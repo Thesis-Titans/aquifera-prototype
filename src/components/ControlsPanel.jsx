@@ -80,7 +80,7 @@ export default function ControlsPanel({
   }
 
   return (
-    <aside className={`app-sidebar ${isOpen ? 'sidebar-open' : 'sidebar-closed'} bg-surface/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl`}>
+    <aside className={`app-sidebar ${isOpen ? 'sidebar-open' : 'sidebar-closed'} bg-surface/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl`}>
       {/* Header */}
       <div className="p-3.5 px-4.5 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -411,9 +411,9 @@ export default function ControlsPanel({
       </div>
 
       {/* Verification Action Footer */}
-      <div className="p-3.5 px-4.5 border-t border-white/10 bg-surface-elevated/90">
+      <div className="p-4 px-4.5 pb-4.5 border-t border-white/10 bg-surface-elevated/90 rounded-b-2xl">
         <button
-          className="w-full py-2.5 px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 bg-linear-to-r from-primary to-cyan-400 text-deep shadow-lg shadow-cyan-500/25 hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer"
+          className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 bg-linear-to-r from-primary to-cyan-400 text-deep shadow-lg shadow-cyan-500/25 hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer"
           onClick={onOpenVerification}
         >
           <Cpu size={16} /> Run USGS MODFLOW 6 Verification

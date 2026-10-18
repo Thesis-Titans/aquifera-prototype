@@ -225,6 +225,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
     left: 12px !important;
     right: 12px !important;
   }
+
+  .benchmark-hud-container {
+    right: auto !important;
+    left: 12px !important;
+    top: 56px !important;
+  }
 }
 
 /* Floating Sidebar Toggle Button when Drawer is Closed */

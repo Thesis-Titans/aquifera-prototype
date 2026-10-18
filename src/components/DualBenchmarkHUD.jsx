@@ -12,7 +12,7 @@ export default function DualBenchmarkHUD({ physicalState }) {
   if (isCollapsed) {
     return (
       <div 
-        className="absolute top-4 right-4 px-3.5 py-1.5 z-15 flex items-center gap-2 rounded-full cursor-pointer bg-surface/90 backdrop-blur-xl border border-white/10 hover:border-primary/50 shadow-xl transition-all select-none"
+        className="benchmark-hud-container absolute top-4 right-4 px-3.5 py-1.5 z-15 flex items-center gap-2 rounded-full cursor-pointer bg-surface/90 backdrop-blur-xl border border-white/10 hover:border-primary/50 shadow-xl transition-all select-none"
         onClick={() => setIsCollapsed(false)}
         title="Click to expand Dual-Engine Benchmark details"
       >
@@ -30,7 +30,7 @@ export default function DualBenchmarkHUD({ physicalState }) {
   }
 
   return (
-    <div className="absolute top-4 right-4 w-85 p-3.5 z-15 flex flex-col gap-3 rounded-xl bg-surface/90 backdrop-blur-xl border border-white/10 shadow-2xl transition-all">
+    <div className="benchmark-hud-container absolute top-4 right-4 w-85 p-3.5 z-15 flex flex-col gap-3 rounded-xl bg-surface/90 backdrop-blur-xl border border-white/10 shadow-2xl transition-all">
       {/* HUD Header */}
       <div className="flex items-center justify-between border-b border-white/10 pb-2">
         <div className="flex items-center gap-2">
