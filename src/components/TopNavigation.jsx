@@ -1,12 +1,13 @@
 import React from 'react';
-import { Camera, Maximize, Play, RotateCcw, Droplets, BookOpen, Layers } from 'lucide-react';
+import { Camera, Maximize, RotateCcw, BookOpen, Layers } from 'lucide-react';
 import { SCENARIO_PRESETS } from '../data/scenarioPresets';
 
 export default function TopNavigation({
   activePresetId,
   onSelectPreset,
   onResetParams,
-  onCaptureScreenshot
+  onCaptureScreenshot,
+  onOpenGuide
 }) {
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -75,7 +76,7 @@ export default function TopNavigation({
       {/* Preset Scenarios for Presentation Defense */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>
-          DEFENSE PRESETS:
+          SCENARIO PRESETS:
         </span>
 
         {SCENARIO_PRESETS.map((preset) => {
@@ -93,8 +94,16 @@ export default function TopNavigation({
         })}
       </div>
 
-      {/* Action Tools (Screenshot, Reset, Fullscreen) */}
+      {/* Action Tools (Guide, Screenshot, Reset, Fullscreen) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={onOpenGuide}
+          title="Open Hydrogeology & Architecture Guide"
+        >
+          <BookOpen size={14} color="var(--color-primary)" /> Guide
+        </button>
+
         <button
           className="btn btn-secondary btn-sm"
           onClick={onCaptureScreenshot}
@@ -106,7 +115,7 @@ export default function TopNavigation({
         <button
           className="btn btn-secondary btn-sm"
           onClick={onResetParams}
-          title="Reset simulation parameters to default"
+          title="Reset simulation parameters to default baseline"
         >
           <RotateCcw size={14} /> Reset
         </button>

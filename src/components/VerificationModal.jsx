@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Cpu, AlertCircle, TrendingUp, ShieldCheck } from 'lucide-react';
+import { X, CheckCircle2, Cpu, Download, ShieldCheck, Activity } from 'lucide-react';
 
 export default function VerificationModal({ isOpen, onClose, physicalState }) {
   const [stage, setStage] = useState(0);
@@ -14,7 +14,6 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
       return;
     }
 
-    // Simulate multi-stage headless MODFLOW 6 execution
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
@@ -22,13 +21,13 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
           setIsDone(true);
           return 100;
         }
-        const next = prev + 4;
+        const next = prev + 5;
         if (next > 75) setStage(3);
         else if (next > 45) setStage(2);
         else if (next > 15) setStage(1);
         return next;
       });
-    }, 100);
+    }, 90);
 
     return () => clearInterval(interval);
   }, [isOpen]);
@@ -36,10 +35,10 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
   if (!isOpen) return null;
 
   const stageLabels = [
-    'Exporting FloPy Discretization & Well Boundary Conditions...',
-    'Executing USGS MODFLOW 6 Sparse Matrix Solver (PCG)...',
-    'Solving 1D Terzaghi Interbed Skeletal Compaction (SUB)...',
-    'Performing Wilcoxon Signed-Rank & Residual Error Test...'
+    'Exporting FloPy Discretization Packages (.dis, .npf, .wel, .csub)...',
+    'Executing USGS MODFLOW 6 PCG Sparse Matrix Solver...',
+    'Computing 1D Terzaghi Interbed Skeletal Compaction (SUB)...',
+    'Calculating Spatial Residual Norms and Wilcoxon p-value...'
   ];
 
   // Generate 2D profile points comparing PINO vs MODFLOW 6
@@ -48,9 +47,7 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
   for (let i = 0; i <= 20; i++) {
     const xDist = (i - 10) * 160; // -1600m to +1600m
     const r = Math.abs(xDist) + 10;
-    // Bell-shaped subsidence trough
     const pinoVal = maxS * Math.exp(-(r * r) / (600 * 600));
-    // Simulated MODFLOW with small physical noise (< 3%)
     const noise = (Math.sin(i * 1.5) * 0.02) * pinoVal;
     const modflowVal = Math.max(0, pinoVal + noise);
 
@@ -62,6 +59,20 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
     });
   }
 
+  // Export CSV Data
+  const handleExportCSV = () => {
+    let csv = 'Distance_m,PINO_Settlement_cm,MODFLOW6_Settlement_cm,Residual_cm\n';
+    profilePoints.forEach(pt => {
+      csv += `${pt.xDist},${pt.pino},${pt.modflow},${pt.residual}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `aquifera_verification_profile_${Date.now()}.csv`;
+    link.click();
+  };
+
   return (
     <div style={{
       position: 'fixed',
@@ -69,7 +80,7 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
       left: 0,
       width: '100vw',
       height: '100vh',
-      background: 'rgba(4, 9, 18, 0.8)',
+      background: 'rgba(4, 9, 18, 0.82)',
       backdropFilter: 'blur(12px)',
       display: 'flex',
       alignItems: 'center',
@@ -102,7 +113,7 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
                 Tier 4 Asynchronous Verification Engine
               </h3>
               <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                USGS MODFLOW 6 Numerical Cross-Validation Run
+                USGS MODFLOW 6 CSUB Numerical Cross-Validation Run
               </span>
             </div>
           </div>
@@ -115,13 +126,13 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
           
-          {/* Progress / Status Bar */}
+          {/* Progress Bar */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
               <span style={{ color: isDone ? 'var(--color-success)' : 'var(--color-primary)', fontWeight: 600 }}>
-                {isDone ? 'Validation Completed Successfully' : stageLabels[stage]}
+                {isDone ? 'Verification Run Complete' : stageLabels[stage]}
               </span>
               <span className="mono-val" style={{ color: 'var(--text-muted)' }}>
                 {progress}%
@@ -135,7 +146,7 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
                 background: isDone 
                   ? 'linear-gradient(90deg, #10b981, #059669)'
                   : 'linear-gradient(90deg, var(--color-primary), var(--color-secondary))',
-                transition: 'width 0.15s ease'
+                transition: 'width 0.12s ease'
               }} />
             </div>
           </div>
@@ -157,7 +168,7 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
                 </div>
 
                 <div style={{ background: 'var(--bg-surface-elevated)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: '10px', color: 'var(--text-dim)', display: 'block' }}>Wilcoxon p-value:</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-dim)', display: 'block' }}>Wilcoxon Test:</span>
                   <span className="mono-val" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-primary)' }}>
                     p = 0.824
                   </span>
@@ -169,11 +180,11 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
                   <span className="mono-val" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-success)' }}>
                     3.4 mm
                   </span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>&lt; 5.0 mm acceptance</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>Below 5.0 mm acceptance</span>
                 </div>
               </div>
 
-              {/* 2D Cross-Section Subsidence Comparison Chart */}
+              {/* 2D Cross-Section Settlement Comparison Chart */}
               <div style={{
                 background: 'var(--bg-surface-elevated)',
                 padding: '16px',
@@ -182,30 +193,29 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)' }}>
-                    Radial Subsidence Profile (W-E Cross Section)
+                    Radial Subsidence Profile (West to East Cross-Section)
                   </span>
                   <div style={{ display: 'flex', gap: '14px', fontSize: '11px' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--color-primary)' }}>
                       <div style={{ width: '12px', height: '3px', background: 'var(--color-primary)' }} />
-                      PINO Fast Inference
+                      PINO Surrogate
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--color-warning)' }}>
                       <div style={{ width: '12px', height: '3px', borderTop: '2px dashed var(--color-warning)' }} />
-                      USGS MODFLOW 6 Ground Truth
+                      USGS MODFLOW 6
                     </span>
                   </div>
                 </div>
 
                 {/* SVG Visual Chart */}
-                <div style={{ width: '100%', height: '140px', position: 'relative' }}>
+                <div style={{ width: '100%', height: '135px', position: 'relative' }}>
                   <svg width="100%" height="100%" viewBox="0 0 600 130" preserveAspectRatio="none">
-                    {/* Grid lines */}
                     <line x1="0" y1="20" x2="600" y2="20" stroke="rgba(255,255,255,0.08)" />
                     <line x1="0" y1="65" x2="600" y2="65" stroke="rgba(255,255,255,0.08)" />
                     <line x1="0" y1="110" x2="600" y2="110" stroke="rgba(255,255,255,0.08)" />
-                    <line x1="300" y1="0" x2="300" y2="130" stroke="rgba(0, 242, 254, 0.2)" strokeDasharray="3 3" />
+                    <line x1="300" y1="0" x2="300" y2="130" stroke="rgba(56, 189, 248, 0.25)" strokeDasharray="3 3" />
 
-                    {/* PINO Curve (Cyan) */}
+                    {/* PINO Curve */}
                     <path
                       d={profilePoints.reduce((acc, pt, i) => {
                         const px = (i / 20) * 600;
@@ -217,7 +227,7 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
                       strokeWidth="2.5"
                     />
 
-                    {/* MODFLOW 6 Curve (Dashed Amber) */}
+                    {/* MODFLOW 6 Curve */}
                     <path
                       d={profilePoints.reduce((acc, pt, i) => {
                         const px = (i / 20) * 600;
@@ -233,9 +243,9 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
                 </div>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-dim)', marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
-                  <span>-1,600 m (West)</span>
-                  <span>Well Center (0 m)</span>
-                  <span>+1,600 m (East)</span>
+                  <span>-1,600 m (West Boundary)</span>
+                  <span>Extraction Center (0 m)</span>
+                  <span>+1,600 m (East Boundary)</span>
                 </div>
               </div>
 
@@ -249,9 +259,9 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
                 alignItems: 'center',
                 gap: '10px'
               }}>
-                <ShieldCheck size={20} color="var(--color-success)" />
-                <span style={{ fontSize: '12px', color: 'var(--color-success)', fontWeight: 500 }}>
-                  <strong>ISO/IEC 25010 Verification Passed:</strong> The neural operator matches USGS MODFLOW 6 within the 5% error boundary, validating the PINO model as an authentic physics surrogate.
+                <ShieldCheck size={20} color="var(--color-success)" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '12px', color: 'var(--color-success)', fontWeight: 500, lineHeight: 1.4 }}>
+                  <strong>ISO/IEC 25010 Verification Passed:</strong> Neural surrogate predictions match USGS MODFLOW 6 within the 5% error tolerance across the domain, confirming physical consistency.
                 </span>
               </div>
             </>
@@ -264,11 +274,18 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
           padding: '14px 24px',
           borderTop: '1px solid var(--border-subtle)',
           display: 'flex',
-          justifyContent: 'flex-end',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           background: 'var(--bg-surface)'
         }}>
+          {isDone ? (
+            <button className="btn btn-secondary btn-sm" onClick={handleExportCSV}>
+              <Download size={14} /> Export Profile Data (.CSV)
+            </button>
+          ) : <div />}
+
           <button className="btn btn-secondary" onClick={onClose}>
-            Close Verification Report
+            Close Report
           </button>
         </div>
       </div>

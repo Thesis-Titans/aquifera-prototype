@@ -4,6 +4,7 @@ import Aquifer3DCanvas from './components/Aquifer3DCanvas';
 import ControlsPanel from './components/ControlsPanel';
 import DualBenchmarkHUD from './components/DualBenchmarkHUD';
 import VerificationModal from './components/VerificationModal';
+import GuideModal from './components/GuideModal';
 import { computeGroundwaterState } from './physics/groundwaterPhysics';
 import { SCENARIO_PRESETS } from './data/scenarioPresets';
 
@@ -29,6 +30,7 @@ export default function App() {
 
   // Modal State
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   // Compute physical state reactively (< 5ms calculation)
   const physicalState = useMemo(() => {
@@ -78,6 +80,7 @@ export default function App() {
         onSelectPreset={handleSelectPreset}
         onResetParams={handleResetParams}
         onCaptureScreenshot={handleCaptureScreenshot}
+        onOpenGuide={() => setIsGuideOpen(true)}
       />
 
       {/* Main Interactive Stage */}
@@ -114,6 +117,12 @@ export default function App() {
         isOpen={isVerificationOpen}
         onClose={() => setIsVerificationOpen(false)}
         physicalState={physicalState}
+      />
+
+      {/* Hydrogeology & PINO System Architecture Guide Modal */}
+      <GuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
       />
     </div>
   );
