@@ -47,17 +47,32 @@ export default function App() {
     setParams({ ...preset.params });
   };
 
-  // Reset to default
+  // Handle Interactive Well Relocation on 3D Surface
+  const handleMoveWell = (wellMetersX, wellMetersY) => {
+    setActivePresetId('custom');
+    setParams(prev => ({
+      ...prev,
+      wellX: Math.round(Math.max(-1400, Math.min(1400, wellMetersX))),
+      wellY: Math.round(Math.max(-1400, Math.min(1400, wellMetersY)))
+    }));
+  };
+
+  // Reset to default sustainable baseline
   const handleResetParams = () => {
     resetHysteresisState();
-    setActivePresetId('custom');
+    setActivePresetId('sustainable');
     setParams({
-      pumpingRate: 1200,
-      pumpingDays: 180,
-      rechargeRateMmDay: 1.5,
+      pumpingRate: 450,
+      pumpingDays: 90,
+      rechargeRateMmDay: 3.0,
       wellCount: 1,
       wellX: 0,
       wellY: 0
+    });
+    setLayerVisibilities({
+      layer1: true,
+      layer2: true,
+      layer3: true
     });
   };
 
@@ -99,6 +114,7 @@ export default function App() {
             physicalState={physicalState}
             layerVisibilities={layerVisibilities}
             setLayerVisibilities={setLayerVisibilities}
+            onMoveWell={handleMoveWell}
           />
 
           {/* Floating Dual-Engine Benchmark HUD */}

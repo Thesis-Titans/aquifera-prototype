@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Layers, Compass, Activity, Eye, Crosshair, X, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { DOMAIN, HYDRO_PARAMS, getPointHydrogeology } from '../physics/groundwaterPhysics';
 
-export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _setLayerVisibilities }) {
+export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setLayerVisibilities, onMoveWell }) {
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -14,6 +14,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
   // Mesh & Object References
   const surfaceMeshRef = useRef(null);
   const wellMeshGroupRef = useRef(null);
+  const coneMeshRef = useRef(null);
   const clayBlockRef = useRef(null);
   const waterTablePlaneRef = useRef(null);
   const clippingPlanesRef = useRef([]);
@@ -36,18 +37,25 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
   const [showWaterTable, setShowWaterTable] = useState(true);
   const [cameraView, setCameraView] = useState('isometric');
 
-  // Interactive 3D Subsurface Data Probe State
+  // Interactive 3D Subsurface Data Probe State & Well Movement
   const [probedData, setProbedData] = useState(null);
   const [isProbePinned, setIsProbePinned] = useState(false);
   const [isProbeActive, setIsProbeActive] = useState(true);
+  const isProbeActiveRef = useRef(true);
+  isProbeActiveRef.current = isProbeActive;
+  const onMoveWellRef = useRef(onMoveWell);
+  onMoveWellRef.current = onMoveWell;
+  const physicalStateRef = useRef(physicalState);
+  physicalStateRef.current = physicalState;
 
   // Helper: Build stratified hydrogeology blocks
   const buildStratigraphy = (scene, cutawayPlane) => {
     const boxSize = 20;
 
     // Layer 1: Upper Unconfined Sand (0 to 30 m depth -> 0 to -3 units)
+    // Note: Top face (+Y, index 2) is invisible so deformed vertex-colored surfaceMesh displays the subsidence depression!
     const sand1Geo = new THREE.BoxGeometry(boxSize, 3, boxSize);
-    const sand1Mat = new THREE.MeshStandardMaterial({
+    const sand1SideMat = new THREE.MeshStandardMaterial({
       color: 0xc89666,
       roughness: 0.85,
       metalness: 0.05,
@@ -57,7 +65,16 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
       clipShadows: true,
       side: THREE.DoubleSide
     });
-    const sand1Mesh = new THREE.Mesh(sand1Geo, sand1Mat);
+    const invisibleTopMat = new THREE.MeshBasicMaterial({ visible: false });
+    const sand1Mats = [
+      sand1SideMat,    // +X (Right)
+      sand1SideMat,    // -X (Left)
+      invisibleTopMat, // +Y (Top: Open so surfaceMesh shows depression)
+      sand1SideMat,    // -Y (Bottom)
+      sand1SideMat,    // +Z (Front)
+      sand1SideMat     // -Z (Back)
+    ];
+    const sand1Mesh = new THREE.Mesh(sand1Geo, sand1Mats);
     sand1Mesh.position.y = -1.5;
     sand1Mesh.name = 'layer1';
     scene.add(sand1Mesh);
@@ -302,7 +319,25 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
     scene.add(wellGroup);
     wellMeshGroupRef.current = wellGroup;
 
-    // 11. Subsurface Raycast Probe Marker Group (3D Target Indicator)
+    // 11. 3D Cone of Piezometric Depression (Translucent Inverted Funnel)
+    const coneGeo = new THREE.ConeGeometry(8, 6, 32, 1, true);
+    coneGeo.rotateX(Math.PI);
+    const coneMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.28,
+      roughness: 0.2,
+      metalness: 0.8,
+      side: THREE.DoubleSide,
+      clippingPlanes: [cutawayPlane],
+      clipShadows: true
+    });
+    const coneMesh = new THREE.Mesh(coneGeo, coneMat);
+    coneMesh.position.set(0, -6, 0);
+    scene.add(coneMesh);
+    coneMeshRef.current = coneMesh;
+
+    // 12. Subsurface Raycast Probe Marker Group (3D Target Indicator)
     const probeGroup = new THREE.Group();
     probeGroup.visible = false;
 
@@ -444,7 +479,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
     };
 
     const handlePointerMove = (e) => {
-      if (!isProbeActive) return;
+      if (!isProbeActiveRef.current) return;
       const hit = getRaycastHit(e);
       if (hit) {
         const hitPoint = hit.point;
@@ -461,23 +496,32 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
     };
 
     const handlePointerDown = (e) => {
-      if (!isProbeActive) return;
-      if (e.target.closest('button') || e.target.closest('.camera-controls-bar') || e.target.closest('.bottom-dock-bar') || e.target.closest('.probe-hud-card')) {
+      if (e.target.closest('button') || e.target.closest('.camera-controls-bar') || e.target.closest('.bottom-dock-bar') || e.target.closest('.probe-hud-card') || e.target.closest('.spatial-gizmo-widget')) {
         return;
       }
 
       const hit = getRaycastHit(e);
       if (hit) {
         const hitPoint = hit.point;
-        if (probeGroupRef.current) {
-          probeGroupRef.current.position.set(hitPoint.x, hitPoint.y, hitPoint.z);
-          probeGroupRef.current.visible = true;
+
+        // If Shift is pressed or Probe is disabled, relocate extraction well:
+        if (onMoveWellRef.current && (e.shiftKey || !isProbeActiveRef.current)) {
+          const domainScale = DOMAIN.widthMeters / 20;
+          onMoveWellRef.current(hitPoint.x * domainScale, hitPoint.z * domainScale);
+          return;
         }
 
-        const hydro = getPointHydrogeology(hitPoint.x, hitPoint.y, hitPoint.z, physicalStateRef.current);
-        if (hydro) {
-          setProbedData({ ...hydro, isPinned: true });
-          setIsProbePinned(true);
+        if (isProbeActiveRef.current) {
+          if (probeGroupRef.current) {
+            probeGroupRef.current.position.set(hitPoint.x, hitPoint.y, hitPoint.z);
+            probeGroupRef.current.visible = true;
+          }
+
+          const hydro = getPointHydrogeology(hitPoint.x, hitPoint.y, hitPoint.z, physicalStateRef.current);
+          if (hydro) {
+            setProbedData({ ...hydro, isPinned: true });
+            setIsProbePinned(true);
+          }
         }
       }
     };
@@ -506,7 +550,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
         container.removeChild(renderer.domElement);
       }
     };
-  }, [isProbeActive]);
+  }, []);
 
   // Reactive Update on Physical State Changes (< 250ms feedback)
   useEffect(() => {
@@ -627,6 +671,19 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
         screen.name = i === 0 ? 'pulseRing' : `screen_${i}`;
         group.add(screen);
       });
+
+      // Update Cone of Depression scale and position based on primary well
+      if (coneMeshRef.current && physicalState.wells && physicalState.wells.length > 0) {
+        const cone = coneMeshRef.current;
+        const primaryWell = physicalState.wells[0];
+        const worldScale = 20 / DOMAIN.widthMeters;
+        cone.position.set(primaryWell.x * worldScale, -5, primaryWell.y * worldScale);
+        
+        const coneRadius = Math.max(1.5, Math.min(10, (physicalState.maxDrawdown / 25) * 9));
+        const coneHeight = Math.max(1, Math.min(8, (physicalState.maxDrawdown / 20) * 6));
+        cone.scale.set(coneRadius / 8, coneHeight / 6, coneRadius / 8);
+        cone.visible = showWaterTable;
+      }
     }
   }, [physicalState, verticalExaggeration, showWaterTable]);
 
@@ -638,6 +695,9 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
       const obj = scene.getObjectByName(id);
       if (obj) obj.visible = layerVisibilities[id];
     });
+    if (surfaceMeshRef.current) {
+      surfaceMeshRef.current.visible = layerVisibilities.layer1;
+    }
   }, [layerVisibilities]);
 
   useEffect(() => {
@@ -679,15 +739,11 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
     <div className="canvas-wrapper relative w-full h-full overflow-hidden select-none">
       <div ref={containerRef} className="w-full h-full cursor-crosshair" />
 
-      {/* Floating 3D Navigation Controls (NN/g: Visibility & Control) */}
-      <div className="camera-controls-bar absolute top-4 left-4 flex items-center gap-2 p-2 px-3 z-10 overflow-x-auto max-w-[calc(100%-140px)] rounded-xl bg-surface-elevated/95 backdrop-blur-xl border border-white/15 shadow-2xl">
-        <span className="text-xs text-text-muted font-bold flex items-center gap-1.5 mr-1 shrink-0 uppercase tracking-wider">
-          <Compass size={15} className="text-primary" /> Camera
-        </span>
-
-        {/* Dynamic Compass Azimuth */}
+      {/* Floating 3D Navigation Controls Toolbar */}
+      <div className="camera-controls-bar absolute top-4 left-4 flex items-center gap-2 p-1.5 px-2.5 z-10 overflow-x-auto no-scrollbar max-w-[calc(100%-160px)] rounded-2xl bg-slate-950/85 backdrop-blur-xl border border-white/12 shadow-2xl">
+        {/* Dynamic Compass Azimuth Badge */}
         <div 
-          className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-deep/80 border border-white/10 text-xs text-text-dim shrink-0"
+          className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-slate-900/80 border border-white/10 text-xs text-slate-300 shrink-0 shadow-xs"
           title="Basin Geographic Orientation (Azimuth)"
         >
           <div className="relative w-4 h-4 flex items-center justify-center">
@@ -695,118 +751,134 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
               ref={compassNeedleRef} 
               className="absolute inset-0 flex items-center justify-center transition-transform duration-75"
             >
-              <div className="w-0.5 h-3.5 bg-linear-to-t from-slate-400 via-white to-primary rounded-full" />
+              <Compass size={14} className="text-primary" />
             </div>
           </div>
-          <span className="font-mono font-bold text-primary text-xs">N</span>
+          <span className="font-mono font-bold text-primary text-[11px] tracking-wider">NORTH</span>
         </div>
 
-        <button
-          className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-            cameraView === 'isometric' 
-              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep shadow-md shadow-cyan-500/25' 
-              : 'bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
-          }`}
-          onClick={() => setPresetCamera('isometric')}
-        >
-          3D Oblique
-        </button>
-        <button
-          className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-            cameraView === 'crossSection' 
-              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep shadow-md shadow-cyan-500/25' 
-              : 'bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
-          }`}
-          onClick={() => setPresetCamera('crossSection')}
-        >
-          Cross Section
-        </button>
-        <button
-          className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-            cameraView === 'top' 
-              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep shadow-md shadow-cyan-500/25' 
-              : 'bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
-          }`}
-          onClick={() => setPresetCamera('top')}
-        >
-          Plan View (Top)
-        </button>
+        <div className="w-px h-5 bg-white/10 mx-0.5 shrink-0" />
 
-        <div className="w-px h-5 bg-white/15 mx-1 shrink-0" />
+        {/* Perspective Snap Segmented Control */}
+        <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-900/60 border border-white/8 shrink-0">
+          <button
+            className={`h-7 px-3 rounded-md text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex items-center justify-center ${
+              cameraView === 'isometric' 
+                ? 'bg-primary/20 text-primary border border-primary/40 font-semibold shadow-xs' 
+                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+            }`}
+            onClick={() => setPresetCamera('isometric')}
+            title="Snap to 3D Oblique Perspective"
+          >
+            3D Oblique
+          </button>
+          <button
+            className={`h-7 px-3 rounded-md text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex items-center justify-center ${
+              cameraView === 'crossSection' 
+                ? 'bg-primary/20 text-primary border border-primary/40 font-semibold shadow-xs' 
+                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+            }`}
+            onClick={() => setPresetCamera('crossSection')}
+            title="Snap to Cross Section View"
+          >
+            Cross-Section
+          </button>
+          <button
+            className={`h-7 px-3 rounded-md text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex items-center justify-center ${
+              cameraView === 'top' 
+                ? 'bg-primary/20 text-primary border border-primary/40 font-semibold shadow-xs' 
+                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+            }`}
+            onClick={() => setPresetCamera('top')}
+            title="Snap to Plan View (Top)"
+          >
+            Plan (Top)
+          </button>
+        </div>
 
-        <button
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-            isCutaway 
-              ? 'bg-primary/20 text-primary border border-primary/40' 
-              : 'bg-white/5 hover:bg-white/10 text-text-muted border border-white/5'
-          }`}
-          onClick={() => setIsCutaway(!isCutaway)}
-          title="Toggle 50% Volumetric Cutaway to inspect internal clay compaction"
-        >
-          <Layers size={14} /> {isCutaway ? 'Cutaway' : 'Solid'}
-        </button>
+        <div className="w-px h-5 bg-white/10 mx-0.5 shrink-0" />
 
-        <button
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-            showWaterTable 
-              ? 'bg-primary/20 text-primary border border-primary/40' 
-              : 'bg-white/5 hover:bg-white/10 text-text-muted border border-white/5'
-          }`}
-          onClick={() => setShowWaterTable(!showWaterTable)}
-          title="Toggle Piezometric Water Table Plane"
-        >
-          <Eye size={14} /> {showWaterTable ? 'Head' : 'Hide Head'}
-        </button>
+        {/* Display Mode Toggles */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            className={`h-8 px-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 border ${
+              isCutaway 
+                ? 'bg-primary/15 text-primary border-primary/40 shadow-xs font-semibold' 
+                : 'bg-white/4 text-slate-400 border-white/10 hover:text-white hover:bg-white/8'
+            }`}
+            onClick={() => setIsCutaway(!isCutaway)}
+            title="Toggle 50% Volumetric Cutaway to inspect internal clay compaction"
+          >
+            <Layers size={13} /> {isCutaway ? 'Cutaway' : 'Solid'}
+          </button>
 
-        <button
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-            isWireframe 
-              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' 
-              : 'bg-white/5 hover:bg-white/10 text-text-muted border border-white/5'
-          }`}
-          onClick={() => setIsWireframe(!isWireframe)}
-          title="Toggle Terrain Mesh Wireframe"
-        >
-          <Activity size={14} /> {isWireframe ? 'Solid' : 'Wire'}
-        </button>
+          <button
+            className={`h-8 px-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 border ${
+              showWaterTable 
+                ? 'bg-primary/15 text-primary border-primary/40 shadow-xs font-semibold' 
+                : 'bg-white/4 text-slate-400 border-white/10 hover:text-white hover:bg-white/8'
+            }`}
+            onClick={() => setShowWaterTable(!showWaterTable)}
+            title="Toggle Piezometric Water Table Plane"
+          >
+            <Eye size={13} /> {showWaterTable ? 'Head' : 'Hide Head'}
+          </button>
 
-        <button
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-            isProbeActive 
-              ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-xs' 
-              : 'bg-white/5 hover:bg-white/10 text-text-muted border border-white/5'
-          }`}
-          onClick={() => {
-            setIsProbeActive(!isProbeActive);
-            if (isProbeActive) {
-              setProbedData(null);
-              setIsProbePinned(false);
-              if (probeGroupRef.current) probeGroupRef.current.visible = false;
-            }
-          }}
-          title="Toggle Interactive 3D Subsurface Probe"
-        >
-          <Crosshair size={14} /> {isProbeActive ? 'Probe ON' : 'Probe OFF'}
-        </button>
+          <button
+            className={`h-8 px-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 border ${
+              isWireframe 
+                ? 'bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-xs font-semibold' 
+                : 'bg-white/4 text-slate-400 border-white/10 hover:text-white hover:bg-white/8'
+            }`}
+            onClick={() => setIsWireframe(!isWireframe)}
+            title="Toggle Terrain Mesh Wireframe"
+          >
+            <Activity size={13} /> Wire
+          </button>
+
+          <button
+            className={`h-8 px-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 border ${
+              isProbeActive 
+                ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40 shadow-xs font-semibold' 
+                : 'bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-xs font-semibold'
+            }`}
+            onClick={() => {
+              setIsProbeActive(!isProbeActive);
+              if (isProbeActive) {
+                setProbedData(null);
+                setIsProbePinned(false);
+                if (probeGroupRef.current) probeGroupRef.current.visible = false;
+              }
+            }}
+            title={isProbeActive ? "Data Probe ON: Hover/click surface to inspect subsurface values (Shift+Click to relocate well)" : "Well Placement Mode: Click anywhere on 3D terrain to relocate extraction well"}
+          >
+            <Crosshair size={13} /> {isProbeActive ? 'Probe ON' : 'Move Well'}
+          </button>
+        </div>
       </div>
 
       {/* Interactive Subsurface Hydrogeological Probe HUD Card */}
       {probedData && isProbeActive && (
-        <div className="probe-hud-card absolute bottom-20 left-4 z-20 w-87.5 max-w-[calc(100vw-32px)] p-3.5 rounded-xl bg-surface/95 backdrop-blur-xl border border-primary/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_10px_hsl(187,92%,48%)] animate-pulse" />
+        <div className="probe-hud-card absolute bottom-24 left-4 z-20 w-85 max-w-[calc(100vw-32px)] p-4 rounded-2xl bg-slate-950/90 backdrop-blur-2xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-150">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_hsl(187,92%,48%)] animate-pulse shrink-0" />
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-text-dim uppercase tracking-wider">
-                  Subsurface Data Probe
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Subsurface Telemetry Probe
                 </span>
-                <span className="text-[11px] font-mono font-semibold text-white">
+                <span className="text-xs font-mono font-semibold text-white">
                   X: {probedData.coordinates.x > 0 ? `+${probedData.coordinates.x}` : probedData.coordinates.x}m · Y: {probedData.coordinates.y > 0 ? `+${probedData.coordinates.y}` : probedData.coordinates.y}m · Depth: {probedData.coordinates.depth}m
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isProbePinned ? 'bg-primary/20 text-primary border border-primary/40' : 'bg-white/5 text-text-dim'}`}>
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shadow-xs ${
+                isProbePinned 
+                  ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/35' 
+                  : 'bg-white/5 text-slate-400 border-white/10'
+              }`}>
                 {isProbePinned ? 'Pinned' : 'Live'}
               </span>
               <button
@@ -815,61 +887,70 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
                   setIsProbePinned(false);
                   if (probeGroupRef.current) probeGroupRef.current.visible = false;
                 }}
-                className="p-1 rounded text-text-muted hover:text-white cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                 title="Dismiss Probe"
               >
-                <X size={14} />
+                <X size={15} />
               </button>
             </div>
           </div>
 
-          {/* Stratum Tag */}
-          <div className="flex items-center gap-2 mb-2 p-1.5 px-2.5 rounded-lg bg-surface-elevated/80 border border-white/5 text-[11px]">
-            <div className="w-2.5 h-2.5 rounded-xs shrink-0" style={{ backgroundColor: probedData.stratum.color }} />
-            <div className="flex-1 truncate">
-              <strong className="text-white block">{probedData.stratum.name}</strong>
-              <span className="text-[10px] text-text-muted font-mono">{probedData.stratum.kText}</span>
+          {/* Stratum Tag Card */}
+          <div className="flex items-center gap-2.5 p-2.5 px-3 rounded-xl bg-slate-900/60 border border-white/8 text-xs">
+            <div className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: probedData.stratum.color }} />
+            <div className="flex-1 min-w-0">
+              <strong className="text-white block font-semibold truncate">{probedData.stratum.name}</strong>
+              <span className="text-[10px] text-slate-400 font-mono">{probedData.stratum.kText}</span>
             </div>
           </div>
 
           {/* 3-Column Hydrogeological Metrics */}
-          <div className="grid grid-cols-3 gap-2 mb-2.5">
-            <div className="p-2 rounded bg-surface-elevated/60 border border-white/5 flex flex-col">
-              <span className="text-[9.5px] text-text-muted">Head (h)</span>
-              <span className="font-mono text-xs font-bold text-secondary">
-                {probedData.hydraulicHeadM} <span className="text-[9px] font-normal">m</span>
-              </span>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="p-2.5 rounded-xl bg-slate-900/40 border border-white/8 flex flex-col justify-between">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Head (h)</span>
+              <div className="mt-1 flex items-baseline gap-1">
+                <span className="font-mono text-sm font-bold text-sky-400">
+                  {probedData.hydraulicHeadM}
+                </span>
+                <span className="text-[10px] text-slate-400">m</span>
+              </div>
             </div>
-            <div className="p-2 rounded bg-surface-elevated/60 border border-white/5 flex flex-col">
-              <span className="text-[9.5px] text-text-muted">Settlement (Δz)</span>
-              <span className={`font-mono text-xs font-bold ${probedData.settlementCm > 15 ? 'text-danger' : 'text-primary'}`}>
-                {probedData.settlementCm} <span className="text-[9px] font-normal">cm</span>
-              </span>
+            <div className="p-2.5 rounded-xl bg-slate-900/40 border border-white/8 flex flex-col justify-between">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Settlement</span>
+              <div className="mt-1 flex items-baseline gap-1">
+                <span className={`font-mono text-sm font-bold ${probedData.settlementCm > 15 ? 'text-rose-400' : 'text-primary'}`}>
+                  {probedData.settlementCm}
+                </span>
+                <span className="text-[10px] text-slate-400">cm</span>
+              </div>
             </div>
-            <div className="p-2 rounded bg-surface-elevated/60 border border-white/5 flex flex-col">
-              <span className="text-[9.5px] text-text-muted">Eff. Stress (σ')</span>
-              <span className="font-mono text-xs font-bold text-amber-400">
-                {probedData.effectiveStressKPa} <span className="text-[9px] font-normal">kPa</span>
-              </span>
+            <div className="p-2.5 rounded-xl bg-slate-900/40 border border-white/8 flex flex-col justify-between">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Eff. Stress</span>
+              <div className="mt-1 flex items-baseline gap-1">
+                <span className="font-mono text-sm font-bold text-amber-400">
+                  {probedData.effectiveStressKPa}
+                </span>
+                <span className="text-[10px] text-slate-400">kPa</span>
+              </div>
             </div>
           </div>
 
           {/* Critical Yield State Indicator */}
-          <div className={`p-1.5 px-2 rounded flex items-center gap-2 text-[10px] ${
+          <div className={`p-2.5 px-3 rounded-xl flex items-center gap-2.5 text-xs font-medium border shadow-xs ${
             probedData.isYielding 
-              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' 
-              : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+              ? 'bg-rose-500/15 text-rose-300 border-rose-500/35' 
+              : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
           }`}>
-            {probedData.isYielding ? <AlertTriangle size={13} className="shrink-0 text-rose-400" /> : <ShieldCheck size={13} className="shrink-0 text-emerald-400" />}
-            <span className="leading-tight font-medium">{probedData.statusText}</span>
+            {probedData.isYielding ? <AlertTriangle size={15} className="shrink-0 text-rose-400" /> : <ShieldCheck size={15} className="shrink-0 text-emerald-400" />}
+            <span className="leading-tight">{probedData.statusText}</span>
           </div>
         </div>
       )}
 
-      {/* Interactive 3D Spatial Orientation Gizmo HUD Widget (Step 2) */}
-      <div className="spatial-gizmo-widget absolute bottom-20 right-4 z-15 flex flex-col items-end gap-2 select-none">
+      {/* Interactive 3D Spatial Orientation Gizmo HUD Widget */}
+      <div className="spatial-gizmo-widget absolute bottom-24 right-4 z-15 flex flex-col items-end gap-2 select-none">
         {isGizmoOpen ? (
-          <div className="p-3.5 rounded-2xl bg-[#091322]/95 backdrop-blur-xl border border-white/20 shadow-2xl flex flex-col gap-2.5 w-60 animate-in fade-in zoom-in-95 duration-150">
+          <div className="p-3.5 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-white/15 shadow-2xl flex flex-col gap-2.5 w-60 animate-in fade-in zoom-in-95 duration-150">
             {/* Header with Title and Minimize */}
             <div className="flex items-center justify-between border-b border-white/10 pb-2">
               <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -877,7 +958,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
               </span>
               <button
                 onClick={() => setIsGizmoOpen(false)}
-                className="text-slate-400 hover:text-white p-0.5 rounded cursor-pointer"
+                className="text-slate-400 hover:text-white hover:bg-white/10 p-1 rounded-lg cursor-pointer transition-colors"
                 title="Collapse Gizmo"
               >
                 <X size={13} />
@@ -887,7 +968,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
             {/* Live 3D Vector Tripod SVG & Quick Snaps */}
             <div className="flex items-center gap-3">
               {/* Projected 3D Axis Compass SVG */}
-              <div className="relative w-15 h-15 rounded-full bg-[#040914] border border-white/15 flex items-center justify-center shrink-0 shadow-inner">
+              <div className="relative w-15 h-15 rounded-full bg-slate-950 border border-white/15 flex items-center justify-center shrink-0 shadow-inner">
                 <svg viewBox="0 0 60 60" className="w-full h-full overflow-visible">
                   {/* Origin Bead */}
                   <circle cx="30" cy="30" r="2.5" fill="#ffffff" opacity="0.6" />
@@ -964,7 +1045,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
         ) : (
           <button
             onClick={() => setIsGizmoOpen(true)}
-            className="p-2 px-3 rounded-xl bg-[#091322]/95 backdrop-blur-xl border border-white/20 hover:border-primary/50 text-slate-300 hover:text-white shadow-xl flex items-center gap-2 text-xs font-semibold cursor-pointer transition-all"
+            className="p-2 px-3 rounded-xl bg-slate-950/90 backdrop-blur-xl border border-white/15 hover:border-primary/50 text-slate-300 hover:text-white shadow-xl flex items-center gap-2 text-xs font-semibold cursor-pointer transition-all"
             title="Expand 3D Spatial Gizmo & Coordinate Scales"
           >
             <Compass size={15} className="text-primary" />
@@ -974,55 +1055,75 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
       </div>
 
       {/* Consolidated Geological Status & Exaggeration Toolbar (Bottom Dock) */}
-      <div className="bottom-dock-bar absolute bottom-4 left-4 right-4 p-2.5 sm:p-3 px-3.5 sm:px-5 z-10 flex items-center justify-between flex-wrap gap-2.5 sm:gap-4 rounded-xl sm:rounded-2xl bg-surface-elevated/95 backdrop-blur-xl border border-white/15 shadow-2xl overflow-x-auto no-scrollbar">
-        {/* Stratum Depth Legend */}
-        <div className="flex items-center gap-2.5 sm:gap-4 text-xs shrink-0">
-          <span className="font-bold text-text-dim uppercase tracking-wider text-[10px] sm:text-[11px]">
+      <div className="bottom-dock-bar absolute bottom-3 left-4 right-4 min-h-12 p-2 px-4 z-10 flex items-center justify-between flex-wrap gap-3 rounded-2xl bg-slate-950/85 backdrop-blur-xl border border-white/12 shadow-2xl overflow-x-auto no-scrollbar">
+        {/* Interactive Stratum Toggles */}
+        <div className="flex items-center gap-2 text-xs shrink-0">
+          <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] mr-1">
             STRATA:
           </span>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-xs bg-[#38bdf8]" />
-            <span className="text-white font-medium">0m Surface</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-xs bg-[#c89666]" />
-            <span className="text-white font-medium">-30m Sand</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-xs bg-[#7c2d12]" />
-            <span className="text-white font-medium">-60m Clay</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-xs bg-[#1e3a8a]" />
-            <span className="text-white font-medium">-120m Aquifer</span>
-          </div>
+          <button
+            onClick={() => setLayerVisibilities(prev => ({ ...prev, layer1: !prev.layer1 }))}
+            className={`h-7 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+              layerVisibilities.layer1 
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-200 shadow-xs' 
+                : 'bg-white/4 border-white/8 text-slate-500 opacity-60 line-through'
+            }`}
+            title="Toggle Upper Sand Layer & Ground Surface (0 to -30m)"
+          >
+            <div className="w-2 h-2 rounded-full bg-[#c89666]" />
+            <span>Sand (0-30m)</span>
+          </button>
+          <button
+            onClick={() => setLayerVisibilities(prev => ({ ...prev, layer2: !prev.layer2 }))}
+            className={`h-7 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+              layerVisibilities.layer2 
+                ? 'bg-orange-500/15 border-orange-500/40 text-orange-200 shadow-xs' 
+                : 'bg-white/4 border-white/8 text-slate-500 opacity-60 line-through'
+            }`}
+            title="Toggle Compressible Clay Aquitard (30 to -60m)"
+          >
+            <div className="w-2 h-2 rounded-full bg-[#ea580c]" />
+            <span>Clay (30-60m)</span>
+          </button>
+          <button
+            onClick={() => setLayerVisibilities(prev => ({ ...prev, layer3: !prev.layer3 }))}
+            className={`h-7 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+              layerVisibilities.layer3 
+                ? 'bg-sky-500/15 border-sky-500/40 text-sky-200 shadow-xs' 
+                : 'bg-white/4 border-white/8 text-slate-500 opacity-60 line-through'
+            }`}
+            title="Toggle Lower Confined Aquifer (60 to -120m)"
+          >
+            <div className="w-2 h-2 rounded-full bg-[#0284c7]" />
+            <span>Aquifer (60-120m)</span>
+          </button>
         </div>
 
         {/* Subsidence Colormap Legend */}
-        <div className="flex items-center gap-2.5">
-          <span className="text-xs text-text-muted font-medium">
+        <div className="flex items-center gap-2.5 shrink-0">
+          <span className="text-xs text-slate-400 font-medium">
             Settlement (Δz):
           </span>
-          <div className="w-32 h-2.5 rounded-full bg-linear-to-r from-[#38bdf8] via-[#f59e0b] to-[#ef4444]" />
-          <div className="flex gap-2 text-xs text-text-dim font-mono tabular-nums font-semibold">
-            <span>0 cm</span>
+          <div className="w-28 sm:w-36 h-2 rounded-full bg-linear-to-r from-[#38bdf8] via-[#f59e0b] to-[#ef4444] shadow-inner" />
+          <div className="flex gap-1.5 text-xs text-slate-400 font-mono tabular-nums font-medium">
+            <span>0cm</span>
             <span>→</span>
-            <span>≥25 cm</span>
+            <span>≥25cm</span>
           </div>
         </div>
 
         {/* Vertical Exaggeration Slider */}
-        <div className="flex items-center gap-2.5">
-          <span className="text-xs text-text-muted font-medium">Exaggeration:</span>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <span className="text-xs text-slate-400 font-medium">Exaggeration:</span>
           <input
             type="range"
             min="1"
             max="30"
             value={verticalExaggeration}
             onChange={(e) => setVerticalExaggeration(Number(e.target.value))}
-            className="w-24 cursor-pointer accent-primary"
+            className="w-20 sm:w-24 cursor-pointer accent-primary"
           />
-          <span className="font-mono tabular-nums text-primary text-xs font-bold min-w-8">
+          <span className="font-mono tabular-nums text-primary text-xs font-bold px-2 py-0.5 rounded-md bg-slate-900 border border-white/10 min-w-7 text-center">
             {verticalExaggeration}×
           </span>
         </div>

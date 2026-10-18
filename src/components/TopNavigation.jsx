@@ -22,12 +22,12 @@ export default function TopNavigation({
   };
 
   return (
-    <header className="h-16 bg-[#070d18]/95 backdrop-blur-2xl border-b border-white/15 flex items-center justify-between px-3 sm:px-6 z-30 shrink-0">
+    <header className="h-16 bg-slate-950/95 backdrop-blur-2xl border-b border-white/15 flex items-center justify-between px-3 sm:px-6 z-30 shrink-0">
       {/* Brand & Project Metadata */}
       <div className="flex items-center gap-3 shrink-0">
-        <div className="w-10 h-10 rounded-full overflow-hidden border border-primary/70 shadow-[0_0_14px_rgba(34,211,238,0.35)] bg-[#040d1a] flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 rounded-full overflow-hidden border border-primary/70 shadow-[0_0_14px_rgba(34,211,238,0.35)] bg-slate-950 flex items-center justify-center shrink-0">
           <img 
-            src="/aquifera-logo.png" 
+            src={`${import.meta.env.BASE_URL}aquifera-logo.png`} 
             alt="Aquifera Brandmark" 
             className="w-[130%] h-[130%] object-cover object-[center_18%]"
           />
@@ -49,37 +49,41 @@ export default function TopNavigation({
       </div>
 
       {/* Preset Scenarios for Presentation Defense */}
-      <div className="presets-scroll-container min-w-0 flex-1 flex items-center justify-center gap-1.5 overflow-x-auto no-scrollbar mx-1.5 sm:mx-2 p-1 rounded-xl border border-white/20 bg-[#070e1b] shadow-inner">
-        {SCENARIO_PRESETS.map((preset) => {
-          const isActive = activePresetId === preset.id;
-          const labelMap = {
-            sustainable: '1. Safe',
-            overextraction: '2. Crisis',
-            recharge: '3. Recharge',
-            catastrophic: '4. Drought'
-          };
-          const displayName = labelMap[preset.id] || preset.name.split('.')[1]?.trim() || preset.name;
-          return (
-            <button
-              key={preset.id}
-              className={isActive ? 'aquifera-preset-btn-active py-1.5 px-2.5 sm:px-3 text-xs shrink-0' : 'aquifera-preset-btn py-1.5 px-2.5 sm:px-3 text-xs shrink-0'}
-              onClick={() => onSelectPreset(preset)}
-              title={`${preset.name}\n${preset.description}`}
-            >
-              {displayName}
-            </button>
-          );
-        })}
+      <div className="flex items-center justify-center min-w-0 max-w-[55vw]">
+        <div className="presets-scroll-container flex items-center gap-1 p-1 rounded-xl bg-slate-950/60 backdrop-blur-md border border-white/10 shadow-inner overflow-x-auto no-scrollbar">
+          {SCENARIO_PRESETS.map((preset) => {
+            const isActive = activePresetId === preset.id;
+            const labelMap = {
+              sustainable: { num: '1.', short: 'Safe', full: 'Safe (Elastic)' },
+              overextraction: { num: '2.', short: 'Crisis', full: 'Crisis (Mandurriao)' },
+              recharge: { num: '3.', short: 'Recharge', full: 'Recharge (MAR)' },
+              catastrophic: { num: '4.', short: 'Drought', full: 'Drought Shock' }
+            };
+            const meta = labelMap[preset.id] || { num: '', short: preset.name, full: preset.name };
+            return (
+              <button
+                key={preset.id}
+                className={isActive ? 'aquifera-preset-btn-active shrink-0' : 'aquifera-preset-btn shrink-0'}
+                onClick={() => onSelectPreset(preset)}
+                title={`${preset.name}\n${preset.description}`}
+              >
+                <span className={`font-mono mr-1.5 font-bold ${isActive ? 'text-primary' : 'text-slate-400'}`}>{meta.num}</span>
+                <span className="inline xl:hidden">{meta.short}</span>
+                <span className="hidden xl:inline">{meta.full}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Action Tools (Guide, Screenshot, Reset, Controls Toggle, Fullscreen) */}
-      <div className="flex items-center gap-2.5 shrink-0">
+      <div className="flex items-center gap-2 shrink-0">
         <button
           className="aquifera-tool-btn"
           onClick={onOpenGuide}
           title="Open Hydrogeology & Architecture Guide"
         >
-          <BookOpen size={16} className="text-primary" />
+          <BookOpen size={15} className="text-primary" />
           <span className="hidden lg:inline">Guide</span>
         </button>
 
@@ -88,7 +92,7 @@ export default function TopNavigation({
           onClick={onCaptureScreenshot}
           title="Capture clean PNG snapshot of the 3D scene for your presentation slides"
         >
-          <Camera size={16} className="text-primary" />
+          <Camera size={15} className="text-primary" />
           <span className="hidden lg:inline">Snapshot</span>
         </button>
 
@@ -97,7 +101,7 @@ export default function TopNavigation({
           onClick={onResetParams}
           title="Reset simulation parameters to default baseline"
         >
-          <RotateCcw size={16} />
+          <RotateCcw size={15} />
           <span className="hidden lg:inline">Reset</span>
         </button>
 
@@ -108,16 +112,16 @@ export default function TopNavigation({
           onClick={onToggleSidebar}
           title={isSidebarOpen ? "Collapse Parameters Panel" : "Expand Parameters Panel"}
         >
-          <Sliders size={16} />
+          <Sliders size={15} />
           <span>Controls</span>
         </button>
 
         <button
-          className="aquifera-tool-btn p-2.5"
+          className="aquifera-tool-btn px-2.5!"
           onClick={toggleFullscreen}
           title="Toggle Fullscreen Presentation Mode"
         >
-          <Maximize size={16} />
+          <Maximize size={15} />
         </button>
       </div>
     </header>
