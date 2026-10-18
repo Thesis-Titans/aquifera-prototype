@@ -129,6 +129,23 @@ export default function ControlsPanel({
               <strong className="text-rose-300">Remedy:</strong> Reduce Q ≤ 1,400 m³/d or increase R ≥ 2.5 mm/d.
             </div>
           </div>
+        ) : physicalState.isHysteresisRetained ? (
+          <div className="bg-amber-950/50 border border-amber-500/60 rounded-2xl p-4.5 shadow-lg shadow-amber-950/40 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity size={19} className="text-amber-400" />
+                <span className="text-xs font-bold text-amber-300 tracking-wide uppercase">
+                  Plastic Hysteresis Preserved
+                </span>
+              </div>
+              <span className="font-mono tabular-nums text-xs text-amber-300 font-bold bg-amber-500/25 px-2.5 py-1 rounded-lg border border-amber-500/40">
+                {physicalState.permanentInelasticCm} cm Non-Rebound
+              </span>
+            </div>
+            <p className="text-xs text-amber-100 leading-relaxed">
+              Piezometric head recovered to <strong className="font-mono text-emerald-300 font-bold">{physicalState.minHead} m</strong>, but permanent clay strata collapse remains locked (no unphysical spring rebound).
+            </p>
+          </div>
         ) : (
           <div className="bg-emerald-950/40 border border-emerald-500/50 rounded-2xl p-4.5 flex items-center gap-3.5 shadow-md">
             <CheckCircle2 size={24} className="text-emerald-400 shrink-0" />
@@ -239,7 +256,7 @@ export default function ControlsPanel({
                 className="w-full accent-primary cursor-pointer my-1.5"
               />
             </div>
-            <div className="flex justify-between text-[11px] text-slate-400 font-mono font-medium pt-2 border-t border-white/10">
+            <div className="flex justify-between text-[11px] text-slate-400 font-mono font-medium pt-2 px-1.5 border-t border-white/10">
               <span>0 (Idle)</span>
               <span>1,200 (Municipal)</span>
               <span>2,500 (Heavy)</span>
@@ -291,7 +308,7 @@ export default function ControlsPanel({
                 className="w-full accent-primary cursor-pointer my-1.5"
               />
             </div>
-            <div className="flex justify-between text-[11px] text-slate-400 font-mono font-medium pt-2 border-t border-white/10">
+            <div className="flex justify-between text-[11px] text-slate-400 font-mono font-medium pt-2 px-1.5 border-t border-white/10">
               <span>10 days</span>
               <span>180 days (Seasonal)</span>
               <span>365 days (1 yr)</span>
@@ -343,7 +360,7 @@ export default function ControlsPanel({
                 className="w-full accent-primary cursor-pointer my-1.5"
               />
             </div>
-            <div className="flex justify-between text-[11px] text-slate-400 font-mono font-medium pt-2 border-t border-white/10">
+            <div className="flex justify-between text-[11px] text-slate-400 font-mono font-medium pt-2 px-1.5 border-t border-white/10">
               <span>0 (Drought)</span>
               <span>2.5 (Normal)</span>
               <span>5.0 (Managed)</span>
@@ -351,7 +368,7 @@ export default function ControlsPanel({
           </div>
 
           {/* Well Configuration Cluster Toggle */}
-          <div className="aquifera-card !flex-row items-center justify-between">
+          <div className="aquifera-card flex-row! items-center justify-between py-3.5 px-4.5">
             <span className="text-xs text-slate-200 font-bold">Well Distribution:</span>
             <div className="flex gap-2">
               <button
@@ -470,12 +487,12 @@ export default function ControlsPanel({
       </div>
 
       {/* Verification Action Footer */}
-      <div className="p-5 border-t border-white/20 bg-[#0c1629] rounded-b-2xl shrink-0">
+      <div className="p-4 px-5 border-t border-white/20 bg-[#0c1629]/95 rounded-b-2xl shrink-0">
         <button
-          className="w-full py-4 px-5 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 bg-linear-to-r from-primary to-cyan-400 text-deep shadow-lg shadow-cyan-500/30 hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer"
+          className="w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 bg-linear-to-r from-primary to-cyan-400 text-deep shadow-lg shadow-cyan-500/30 hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer"
           onClick={onOpenVerification}
         >
-          <Cpu size={19} /> Run USGS MODFLOW 6 Verification
+          <Cpu size={18} /> Run USGS MODFLOW 6 Verification
         </button>
       </div>
 

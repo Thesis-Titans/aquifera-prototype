@@ -50,6 +50,16 @@ function wellFunctionW(u) {
   return -Math.log(u) + a0 + u * (a1 + u * (a2 + u * (a3 + u * (a4 + u * a5))));
 }
 
+// Persistent Terzaghi Plastic Hysteresis Buffer (Tracks historic peak stress / minimum head)
+let historicalMinHeadBuffer = null;
+
+/**
+ * Resets the plastic hysteresis memory buffer (e.g., when switching scenarios or explicit reset)
+ */
+export function resetHysteresisState() {
+  historicalMinHeadBuffer = null;
+}
+
 /**
  * Calculates 3D hydraulic head and 2D surface compaction field
  * @param {Object} params Pumping and environmental parameters
@@ -75,6 +85,11 @@ export function computeGroundwaterState(params) {
   const hPre = HYDRO_PARAMS.preconsolidationHead;
   const bClay = HYDRO_PARAMS.clayThickness;
 
+  // Initialize or re-verify hysteresis buffer size
+  if (!historicalMinHeadBuffer || historicalMinHeadBuffer.length !== res * res) {
+    historicalMinHeadBuffer = new Float32Array(res * res).fill(h0);
+  }
+
   // Recharge offset: net recharge replenishes head uniformly
   const rechargeMDay = rechargeRateMmDay / 1000.0;
   const rechargeHeadBoost = Math.min(3.5, (rechargeMDay * pumpingDays * 0.15));
@@ -85,6 +100,7 @@ export function computeGroundwaterState(params) {
   let totalInelasticSubsidenceM = 0;
   let totalElasticSubsidenceM = 0;
   let pointsInelastic = 0;
+  let isHysteresisRetained = false;
 
   // 2D displacement grid for Three.js heightfield
   const displacementGrid = new Float32Array(res * res);
@@ -128,22 +144,34 @@ export function computeGroundwaterState(params) {
       const lagFactor = 1.0 - Math.exp(-pumpingDays / HYDRO_PARAMS.clayTimeLagDays);
       const headClay = h0 - (netDrawdown * lagFactor);
 
-      // Terzaghi 1D consolidation calculation
+      // Terzaghi 1D consolidation with Plastic Hysteresis Buffer:
+      // Track minimum historical head reached across extraction cycles
+      if (headClay < historicalMinHeadBuffer[idx]) {
+        historicalMinHeadBuffer[idx] = headClay;
+      }
+      const histMinHead = historicalMinHeadBuffer[idx];
+
       let deltaBElastic = 0;
       let deltaBInelastic = 0;
 
-      if (headClay >= hPre) {
-        // Purely elastic regime (reversible spring-like skeleton)
-        const deltaH = h0 - headClay;
-        deltaBElastic = bClay * HYDRO_PARAMS.claySke * deltaH;
-      } else {
-        // Inelastic regime: preconsolidation head breached!
+      if (histMinHead < hPre) {
+        // Preconsolidation head was breached historically -> permanent matrix collapse locked in
         pointsInelastic++;
-        const deltaHElastic = h0 - hPre;
-        const deltaHInelastic = hPre - headClay;
-
-        deltaBElastic = bClay * HYDRO_PARAMS.claySke * deltaHElastic;
+        const deltaHInelastic = hPre - histMinHead;
         deltaBInelastic = bClay * HYDRO_PARAMS.claySkv * deltaHInelastic;
+
+        // If current head has rebounded above historical min head, hysteresis is physically active
+        if (headClay > histMinHead + 0.1) {
+          isHysteresisRetained = true;
+        }
+
+        // Reversible elastic component fluctuates between current head and historical preconsolidation
+        const effectiveElasticHead = Math.min(h0, Math.max(headClay, histMinHead));
+        deltaBElastic = bClay * HYDRO_PARAMS.claySke * (h0 - effectiveElasticHead);
+      } else {
+        // Purely elastic regime (within original preconsolidation bounds; 100% reversible)
+        const deltaH = Math.max(0, h0 - headClay);
+        deltaBElastic = bClay * HYDRO_PARAMS.claySke * deltaH;
       }
 
       const totalCompactionM = deltaBElastic + deltaBInelastic;
@@ -177,6 +205,8 @@ export function computeGroundwaterState(params) {
     inelasticPercent,
     elasticSubsidenceMm: parseFloat((totalElasticSubsidenceM * 1000).toFixed(1)),
     inelasticSubsidenceMm: parseFloat((totalInelasticSubsidenceM * 1000).toFixed(1)),
+    permanentInelasticCm: parseFloat((totalInelasticSubsidenceM * 100).toFixed(1)),
+    isHysteresisRetained,
     pointsInelastic,
     pumpingRate,
     pumpingDays,

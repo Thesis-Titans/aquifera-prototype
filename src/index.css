@@ -217,14 +217,14 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .aquifera-card {
-  background: hsla(222, 50%, 15%, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: hsla(222, 50%, 14%, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 16px;
   padding: 18px 20px;
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   transition: all 0.2s ease;
 }
 
@@ -369,10 +369,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* Tablet Landscape (< 1180px) */
 @media (max-width: 1180px) {
   :root {
-    --sidebar-width: 420px;
-  }
-  .presets-scroll-container {
-    max-width: 42vw;
+    --sidebar-width: 390px;
   }
 }
 
@@ -380,15 +377,15 @@ input[type="range"]::-webkit-slider-thumb:hover {
 @media (max-width: 920px) {
   .app-sidebar {
     position: fixed;
-    top: calc(var(--nav-height) + 12px);
-    right: 12px;
-    bottom: 12px;
-    height: calc(100vh - var(--nav-height) - 24px);
+    top: calc(var(--nav-height) + 12px) !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    height: auto !important;
     margin: 0 !important;
-    width: min(440px, calc(100vw - 24px)) !important;
+    width: min(390px, calc(100vw - 24px)) !important;
     border-radius: 20px !important;
     z-index: 50;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85) !important;
   }
   .app-sidebar.sidebar-closed {
@@ -415,9 +412,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
   .nav-brand-subtitle {
     display: none !important;
   }
-  .presets-scroll-container {
-    max-width: 36vw;
-  }
 
   .bottom-dock-bar {
     bottom: 12px !important;
@@ -428,7 +422,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   .benchmark-hud-container {
     right: auto !important;
     left: 16px !important;
-    top: 72px !important;
+    top: 68px !important;
   }
 }
 
@@ -438,4 +432,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
   top: 16px;
   right: 16px;
   z-index: 35;
+}
+
+/* Utility to hide scrollbars while retaining touch/wheel scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

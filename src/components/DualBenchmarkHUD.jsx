@@ -30,7 +30,7 @@ export default function DualBenchmarkHUD({ _physicalState }) {
   }
 
   return (
-    <div className="benchmark-hud-container absolute top-4 right-4 w-90 p-5 z-15 flex flex-col gap-4 rounded-2xl bg-[#13223f]/95 backdrop-blur-2xl border border-white/20 shadow-2xl transition-all">
+    <div className="benchmark-hud-container absolute top-4 right-4 w-80 sm:w-90 max-w-[calc(100vw-32px)] p-4 sm:p-5 z-15 flex flex-col gap-3.5 sm:gap-4 rounded-2xl bg-[#13223f]/95 backdrop-blur-2xl border border-white/20 shadow-2xl transition-all">
       {/* HUD Header */}
       <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <div className="flex items-center gap-2">

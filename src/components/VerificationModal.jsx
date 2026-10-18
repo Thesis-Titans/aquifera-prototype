@@ -7,12 +7,11 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
   const [isDone, setIsDone] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) {
-      setStage(0);
-      setProgress(0);
-      setIsDone(false);
-      return;
-    }
+    if (!isOpen) return;
+
+    setStage(0);
+    setProgress(0);
+    setIsDone(false);
 
     const interval = setInterval(() => {
       setProgress(prev => {

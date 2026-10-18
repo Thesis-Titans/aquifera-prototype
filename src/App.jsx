@@ -6,7 +6,7 @@ import ControlsPanel from './components/ControlsPanel';
 import DualBenchmarkHUD from './components/DualBenchmarkHUD';
 import VerificationModal from './components/VerificationModal';
 import GuideModal from './components/GuideModal';
-import { computeGroundwaterState } from './physics/groundwaterPhysics';
+import { computeGroundwaterState, resetHysteresisState } from './physics/groundwaterPhysics';
 
 export default function App() {
   // Primary Hydrogeological Simulation Parameters
@@ -42,12 +42,14 @@ export default function App() {
 
   // Handle Preset Selection
   const handleSelectPreset = (preset) => {
+    resetHysteresisState();
     setActivePresetId(preset.id);
     setParams({ ...preset.params });
   };
 
   // Reset to default
   const handleResetParams = () => {
+    resetHysteresisState();
     setActivePresetId('custom');
     setParams({
       pumpingRate: 1200,

@@ -22,7 +22,7 @@ export default function TopNavigation({
   };
 
   return (
-    <header className="h-16 bg-[#070d18]/95 backdrop-blur-2xl border-b border-white/15 flex items-center justify-between px-6 z-30 shrink-0">
+    <header className="h-16 bg-[#070d18]/95 backdrop-blur-2xl border-b border-white/15 flex items-center justify-between px-3 sm:px-6 z-30 shrink-0">
       {/* Brand & Project Metadata */}
       <div className="flex items-center gap-3 shrink-0">
         <div className="w-10 h-10 rounded-full overflow-hidden border border-primary/70 shadow-[0_0_14px_rgba(34,211,238,0.35)] bg-[#040d1a] flex items-center justify-center shrink-0">
@@ -35,10 +35,10 @@ export default function TopNavigation({
 
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-base font-extrabold tracking-tight text-white">
+            <h1 className="text-base font-extrabold tracking-tight text-white shrink-0">
               AQUIFERA
             </h1>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-primary/20 text-primary border border-primary/40 shadow-xs">
+            <span className="hidden lg:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-primary/20 text-primary border border-primary/40 shadow-xs">
               SIMULATION
             </span>
           </div>
@@ -48,12 +48,12 @@ export default function TopNavigation({
         </div>
       </div>
 
-      {/* Preset Scenarios for Presentation Defense (Horizontally scrollable on tablets) */}
-      <div className="presets-scroll-container flex items-center gap-2 overflow-x-auto max-w-[48vw] p-1.5 rounded-2xl border border-white/20 bg-[#070e1b] shadow-inner">
+      {/* Preset Scenarios for Presentation Defense */}
+      <div className="presets-scroll-container min-w-0 flex-1 flex items-center justify-center gap-1.5 overflow-x-auto no-scrollbar mx-1.5 sm:mx-2 p-1 rounded-xl border border-white/20 bg-[#070e1b] shadow-inner">
         {SCENARIO_PRESETS.map((preset) => {
           const isActive = activePresetId === preset.id;
           const labelMap = {
-            sustainable: '1. Sustainable',
+            sustainable: '1. Safe',
             overextraction: '2. Crisis',
             recharge: '3. Recharge',
             catastrophic: '4. Drought'
@@ -62,7 +62,7 @@ export default function TopNavigation({
           return (
             <button
               key={preset.id}
-              className={isActive ? 'aquifera-preset-btn-active' : 'aquifera-preset-btn'}
+              className={isActive ? 'aquifera-preset-btn-active py-1.5 px-2.5 sm:px-3 text-xs shrink-0' : 'aquifera-preset-btn py-1.5 px-2.5 sm:px-3 text-xs shrink-0'}
               onClick={() => onSelectPreset(preset)}
               title={`${preset.name}\n${preset.description}`}
             >

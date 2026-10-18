@@ -20,6 +20,15 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
   const probeGroupRef = useRef(null);
   const compassNeedleRef = useRef(null);
 
+  // 3D Spatial Orientation Gizmo References & State
+  const gizmoXRef = useRef(null);
+  const gizmoYRef = useRef(null);
+  const gizmoZRef = useRef(null);
+  const gizmoXHeadRef = useRef(null);
+  const gizmoYHeadRef = useRef(null);
+  const gizmoZHeadRef = useRef(null);
+  const [isGizmoOpen, setIsGizmoOpen] = useState(true);
+
   // Viewport Settings
   const [verticalExaggeration, setVerticalExaggeration] = useState(15);
   const [isCutaway, setIsCutaway] = useState(true);
@@ -87,6 +96,82 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
     sand2Mesh.position.y = -9.0;
     sand2Mesh.name = 'layer3';
     scene.add(sand2Mesh);
+  };
+
+  // Helper: Build 3D Spatial Orientation Gizmo & Basin Metric Rulers
+  const buildSpatialGizmo = (scene) => {
+    const gizmoGroup = new THREE.Group();
+    gizmoGroup.name = 'spatialGizmo';
+
+    // 1. In-Scene 3D Corner Axes at Bedrock SW corner (-10.1, -12.0, 10.1)
+    // Red (+X = East: 3.2km), Green (+Y = Up/Depth: 120m), Blue (+Z = South/North)
+    const axesHelper = new THREE.AxesHelper(3.5);
+    axesHelper.position.set(-10.1, -12.0, 10.1);
+    gizmoGroup.add(axesHelper);
+
+    // 2. Vertical Depth Graduation Ruler along front-left cutaway corner (-10, 0 to -12, 0)
+    const depthLineGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-10.05, 0.05, 0.05),
+      new THREE.Vector3(-10.05, -12.05, 0.05)
+    ]);
+    const depthLineMat = new THREE.LineBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.8
+    });
+    const depthLine = new THREE.Line(depthLineGeo, depthLineMat);
+    gizmoGroup.add(depthLine);
+
+    // Graduation ticks at 0m, -30m (-3u), -60m (-6u), -120m (-12u)
+    const tickDepths = [0, -3, -6, -12];
+    tickDepths.forEach(y => {
+      const tickGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-10.05, y, 0.05),
+        new THREE.Vector3(-10.5, y, 0.05)
+      ]);
+      const tickLine = new THREE.Line(tickGeo, depthLineMat);
+      gizmoGroup.add(tickLine);
+    });
+
+    // 3. Ground Perimeter Scale Lines (3.2 km x 3.2 km basin footprint)
+    const perimeterGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-10, 0.02, 10),
+      new THREE.Vector3(10, 0.02, 10),
+      new THREE.Vector3(10, 0.02, -10),
+      new THREE.Vector3(-10, 0.02, -10),
+      new THREE.Vector3(-10, 0.02, 10)
+    ]);
+    const perimeterMat = new THREE.LineBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.35
+    });
+    const perimeterLine = new THREE.Line(perimeterGeo, perimeterMat);
+    gizmoGroup.add(perimeterLine);
+
+    // 4. North Direction Arrow on ground surface (pointing North: -Z)
+    const northArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 0, -1),
+      new THREE.Vector3(0, 0.05, 10.5),
+      2.4,
+      0x22d3ee,
+      0.6,
+      0.4
+    );
+    gizmoGroup.add(northArrow);
+
+    // 5. East Direction Arrow on ground surface (pointing East: +X)
+    const eastArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(10.5, 0.05, 0),
+      2.4,
+      0xf43f5e,
+      0.6,
+      0.4
+    );
+    gizmoGroup.add(eastArrow);
+
+    scene.add(gizmoGroup);
   };
 
   useEffect(() => {
@@ -165,8 +250,9 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
     bedrockMesh.position.y = -12.35;
     scene.add(bedrockMesh);
 
-    // Build Stratified Hydrogeology Blocks
+    // Build Stratified Hydrogeology Blocks & Spatial Rulers
     buildStratigraphy(scene, cutawayPlane);
+    buildSpatialGizmo(scene);
 
     // 8. Ground Surface Terrain Heightfield (64x64)
     const res = DOMAIN.gridResolution;
@@ -289,6 +375,45 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
         const azimuthRad = controls.getAzimuthalAngle();
         const deg = (azimuthRad * 180) / Math.PI;
         compassNeedleRef.current.style.transform = `rotate(${-deg}deg)`;
+      }
+
+      // Update 60 FPS 3D Spatial Orientation Gizmo Projections
+      if (camera && gizmoXRef.current && gizmoYRef.current && gizmoZRef.current) {
+        const qInv = camera.quaternion.clone().invert();
+        const vX = new THREE.Vector3(1, 0, 0).applyQuaternion(qInv);
+        const vY = new THREE.Vector3(0, 1, 0).applyQuaternion(qInv);
+        const vZ = new THREE.Vector3(0, 0, -1).applyQuaternion(qInv);
+
+        const radius = 22;
+        const cx = 30;
+        const cy = 30;
+
+        const pxX = cx + vX.x * radius;
+        const pyX = cy - vX.y * radius;
+        const pxY = cx + vY.x * radius;
+        const pyY = cy - vY.y * radius;
+        const pxZ = cx + vZ.x * radius;
+        const pyZ = cy - vZ.y * radius;
+
+        gizmoXRef.current.setAttribute('x2', pxX.toFixed(1));
+        gizmoXRef.current.setAttribute('y2', pyX.toFixed(1));
+        gizmoYRef.current.setAttribute('x2', pxY.toFixed(1));
+        gizmoYRef.current.setAttribute('y2', pyY.toFixed(1));
+        gizmoZRef.current.setAttribute('x2', pxZ.toFixed(1));
+        gizmoZRef.current.setAttribute('y2', pyZ.toFixed(1));
+
+        if (gizmoXHeadRef.current) {
+          gizmoXHeadRef.current.setAttribute('cx', pxX.toFixed(1));
+          gizmoXHeadRef.current.setAttribute('cy', pyX.toFixed(1));
+        }
+        if (gizmoYHeadRef.current) {
+          gizmoYHeadRef.current.setAttribute('cx', pxY.toFixed(1));
+          gizmoYHeadRef.current.setAttribute('cy', pyY.toFixed(1));
+        }
+        if (gizmoZHeadRef.current) {
+          gizmoZHeadRef.current.setAttribute('cx', pxZ.toFixed(1));
+          gizmoZHeadRef.current.setAttribute('cy', pyZ.toFixed(1));
+        }
       }
 
       controls.update();
@@ -539,6 +664,12 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
     } else if (type === 'top') {
       camera.position.set(0, 34, 0.1);
       controls.target.set(0, 0, 0);
+    } else if (type === 'north') {
+      camera.position.set(0, 16, -30);
+      controls.target.set(0, -4, 0);
+    } else if (type === 'east') {
+      camera.position.set(30, 16, 0);
+      controls.target.set(0, -4, 0);
     }
     controls.update();
     setCameraView(type);
@@ -735,11 +866,118 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _set
         </div>
       )}
 
+      {/* Interactive 3D Spatial Orientation Gizmo HUD Widget (Step 2) */}
+      <div className="spatial-gizmo-widget absolute bottom-20 right-4 z-15 flex flex-col items-end gap-2 select-none">
+        {isGizmoOpen ? (
+          <div className="p-3.5 rounded-2xl bg-[#091322]/95 backdrop-blur-xl border border-white/20 shadow-2xl flex flex-col gap-2.5 w-60 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header with Title and Minimize */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-2">
+              <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Compass size={14} className="text-primary" /> 3D Spatial Gizmo
+              </span>
+              <button
+                onClick={() => setIsGizmoOpen(false)}
+                className="text-slate-400 hover:text-white p-0.5 rounded cursor-pointer"
+                title="Collapse Gizmo"
+              >
+                <X size={13} />
+              </button>
+            </div>
+
+            {/* Live 3D Vector Tripod SVG & Quick Snaps */}
+            <div className="flex items-center gap-3">
+              {/* Projected 3D Axis Compass SVG */}
+              <div className="relative w-15 h-15 rounded-full bg-[#040914] border border-white/15 flex items-center justify-center shrink-0 shadow-inner">
+                <svg viewBox="0 0 60 60" className="w-full h-full overflow-visible">
+                  {/* Origin Bead */}
+                  <circle cx="30" cy="30" r="2.5" fill="#ffffff" opacity="0.6" />
+
+                  {/* +X Axis (East - Red/Coral) */}
+                  <line ref={gizmoXRef} x1="30" y1="30" x2="52" y2="30" stroke="#f43f5e" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle ref={gizmoXHeadRef} cx="52" cy="30" r="3.5" fill="#f43f5e" />
+
+                  {/* +Y Axis (Elevation/Depth - Sky Blue) */}
+                  <line ref={gizmoYRef} x1="30" y1="30" x2="30" y2="8" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle ref={gizmoYHeadRef} cx="30" cy="8" r="3.5" fill="#38bdf8" />
+
+                  {/* +Z Axis (North - Cyan/Emerald) */}
+                  <line ref={gizmoZRef} x1="30" y1="30" x2="14" y2="44" stroke="#2dd4bf" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle ref={gizmoZHeadRef} cx="14" cy="44" r="3.5" fill="#2dd4bf" />
+                </svg>
+              </div>
+
+              {/* Axis Legend & Basin Dimensions */}
+              <div className="flex-1 flex flex-col gap-1 text-[10.5px]">
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="flex items-center gap-1 font-bold text-rose-400">
+                    <span className="w-2 h-2 rounded-full bg-rose-500" /> East (+X):
+                  </span>
+                  <span className="font-mono font-semibold text-white">3.2 km</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="flex items-center gap-1 font-bold text-teal-300">
+                    <span className="w-2 h-2 rounded-full bg-teal-400" /> North (+Z):
+                  </span>
+                  <span className="font-mono font-semibold text-white">3.2 km</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="flex items-center gap-1 font-bold text-sky-400">
+                    <span className="w-2 h-2 rounded-full bg-sky-400" /> Depth (Z):
+                  </span>
+                  <span className="font-mono font-semibold text-white">120 m</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Perspective Snap Buttons */}
+            <div className="grid grid-cols-4 gap-1 pt-2 border-t border-white/10 text-[10px]">
+              <button
+                className="py-1 px-1.5 rounded-md font-bold bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition-all text-center cursor-pointer border border-white/10"
+                onClick={() => setPresetCamera('top')}
+                title="Snap to Plan View (Top)"
+              >
+                Top
+              </button>
+              <button
+                className="py-1 px-1.5 rounded-md font-bold bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition-all text-center cursor-pointer border border-white/10"
+                onClick={() => setPresetCamera('north')}
+                title="Snap looking South from North"
+              >
+                North
+              </button>
+              <button
+                className="py-1 px-1.5 rounded-md font-bold bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition-all text-center cursor-pointer border border-white/10"
+                onClick={() => setPresetCamera('east')}
+                title="Snap looking West from East"
+              >
+                East
+              </button>
+              <button
+                className="py-1 px-1.5 rounded-md font-bold bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition-all text-center cursor-pointer"
+                onClick={() => setPresetCamera('isometric')}
+                title="Snap to 3D Oblique Perspective"
+              >
+                3D
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsGizmoOpen(true)}
+            className="p-2 px-3 rounded-xl bg-[#091322]/95 backdrop-blur-xl border border-white/20 hover:border-primary/50 text-slate-300 hover:text-white shadow-xl flex items-center gap-2 text-xs font-semibold cursor-pointer transition-all"
+            title="Expand 3D Spatial Gizmo & Coordinate Scales"
+          >
+            <Compass size={15} className="text-primary" />
+            <span>3D Spatial Gizmo</span>
+          </button>
+        )}
+      </div>
+
       {/* Consolidated Geological Status & Exaggeration Toolbar (Bottom Dock) */}
-      <div className="bottom-dock-bar absolute bottom-4 left-4 right-4 p-3.5 px-5 z-10 flex items-center justify-between flex-wrap gap-4 rounded-2xl bg-surface-elevated/95 backdrop-blur-xl border border-white/15 shadow-2xl">
+      <div className="bottom-dock-bar absolute bottom-4 left-4 right-4 p-2.5 sm:p-3 px-3.5 sm:px-5 z-10 flex items-center justify-between flex-wrap gap-2.5 sm:gap-4 rounded-xl sm:rounded-2xl bg-surface-elevated/95 backdrop-blur-xl border border-white/15 shadow-2xl overflow-x-auto no-scrollbar">
         {/* Stratum Depth Legend */}
-        <div className="flex items-center gap-4 text-xs">
-          <span className="font-bold text-text-dim uppercase tracking-wider text-[11px]">
+        <div className="flex items-center gap-2.5 sm:gap-4 text-xs shrink-0">
+          <span className="font-bold text-text-dim uppercase tracking-wider text-[10px] sm:text-[11px]">
             STRATA:
           </span>
           <div className="flex items-center gap-2">
