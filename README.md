@@ -1,4 +1,4 @@
-# AQUIFERA — 3D Digital Twin Simulation Platform
+# AQUIFERA — Web-Based Simulation Platform
 > **SIMULATE • VERIFY • SUSTAIN**  
 > *A Web-Based Simulation Platform and Automated Pipeline for Subsurface Compaction Modeling Using Physics-Informed Neural Operator Surrogates*
 
@@ -12,7 +12,7 @@
 
 ## 🌊 Overview
 
-**Aquifera** is a web-based, physics-informed digital twin designed to address the severe computational bottlenecks of traditional regional groundwater modeling. 
+**Aquifera** is an interactive web-based simulation platform and automated pipeline designed to address the severe computational bottlenecks of traditional regional groundwater modeling. 
 
 Standard finite-difference numerical solvers (such as **USGS MODFLOW 6 CSUB**) require 3 to 5 minutes (or hours for large regional grids) to compute non-linear skeletal consolidation, preventing interactive scenario exploration during urban planning and water allocation meetings. 
 
@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-Open your browser at `http://localhost:5173/` to view the 3D digital twin.
+Open your browser at `http://localhost:5173/` to view the 3D simulation platform.
 
 ### Production Build
 ```bash

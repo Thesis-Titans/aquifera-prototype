@@ -63,7 +63,7 @@ export default function TopNavigation({
               AQUIFERA
             </h1>
             <span className="badge badge-primary" style={{ fontSize: '10px' }}>
-              PINO 3D DIGITAL TWIN
+              3D SIMULATION PLATFORM
             </span>
           </div>
           <p style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '0.4px', fontWeight: 600 }}>

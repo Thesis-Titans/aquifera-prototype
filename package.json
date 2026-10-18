@@ -2,7 +2,7 @@
   "name": "aquifera-prototype",
   "private": true,
   "version": "0.1.0",
-  "description": "Aquifera: 3D Digital Twin Platform for Groundwater Drawdown & Land Subsidence Simulation (PINO Surrogate & USGS MODFLOW 6 Verification)",
+  "description": "Aquifera: A Web-Based Simulation Platform and Automated Pipeline for Subsurface Compaction Modeling Using Physics-Informed Neural Operator Surrogates",
   "type": "module",
   "scripts": {
     "dev": "vite",
