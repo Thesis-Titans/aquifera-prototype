@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Cpu, Download, ShieldCheck, Activity } from 'lucide-react';
+import { X, Cpu, Download, ShieldCheck } from 'lucide-react';
 
 export default function VerificationModal({ isOpen, onClose, physicalState }) {
   const [stage, setStage] = useState(0);

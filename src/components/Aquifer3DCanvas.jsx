@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Layers, RefreshCw, Compass, Activity, Info, Eye, Crosshair, MapPin, X, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Layers, Compass, Activity, Eye, Crosshair, X, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { DOMAIN, HYDRO_PARAMS, getPointHydrogeology } from '../physics/groundwaterPhysics';
 
-export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setLayerVisibilities }) {
+export default function Aquifer3DCanvas({ physicalState, layerVisibilities, _setLayerVisibilities }) {
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -13,7 +13,6 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
 
   // Mesh & Object References
   const surfaceMeshRef = useRef(null);
-  const coneMeshRef = useRef(null);
   const wellMeshGroupRef = useRef(null);
   const clayBlockRef = useRef(null);
   const waterTablePlaneRef = useRef(null);
@@ -33,11 +32,62 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
   const [isProbePinned, setIsProbePinned] = useState(false);
   const [isProbeActive, setIsProbeActive] = useState(true);
 
-  // Physical State Ref for 60fps Raycasting
-  const physicalStateRef = useRef(physicalState);
-  useEffect(() => {
-    physicalStateRef.current = physicalState;
-  }, [physicalState]);
+  // Helper: Build stratified hydrogeology blocks
+  const buildStratigraphy = (scene, cutawayPlane) => {
+    const boxSize = 20;
+
+    // Layer 1: Upper Unconfined Sand (0 to 30 m depth -> 0 to -3 units)
+    const sand1Geo = new THREE.BoxGeometry(boxSize, 3, boxSize);
+    const sand1Mat = new THREE.MeshStandardMaterial({
+      color: 0xc89666,
+      roughness: 0.85,
+      metalness: 0.05,
+      transparent: true,
+      opacity: 0.95,
+      clippingPlanes: [cutawayPlane],
+      clipShadows: true,
+      side: THREE.DoubleSide
+    });
+    const sand1Mesh = new THREE.Mesh(sand1Geo, sand1Mat);
+    sand1Mesh.position.y = -1.5;
+    sand1Mesh.name = 'layer1';
+    scene.add(sand1Mesh);
+
+    // Layer 2: Compressible Clay Aquitard (30 to 60 m depth -> -3 to -6 units)
+    const clayGeo = new THREE.BoxGeometry(boxSize, 3, boxSize);
+    const clayMat = new THREE.MeshStandardMaterial({
+      color: 0x7c2d12,
+      roughness: 0.92,
+      metalness: 0.05,
+      transparent: true,
+      opacity: 0.98,
+      clippingPlanes: [cutawayPlane],
+      clipShadows: true,
+      side: THREE.DoubleSide
+    });
+    const clayMesh = new THREE.Mesh(clayGeo, clayMat);
+    clayMesh.position.y = -4.5;
+    clayMesh.name = 'layer2';
+    scene.add(clayMesh);
+    clayBlockRef.current = clayMesh;
+
+    // Layer 3: Lower Confined Aquifer (60 to 120 m depth -> -6 to -12 units)
+    const sand2Geo = new THREE.BoxGeometry(boxSize, 6, boxSize);
+    const sand2Mat = new THREE.MeshStandardMaterial({
+      color: 0x1e3a8a,
+      roughness: 0.65,
+      metalness: 0.15,
+      transparent: true,
+      opacity: 0.95,
+      clippingPlanes: [cutawayPlane],
+      clipShadows: true,
+      side: THREE.DoubleSide
+    });
+    const sand2Mesh = new THREE.Mesh(sand2Geo, sand2Mat);
+    sand2Mesh.position.y = -9.0;
+    sand2Mesh.name = 'layer3';
+    scene.add(sand2Mesh);
+  };
 
   useEffect(() => {
     const container = containerRef.current;
@@ -333,63 +383,6 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     };
   }, [isProbeActive]);
 
-  // Helper: Build stratified hydrogeology blocks
-  function buildStratigraphy(scene, cutawayPlane) {
-    const boxSize = 20;
-
-    // Layer 1: Upper Unconfined Sand (0 to 30 m depth -> 0 to -3 units)
-    const sand1Geo = new THREE.BoxGeometry(boxSize, 3, boxSize);
-    const sand1Mat = new THREE.MeshStandardMaterial({
-      color: 0xc89666,
-      roughness: 0.85,
-      metalness: 0.05,
-      transparent: true,
-      opacity: 0.95,
-      clippingPlanes: [cutawayPlane],
-      clipShadows: true,
-      side: THREE.DoubleSide
-    });
-    const sand1Mesh = new THREE.Mesh(sand1Geo, sand1Mat);
-    sand1Mesh.position.y = -1.5;
-    sand1Mesh.name = 'layer1';
-    scene.add(sand1Mesh);
-
-    // Layer 2: Compressible Clay Aquitard (30 to 60 m depth -> -3 to -6 units)
-    const clayGeo = new THREE.BoxGeometry(boxSize, 3, boxSize);
-    const clayMat = new THREE.MeshStandardMaterial({
-      color: 0x7c2d12,
-      roughness: 0.92,
-      metalness: 0.05,
-      transparent: true,
-      opacity: 0.98,
-      clippingPlanes: [cutawayPlane],
-      clipShadows: true,
-      side: THREE.DoubleSide
-    });
-    const clayMesh = new THREE.Mesh(clayGeo, clayMat);
-    clayMesh.position.y = -4.5;
-    clayMesh.name = 'layer2';
-    scene.add(clayMesh);
-    clayBlockRef.current = clayMesh;
-
-    // Layer 3: Lower Confined Aquifer (60 to 120 m depth -> -6 to -12 units)
-    const sand2Geo = new THREE.BoxGeometry(boxSize, 6, boxSize);
-    const sand2Mat = new THREE.MeshStandardMaterial({
-      color: 0x1e3a8a,
-      roughness: 0.65,
-      metalness: 0.15,
-      transparent: true,
-      opacity: 0.95,
-      clippingPlanes: [cutawayPlane],
-      clipShadows: true,
-      side: THREE.DoubleSide
-    });
-    const sand2Mesh = new THREE.Mesh(sand2Geo, sand2Mat);
-    sand2Mesh.position.y = -9.0;
-    sand2Mesh.name = 'layer3';
-    scene.add(sand2Mesh);
-  }
-
   // Reactive Update on Physical State Changes (< 250ms feedback)
   useEffect(() => {
     if (!surfaceMeshRef.current || !physicalState) return;
@@ -556,101 +549,101 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
       <div ref={containerRef} className="w-full h-full cursor-crosshair" />
 
       {/* Floating 3D Navigation Controls (NN/g: Visibility & Control) */}
-      <div className="camera-controls-bar absolute top-4 left-4 flex items-center gap-1.5 p-1.5 px-2.5 z-10 overflow-x-auto max-w-[calc(100%-140px)] rounded-xl bg-surface/90 backdrop-blur-xl border border-white/10 shadow-xl">
-        <span className="text-[11px] text-text-muted font-semibold flex items-center gap-1 mr-1 shrink-0">
-          <Compass size={14} className="text-primary" /> CAMERA
+      <div className="camera-controls-bar absolute top-4 left-4 flex items-center gap-2 p-2 px-3 z-10 overflow-x-auto max-w-[calc(100%-140px)] rounded-xl bg-surface-elevated/95 backdrop-blur-xl border border-white/15 shadow-2xl">
+        <span className="text-xs text-text-muted font-bold flex items-center gap-1.5 mr-1 shrink-0 uppercase tracking-wider">
+          <Compass size={15} className="text-primary" /> Camera
         </span>
 
         {/* Dynamic Compass Azimuth */}
         <div 
-          className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-surface-elevated/90 border border-white/10 text-[10px] text-text-dim"
+          className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-deep/80 border border-white/10 text-xs text-text-dim shrink-0"
           title="Basin Geographic Orientation (Azimuth)"
         >
-          <div className="relative w-3.5 h-3.5 flex items-center justify-center">
+          <div className="relative w-4 h-4 flex items-center justify-center">
             <div 
               ref={compassNeedleRef} 
               className="absolute inset-0 flex items-center justify-center transition-transform duration-75"
             >
-              <div className="w-0.5 h-3 bg-linear-to-t from-slate-400 via-white to-primary rounded-full" />
+              <div className="w-0.5 h-3.5 bg-linear-to-t from-slate-400 via-white to-primary rounded-full" />
             </div>
           </div>
-          <span className="font-mono font-bold text-primary text-[10px]">N</span>
+          <span className="font-mono font-bold text-primary text-xs">N</span>
         </div>
 
         <button
-          className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+          className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
             cameraView === 'isometric' 
-              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-sm shadow-cyan-500/25' 
-              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
+              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep shadow-md shadow-cyan-500/25' 
+              : 'bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
           }`}
           onClick={() => setPresetCamera('isometric')}
         >
           3D Oblique
         </button>
         <button
-          className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+          className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
             cameraView === 'crossSection' 
-              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-sm shadow-cyan-500/25' 
-              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
+              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep shadow-md shadow-cyan-500/25' 
+              : 'bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
           }`}
           onClick={() => setPresetCamera('crossSection')}
         >
           Cross Section
         </button>
         <button
-          className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+          className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
             cameraView === 'top' 
-              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-sm shadow-cyan-500/25' 
-              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
+              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep shadow-md shadow-cyan-500/25' 
+              : 'bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
           }`}
           onClick={() => setPresetCamera('top')}
         >
           Plan View (Top)
         </button>
 
-        <div className="w-px h-4 bg-white/10 mx-1 shrink-0" />
+        <div className="w-px h-5 bg-white/15 mx-1 shrink-0" />
 
         <button
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
             isCutaway 
               ? 'bg-primary/20 text-primary border border-primary/40' 
-              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted border border-white/5'
+              : 'bg-white/5 hover:bg-white/10 text-text-muted border border-white/5'
           }`}
           onClick={() => setIsCutaway(!isCutaway)}
           title="Toggle 50% Volumetric Cutaway to inspect internal clay compaction"
         >
-          <Layers size={13} /> {isCutaway ? 'Cutaway' : 'Solid'}
+          <Layers size={14} /> {isCutaway ? 'Cutaway' : 'Solid'}
         </button>
 
         <button
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
             showWaterTable 
               ? 'bg-primary/20 text-primary border border-primary/40' 
-              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted border border-white/5'
+              : 'bg-white/5 hover:bg-white/10 text-text-muted border border-white/5'
           }`}
           onClick={() => setShowWaterTable(!showWaterTable)}
           title="Toggle Piezometric Water Table Plane"
         >
-          <Eye size={13} /> {showWaterTable ? 'Head' : 'Hide Head'}
+          <Eye size={14} /> {showWaterTable ? 'Head' : 'Hide Head'}
         </button>
 
         <button
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
             isWireframe 
               ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' 
-              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted border border-white/5'
+              : 'bg-white/5 hover:bg-white/10 text-text-muted border border-white/5'
           }`}
           onClick={() => setIsWireframe(!isWireframe)}
           title="Toggle Terrain Mesh Wireframe"
         >
-          <Activity size={13} /> {isWireframe ? 'Solid' : 'Wire'}
+          <Activity size={14} /> {isWireframe ? 'Solid' : 'Wire'}
         </button>
 
         <button
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
             isProbeActive 
               ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-xs' 
-              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted border border-white/5'
+              : 'bg-white/5 hover:bg-white/10 text-text-muted border border-white/5'
           }`}
           onClick={() => {
             setIsProbeActive(!isProbeActive);
@@ -662,13 +655,13 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
           }}
           title="Toggle Interactive 3D Subsurface Probe"
         >
-          <Crosshair size={13} /> {isProbeActive ? 'Probe ON' : 'Probe OFF'}
+          <Crosshair size={14} /> {isProbeActive ? 'Probe ON' : 'Probe OFF'}
         </button>
       </div>
 
       {/* Interactive Subsurface Hydrogeological Probe HUD Card */}
       {probedData && isProbeActive && (
-        <div className="probe-hud-card absolute bottom-20 left-4 z-20 w-[350px] max-w-[calc(100vw-32px)] p-3.5 rounded-xl bg-surface/95 backdrop-blur-xl border border-primary/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="probe-hud-card absolute bottom-20 left-4 z-20 w-87.5 max-w-[calc(100vw-32px)] p-3.5 rounded-xl bg-surface/95 backdrop-blur-xl border border-primary/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-2.5">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_10px_hsl(187,92%,48%)] animate-pulse" />
@@ -743,37 +736,37 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
       )}
 
       {/* Consolidated Geological Status & Exaggeration Toolbar (Bottom Dock) */}
-      <div className="bottom-dock-bar absolute bottom-4 left-4 right-4 p-2.5 px-4 z-10 flex items-center justify-between flex-wrap gap-3 rounded-xl bg-surface/90 backdrop-blur-xl border border-white/10 shadow-xl">
+      <div className="bottom-dock-bar absolute bottom-4 left-4 right-4 p-3.5 px-5 z-10 flex items-center justify-between flex-wrap gap-4 rounded-2xl bg-surface-elevated/95 backdrop-blur-xl border border-white/15 shadow-2xl">
         {/* Stratum Depth Legend */}
-        <div className="flex items-center gap-3.5 text-[11px]">
-          <span className="font-bold text-text-dim uppercase tracking-wider text-[10px]">
+        <div className="flex items-center gap-4 text-xs">
+          <span className="font-bold text-text-dim uppercase tracking-wider text-[11px]">
             STRATA:
           </span>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-xs bg-[#38bdf8]" />
-            <span>0m Surface</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-xs bg-[#38bdf8]" />
+            <span className="text-white font-medium">0m Surface</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-xs bg-[#c89666]" />
-            <span>-30m Sand</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-xs bg-[#c89666]" />
+            <span className="text-white font-medium">-30m Sand</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-xs bg-[#7c2d12]" />
-            <span>-60m Clay</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-xs bg-[#7c2d12]" />
+            <span className="text-white font-medium">-60m Clay</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-xs bg-[#1e3a8a]" />
-            <span>-120m Aquifer</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-xs bg-[#1e3a8a]" />
+            <span className="text-white font-medium">-120m Aquifer</span>
           </div>
         </div>
 
         {/* Subsidence Colormap Legend */}
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-text-muted font-medium">
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs text-text-muted font-medium">
             Settlement (Δz):
           </span>
-          <div className="w-28 h-2 rounded-full bg-linear-to-r from-[#38bdf8] via-[#f59e0b] to-[#ef4444]" />
-          <div className="flex gap-1.5 text-[10px] text-text-dim font-mono tabular-nums">
+          <div className="w-32 h-2.5 rounded-full bg-linear-to-r from-[#38bdf8] via-[#f59e0b] to-[#ef4444]" />
+          <div className="flex gap-2 text-xs text-text-dim font-mono tabular-nums font-semibold">
             <span>0 cm</span>
             <span>→</span>
             <span>≥25 cm</span>
@@ -781,17 +774,17 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         </div>
 
         {/* Vertical Exaggeration Slider */}
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-text-muted">Exaggeration:</span>
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs text-text-muted font-medium">Exaggeration:</span>
           <input
             type="range"
             min="1"
             max="30"
             value={verticalExaggeration}
             onChange={(e) => setVerticalExaggeration(Number(e.target.value))}
-            className="w-20 cursor-pointer accent-primary"
+            className="w-24 cursor-pointer accent-primary"
           />
-          <span className="font-mono tabular-nums text-primary text-[11px] font-bold min-w-7">
+          <span className="font-mono tabular-nums text-primary text-xs font-bold min-w-8">
             {verticalExaggeration}×
           </span>
         </div>

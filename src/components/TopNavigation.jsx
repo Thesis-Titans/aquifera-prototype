@@ -22,10 +22,10 @@ export default function TopNavigation({
   };
 
   return (
-    <header className="h-15 bg-surface/90 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-4 z-30 shrink-0">
+    <header className="h-16 bg-[#070d18]/95 backdrop-blur-2xl border-b border-white/15 flex items-center justify-between px-6 z-30 shrink-0">
       {/* Brand & Project Metadata */}
-      <div className="flex items-center gap-2.5 shrink-0">
-        <div className="w-9 h-9 rounded-full overflow-hidden border border-primary/70 shadow-[0_0_12px_rgba(34,211,238,0.3)] bg-[#040d1a] flex items-center justify-center shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
+        <div className="w-10 h-10 rounded-full overflow-hidden border border-primary/70 shadow-[0_0_14px_rgba(34,211,238,0.35)] bg-[#040d1a] flex items-center justify-center shrink-0">
           <img 
             src="/aquifera-logo.png" 
             alt="Aquifera Brandmark" 
@@ -34,22 +34,22 @@ export default function TopNavigation({
         </div>
 
         <div>
-          <div className="flex items-center gap-1.5">
-            <h1 className="text-sm font-extrabold tracking-tight text-white">
+          <div className="flex items-center gap-2">
+            <h1 className="text-base font-extrabold tracking-tight text-white">
               AQUIFERA
             </h1>
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-primary/15 text-primary border border-primary/30">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-primary/20 text-primary border border-primary/40 shadow-xs">
               SIMULATION
             </span>
           </div>
-          <p className="nav-brand-subtitle text-[9.5px] text-text-dim tracking-widest font-semibold">
+          <p className="nav-brand-subtitle text-[10px] text-slate-400 tracking-widest font-semibold">
             SIMULATE • VERIFY • SUSTAIN
           </p>
         </div>
       </div>
 
       {/* Preset Scenarios for Presentation Defense (Horizontally scrollable on tablets) */}
-      <div className="presets-scroll-container flex items-center gap-1.5 overflow-x-auto max-w-[46vw] py-1 px-1 rounded-lg border border-white/5 bg-deep/40">
+      <div className="presets-scroll-container flex items-center gap-2 overflow-x-auto max-w-[48vw] p-1.5 rounded-2xl border border-white/20 bg-[#070e1b] shadow-inner">
         {SCENARIO_PRESETS.map((preset) => {
           const isActive = activePresetId === preset.id;
           const labelMap = {
@@ -62,11 +62,7 @@ export default function TopNavigation({
           return (
             <button
               key={preset.id}
-              className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all duration-150 cursor-pointer ${
-                isActive 
-                  ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-md shadow-cyan-500/25 scale-[1.02]' 
-                  : 'bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
-              }`}
+              className={isActive ? 'aquifera-preset-btn-active' : 'aquifera-preset-btn'}
               onClick={() => onSelectPreset(preset)}
               title={`${preset.name}\n${preset.description}`}
             >
@@ -77,55 +73,51 @@ export default function TopNavigation({
       </div>
 
       {/* Action Tools (Guide, Screenshot, Reset, Controls Toggle, Fullscreen) */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-2.5 shrink-0">
         <button
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-primary/50 transition-all cursor-pointer active:scale-95"
+          className="aquifera-tool-btn"
           onClick={onOpenGuide}
           title="Open Hydrogeology & Architecture Guide"
         >
-          <BookOpen size={14} className="text-primary" />
+          <BookOpen size={16} className="text-primary" />
           <span className="hidden lg:inline">Guide</span>
         </button>
 
         <button
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-primary/50 transition-all cursor-pointer active:scale-95"
+          className="aquifera-tool-btn"
           onClick={onCaptureScreenshot}
           title="Capture clean PNG snapshot of the 3D scene for your presentation slides"
         >
-          <Camera size={14} className="text-primary" />
+          <Camera size={16} className="text-primary" />
           <span className="hidden lg:inline">Snapshot</span>
         </button>
 
         <button
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-white/20 transition-all cursor-pointer active:scale-95"
+          className="aquifera-tool-btn"
           onClick={onResetParams}
           title="Reset simulation parameters to default baseline"
         >
-          <RotateCcw size={14} />
+          <RotateCcw size={16} />
           <span className="hidden lg:inline">Reset</span>
         </button>
 
         {/* Sidebar Drawer Toggle (Responsive Controls button for Desktop & Tablet) */}
         <button
           id="controls-toggle-btn"
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer active:scale-95 ${
-            isSidebarOpen 
-              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-md shadow-cyan-500/25' 
-              : 'bg-surface-elevated/90 hover:bg-white/10 text-text-main border border-white/10 hover:border-primary/50'
-          }`}
+          className={isSidebarOpen ? 'aquifera-tool-btn-active' : 'aquifera-tool-btn'}
           onClick={onToggleSidebar}
           title={isSidebarOpen ? "Collapse Parameters Panel" : "Expand Parameters Panel"}
         >
-          <Sliders size={14} />
+          <Sliders size={16} />
           <span>Controls</span>
         </button>
 
         <button
-          className="inline-flex items-center justify-center p-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-white/20 transition-all cursor-pointer active:scale-95"
+          className="aquifera-tool-btn p-2.5"
           onClick={toggleFullscreen}
           title="Toggle Fullscreen Presentation Mode"
         >
-          <Maximize size={14} />
+          <Maximize size={16} />
         </button>
       </div>
     </header>

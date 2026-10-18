@@ -7,7 +7,6 @@ import DualBenchmarkHUD from './components/DualBenchmarkHUD';
 import VerificationModal from './components/VerificationModal';
 import GuideModal from './components/GuideModal';
 import { computeGroundwaterState } from './physics/groundwaterPhysics';
-import { SCENARIO_PRESETS } from './data/scenarioPresets';
 
 export default function App() {
   // Primary Hydrogeological Simulation Parameters
