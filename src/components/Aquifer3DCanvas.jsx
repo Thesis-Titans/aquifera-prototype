@@ -501,7 +501,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#8c5332' }} />
-          <span><strong>-60 m:</strong> Clay Aquitard (Aquitard)</span>
+          <span><strong>-60 m:</strong> Clay Aquitard (Compressible)</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#1d4ed8' }} />

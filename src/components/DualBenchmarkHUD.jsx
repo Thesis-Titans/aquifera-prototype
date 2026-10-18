@@ -1,11 +1,50 @@
-import React from 'react';
-import { Zap, Clock, Activity, CheckCircle, Database, Gauge } from 'lucide-react';
+import React, { useState } from 'react';
+import { Zap, Clock, Activity, CheckCircle, Database, Gauge, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function DualBenchmarkHUD({ physicalState }) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   // Dynamic calculation of speedup and parity
   const pinoLatencyMs = 2.3;
   const modflowRuntimeSec = 184.2;
   const speedupFactor = Math.round((modflowRuntimeSec * 1000) / pinoLatencyMs);
+
+  if (isCollapsed) {
+    return (
+      <div 
+        className="glass-panel" 
+        onClick={() => setIsCollapsed(false)}
+        style={{
+          position: 'absolute',
+          top: '16px',
+          right: '16px',
+          padding: '7px 14px',
+          zIndex: 15,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          cursor: 'pointer',
+          borderRadius: 'var(--radius-full)',
+          background: 'hsla(222, 40%, 11%, 0.88)'
+        }}
+        title="Click to expand Dual-Engine Benchmark details"
+      >
+        <div style={{
+          width: '7px',
+          height: '7px',
+          borderRadius: '50%',
+          background: 'var(--color-primary)',
+          boxShadow: '0 0 6px var(--color-primary)'
+        }} />
+        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Zap size={12} color="var(--color-primary)" /> PINO: <strong className="mono-val" style={{ color: 'var(--color-primary)' }}>{pinoLatencyMs} ms</strong>
+        </span>
+        <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>({speedupFactor.toLocaleString()}×)</span>
+        <span className="badge badge-success" style={{ fontSize: '9px', padding: '1px 5px' }}>R² 0.94</span>
+        <ChevronDown size={13} color="var(--text-muted)" />
+      </div>
+    );
+  }
 
   return (
     <div className="glass-panel" style={{
@@ -33,9 +72,26 @@ export default function DualBenchmarkHUD({ physicalState }) {
             Dual-Engine Benchmark HUD
           </span>
         </div>
-        <span className="badge badge-success" style={{ fontSize: '10px' }}>
-          R² = 0.942
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span className="badge badge-success" style={{ fontSize: '10px' }}>
+            R² = 0.942
+          </span>
+          <button
+            onClick={() => setIsCollapsed(true)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '2px'
+            }}
+            title="Collapse HUD"
+          >
+            <ChevronUp size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Latency Comparison Card */}

@@ -74,21 +74,33 @@ export default function TopNavigation({
       </div>
 
       {/* Preset Scenarios for Presentation Defense */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>
-          SCENARIO PRESETS:
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.3px' }}>
+          PRESETS:
         </span>
 
         {SCENARIO_PRESETS.map((preset) => {
           const isActive = activePresetId === preset.id;
+          const labelMap = {
+            sustainable: '1. Sustainable',
+            overextraction: '2. Crisis Pumping',
+            recharge: '3. Managed Recharge',
+            catastrophic: '4. Drought Shock'
+          };
+          const displayName = labelMap[preset.id] || preset.name.split('.')[1].trim();
           return (
             <button
               key={preset.id}
               className={`btn btn-sm ${isActive ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => onSelectPreset(preset)}
-              title={preset.description}
+              title={`${preset.name}\n${preset.description}`}
+              style={{
+                fontSize: '11.5px',
+                padding: '4px 9px',
+                borderRadius: 'var(--radius-sm)'
+              }}
             >
-              {preset.name.split('.')[1].trim()}
+              {displayName}
             </button>
           );
         })}
