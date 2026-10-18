@@ -74,34 +74,31 @@ export default function ControlsPanel({
             background: 'var(--color-danger-bg)',
             border: '1px solid var(--border-danger)',
             borderRadius: 'var(--radius-sm)',
-            padding: '12px 14px',
+            padding: '10px 12px',
             boxShadow: 'var(--shadow-danger-glow)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <AlertTriangle size={18} color="var(--color-danger)" />
-              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-danger)', letterSpacing: '0.2px' }}>
-                PRECONSOLIDATION BREACHED
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <AlertTriangle size={16} color="var(--color-danger)" />
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-danger)', letterSpacing: '0.2px' }}>
+                  PRECONSOLIDATION BREACHED
+                </span>
+              </div>
+              <span className="mono-val" style={{ fontSize: '10px', color: 'var(--color-danger)', fontWeight: 700 }}>
+                {physicalState.inelasticPercent}% Permanent
               </span>
             </div>
-            <p style={{ fontSize: '11px', color: 'hsl(350, 80%, 88%)', lineHeight: 1.45, marginBottom: '8px' }}>
-              Piezometric head dropped to <strong className="mono-val">{physicalState.minHead} m</strong> (threshold: <strong className="mono-val">88.0 m</strong>). Effective stress exceeded historical limits, triggering <strong>permanent clay matrix compaction</strong>.
+            <p style={{ fontSize: '11px', color: 'hsl(350, 80%, 90%)', lineHeight: 1.35, marginBottom: '6px' }}>
+              Head dropped to <strong className="mono-val">{physicalState.minHead} m</strong> (threshold: 88.0 m). Clay matrix collapsed.
             </p>
             <div style={{ 
-              background: 'rgba(0, 0, 0, 0.25)', 
-              padding: '6px 8px', 
+              background: 'rgba(0, 0, 0, 0.3)', 
+              padding: '4px 8px', 
               borderRadius: '4px', 
-              fontSize: '10.5px', 
-              color: 'hsl(350, 75%, 90%)',
-              lineHeight: 1.35,
-              marginBottom: '6px'
+              fontSize: '10px', 
+              color: 'hsl(350, 75%, 92%)' 
             }}>
-              <strong>Recommended Action:</strong> Reduce extraction to ≤ 1,400 m³/day or raise recharge to ≥ 2.5 mm/day to arrest inelastic settlement.
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', paddingTop: '6px', borderTop: '1px solid hsla(350, 80%, 40%, 0.3)' }}>
-              <span style={{ color: 'hsl(350, 70%, 80%)' }}>Permanent Settlement:</span>
-              <span className="mono-val" style={{ color: 'var(--color-danger)', fontWeight: 700 }}>
-                {physicalState.inelasticPercent}% of total
-              </span>
+              <strong>Remedy:</strong> Reduce Q ≤ 1,400 m³/d or increase R ≥ 2.5 mm/d.
             </div>
           </div>
         ) : (
@@ -109,18 +106,18 @@ export default function ControlsPanel({
             background: 'var(--color-success-bg)',
             border: '1px solid hsla(158, 85%, 44%, 0.3)',
             borderRadius: 'var(--radius-sm)',
-            padding: '10px 14px',
+            padding: '8px 12px',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px'
+            gap: '8px'
           }}>
-            <CheckCircle2 size={18} color="var(--color-success)" style={{ flexShrink: 0 }} />
+            <CheckCircle2 size={16} color="var(--color-success)" style={{ flexShrink: 0 }} />
             <div>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-success)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-success)' }}>
                 Elastic Range Maintained
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.35 }}>
-                Piezometric head ({physicalState.minHead} m) ≥ 88.0 m. Deformation is fully reversible upon recharge.
+              <div style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                Head ({physicalState.minHead} m) ≥ 88.0 m. Subsidence is 100% reversible.
               </div>
             </div>
           </div>
@@ -369,45 +366,46 @@ export default function ControlsPanel({
 
         </div>
 
-        {/* Stratigraphy Layer Inspector */}
-        <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '10px' }}>
+        {/* Stratigraphy Layer Inspector (Compact 3-Pill Toggle) */}
+        <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '10px' }}>
+          <span style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
             <Layers size={13} /> Geological Strata Visibility
           </span>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {DOMAIN.layers.map(layer => (
-              <div 
-                key={layer.id}
-                onClick={() => toggleLayer(layer.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 10px',
-                  background: layerVisibilities[layer.id] ? 'var(--bg-surface-elevated)' : 'transparent',
-                  border: '1px solid',
-                  borderColor: layerVisibilities[layer.id] ? 'var(--border-subtle)' : 'transparent',
-                  borderRadius: 'var(--radius-sm)',
-                  cursor: 'pointer',
-                  opacity: layerVisibilities[layer.id] ? 1 : 0.45,
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: layer.color }} />
-                  <div>
-                    <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-main)' }}>{layer.name}</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
-                      Depth: {layer.top} m to {layer.bottom} m ({layer.thickness} m)
-                    </div>
-                  </div>
-                </div>
-                <span style={{ fontSize: '11px', color: layerVisibilities[layer.id] ? 'var(--color-primary)' : 'var(--text-dim)' }}>
-                  {layerVisibilities[layer.id] ? 'Visible' : 'Hidden'}
-                </span>
-              </div>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+            {DOMAIN.layers.map(layer => {
+              const isVis = layerVisibilities[layer.id];
+              const shortNames = {
+                layer1: 'Sand (0-30m)',
+                layer2: 'Clay (30-60m)',
+                layer3: 'Aquifer (60-120m)'
+              };
+              return (
+                <button
+                  key={layer.id}
+                  onClick={() => toggleLayer(layer.id)}
+                  className={`btn btn-sm ${isVis ? 'btn-secondary' : ''}`}
+                  style={{
+                    padding: '6px 4px',
+                    fontSize: '10.5px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '3px',
+                    border: '1px solid',
+                    borderColor: isVis ? layer.color : 'var(--border-subtle)',
+                    opacity: isVis ? 1 : 0.4,
+                    background: isVis ? 'var(--bg-surface-elevated)' : 'transparent'
+                  }}
+                  title={`${layer.name} (${layer.thickness} m)`}
+                >
+                  <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: layer.color }} />
+                  <span style={{ fontSize: '10px', fontWeight: 600, color: isVis ? 'var(--text-main)' : 'var(--text-dim)' }}>
+                    {shortNames[layer.id] || layer.name}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

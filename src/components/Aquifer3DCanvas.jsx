@@ -86,10 +86,21 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     const cutawayPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     clippingPlanesRef.current = [cutawayPlane];
 
-    // 7. Base Coordinate Grid & Cardinal Direction Markers
-    const gridHelper = new THREE.GridHelper(26, 26, 0x1e3a5f, 0x0f1f33);
-    gridHelper.position.y = -12.05;
+    // 7. Base Coordinate Grid & Impermeable Bedrock Slab
+    const gridHelper = new THREE.GridHelper(24, 24, 0x1e3a5f, 0x0f1f33);
+    gridHelper.position.y = -12.1;
     scene.add(gridHelper);
+
+    // Solid Impermeable Bedrock Slab (Base of Alluvial Basin)
+    const bedrockGeo = new THREE.BoxGeometry(20.2, 0.5, 20.2);
+    const bedrockMat = new THREE.MeshStandardMaterial({
+      color: 0x0a1120,
+      roughness: 0.95,
+      metalness: 0.1
+    });
+    const bedrockMesh = new THREE.Mesh(bedrockGeo, bedrockMat);
+    bedrockMesh.position.y = -12.35;
+    scene.add(bedrockMesh);
 
     // Build Stratified Hydrogeology Blocks
     buildStratigraphy(scene, cutawayPlane);
@@ -105,9 +116,11 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
 
     const terrainMat = new THREE.MeshStandardMaterial({
       vertexColors: true,
-      roughness: 0.4,
-      metalness: 0.15,
+      roughness: 0.45,
+      metalness: 0.1,
       wireframe: false,
+      clippingPlanes: [cutawayPlane],
+      clipShadows: true,
       side: THREE.DoubleSide
     });
 
@@ -123,7 +136,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     const waterTableMat = new THREE.MeshStandardMaterial({
       color: 0x0284c7,
       transparent: true,
-      opacity: 0.28,
+      opacity: 0.35,
       roughness: 0.1,
       metalness: 0.8,
       clippingPlanes: [cutawayPlane],
@@ -140,22 +153,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     scene.add(wellGroup);
     wellMeshGroupRef.current = wellGroup;
 
-    // 11. Piezometric Cone of Depression Mesh
-    const coneGeo = new THREE.ConeGeometry(7, 5, 32, 1, true);
-    coneGeo.rotateX(Math.PI);
-    const coneMat = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      transparent: true,
-      opacity: 0.25,
-      wireframe: true,
-      side: THREE.DoubleSide
-    });
-    const coneMesh = new THREE.Mesh(coneGeo, coneMat);
-    coneMesh.position.set(0, -5, 0);
-    scene.add(coneMesh);
-    coneMeshRef.current = coneMesh;
-
-    // 12. Animation Loop (Modern timestamp tracking, zero deprecations)
+    // 11. Animation Loop (Modern timestamp tracking, zero deprecations)
     let animationFrameId;
     let startTime = performance.now();
 
@@ -205,12 +203,14 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     // Layer 1: Upper Unconfined Sand (0 to 30 m depth -> 0 to -3 units)
     const sand1Geo = new THREE.BoxGeometry(boxSize, 3, boxSize);
     const sand1Mat = new THREE.MeshStandardMaterial({
-      color: 0xd8b48f,
-      roughness: 0.65,
+      color: 0xc89666,
+      roughness: 0.85,
+      metalness: 0.05,
       transparent: true,
-      opacity: 0.65,
+      opacity: 0.95,
       clippingPlanes: [cutawayPlane],
-      clipShadows: true
+      clipShadows: true,
+      side: THREE.DoubleSide
     });
     const sand1Mesh = new THREE.Mesh(sand1Geo, sand1Mat);
     sand1Mesh.position.y = -1.5;
@@ -220,12 +220,14 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     // Layer 2: Compressible Clay Aquitard (30 to 60 m depth -> -3 to -6 units)
     const clayGeo = new THREE.BoxGeometry(boxSize, 3, boxSize);
     const clayMat = new THREE.MeshStandardMaterial({
-      color: 0x8c5332,
-      roughness: 0.85,
+      color: 0x7c2d12,
+      roughness: 0.92,
+      metalness: 0.05,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.98,
       clippingPlanes: [cutawayPlane],
-      clipShadows: true
+      clipShadows: true,
+      side: THREE.DoubleSide
     });
     const clayMesh = new THREE.Mesh(clayGeo, clayMat);
     clayMesh.position.y = -4.5;
@@ -236,13 +238,14 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     // Layer 3: Lower Confined Aquifer (60 to 120 m depth -> -6 to -12 units)
     const sand2Geo = new THREE.BoxGeometry(boxSize, 6, boxSize);
     const sand2Mat = new THREE.MeshStandardMaterial({
-      color: 0x1d4ed8,
-      roughness: 0.5,
-      metalness: 0.2,
+      color: 0x1e3a8a,
+      roughness: 0.65,
+      metalness: 0.15,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.95,
       clippingPlanes: [cutawayPlane],
-      clipShadows: true
+      clipShadows: true,
+      side: THREE.DoubleSide
     });
     const sand2Mesh = new THREE.Mesh(sand2Geo, sand2Mat);
     sand2Mesh.position.y = -9.0;
@@ -321,53 +324,54 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
       }
 
       const worldScale = 20 / DOMAIN.widthMeters;
+      const res = physicalState.resolution;
+      const grid = physicalState.displacementGrid;
 
       physicalState.wells.forEach((w, i) => {
         const wx = w.x * worldScale;
         const wz = w.y * worldScale;
 
-        // Steel well casing
-        const casingGeo = new THREE.CylinderGeometry(0.18, 0.18, 10, 16);
+        // Calculate surface settlement at exact wellhead location
+        const gi = Math.max(0, Math.min(res - 1, Math.round(((wx + 10) / 20) * (res - 1))));
+        const gj = Math.max(0, Math.min(res - 1, Math.round(((wz + 10) / 20) * (res - 1))));
+        const subMeters = grid ? grid[gi * res + gj] : 0;
+        const surfaceY = -subMeters * (verticalExaggeration * 0.25);
+
+        // Well casing runs from surfaceY down to -9.0
+        const casingHeight = Math.max(0.5, 9.0 + surfaceY);
+        const casingGeo = new THREE.CylinderGeometry(0.18, 0.18, casingHeight, 16);
         const casingMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.3 });
         const casing = new THREE.Mesh(casingGeo, casingMat);
-        casing.position.set(wx, -5, wz);
+        casing.position.set(wx, surfaceY - casingHeight / 2, wz);
         group.add(casing);
 
-        // Surface concrete wellpad
-        const padGeo = new THREE.BoxGeometry(1.2, 0.2, 1.2);
-        const padMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9 });
+        // Surface concrete wellpad resting directly on deformed ground surface
+        const padGeo = new THREE.BoxGeometry(1.2, 0.16, 1.2);
+        const padMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9 });
         const pad = new THREE.Mesh(padGeo, padMat);
-        pad.position.set(wx, 0.1, wz);
+        pad.position.set(wx, surfaceY + 0.08, wz);
         group.add(pad);
 
-        // Wellhead pump motor housing
-        const headGeo = new THREE.CylinderGeometry(0.35, 0.45, 0.7, 12);
-        const headMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.6 });
+        // Wellhead pump motor housing on top of the pad
+        const headGeo = new THREE.CylinderGeometry(0.35, 0.45, 0.65, 14);
+        const headMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.6, roughness: 0.3 });
         const head = new THREE.Mesh(headGeo, headMat);
-        head.position.set(wx, 0.55, wz);
+        head.position.set(wx, surfaceY + 0.48, wz);
         group.add(head);
 
-        // Perforated intake strainer ring at screen depth (-9 units)
-        const ringGeo = new THREE.RingGeometry(0.25, 0.9, 24);
-        ringGeo.rotateX(-Math.PI / 2);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        ring.position.set(wx, -9.0, wz);
-        ring.name = i === 0 ? 'pulseRing' : `ring_${i}`;
-        group.add(ring);
+        // Slotted intake strainer (screen) in the lower confined aquifer (-9.0 units)
+        const screenGeo = new THREE.CylinderGeometry(0.24, 0.24, 1.8, 16);
+        const screenMat = new THREE.MeshStandardMaterial({
+          color: 0x38bdf8,
+          metalness: 0.8,
+          roughness: 0.2,
+          wireframe: true
+        });
+        const screen = new THREE.Mesh(screenGeo, screenMat);
+        screen.position.set(wx, -9.0, wz);
+        screen.name = i === 0 ? 'pulseRing' : `screen_${i}`;
+        group.add(screen);
       });
-    }
-
-    // Scale Cone of Depression
-    if (coneMeshRef.current) {
-      const cone = coneMeshRef.current;
-      const primaryWell = physicalState.wells[0];
-      const worldScale = 20 / DOMAIN.widthMeters;
-      cone.position.set(primaryWell.x * worldScale, -5, primaryWell.y * worldScale);
-      
-      const coneRadius = Math.max(1.8, Math.min(10, (physicalState.maxDrawdown / 22) * 8.5));
-      const coneHeight = Math.max(1.2, Math.min(7.5, (physicalState.maxDrawdown / 18) * 5.5));
-      cone.scale.set(coneRadius, coneHeight, coneRadius);
     }
   }, [physicalState, verticalExaggeration, showWaterTable]);
 
@@ -476,93 +480,75 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         </button>
       </div>
 
-      {/* Geotechnical Stratum Depth Gauge Ruler (Left Edge) */}
+      {/* Consolidated Geological Status & Exaggeration Toolbar (Bottom Dock) */}
       <div className="glass-panel" style={{
         position: 'absolute',
-        top: '68px',
+        bottom: '16px',
         left: '16px',
-        padding: '10px 12px',
-        zIndex: 10,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        fontSize: '11px'
-      }}>
-        <div style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-          Elevation / Depth
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#38bdf8' }} />
-          <span><strong>0 m:</strong> Ground Surface (Datum)</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#d8b48f' }} />
-          <span><strong>-30 m:</strong> Unconfined Sand</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#8c5332' }} />
-          <span><strong>-60 m:</strong> Clay Aquitard (Compressible)</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#1d4ed8' }} />
-          <span><strong>-120 m:</strong> Confined Aquifer</span>
-        </div>
-      </div>
-
-      {/* Vertical Exaggeration HUD Slider */}
-      <div className="glass-panel" style={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '20px',
-        padding: '10px 14px',
+        right: '16px',
+        padding: '8px 16px',
         zIndex: 10,
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
         gap: '12px'
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Vertical Exaggeration:</span>
-            <span className="mono-val" style={{ color: 'var(--color-primary)', fontSize: '12px' }}>{verticalExaggeration}×</span>
+        {/* Stratum Depth Legend */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '11px' }}>
+          <span style={{ fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.4px', fontSize: '10px' }}>
+            STRATA:
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#38bdf8' }} />
+            <span>0m Surface</span>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#c89666' }} />
+            <span>-30m Sand</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#7c2d12' }} />
+            <span>-60m Clay</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#1e3a8a' }} />
+            <span>-120m Aquifer</span>
+          </div>
+        </div>
+
+        {/* Subsidence Colormap Legend */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>
+            Settlement (Δz):
+          </span>
+          <div style={{
+            width: '120px',
+            height: '8px',
+            borderRadius: '4px',
+            background: 'linear-gradient(to right, #38bdf8, #f59e0b, #ef4444)'
+          }} />
+          <div style={{ display: 'flex', gap: '6px', fontSize: '10px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+            <span>0 cm</span>
+            <span>→</span>
+            <span>≥25 cm</span>
+          </div>
+        </div>
+
+        {/* Vertical Exaggeration Slider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Exaggeration:</span>
           <input
             type="range"
             min="1"
             max="30"
             value={verticalExaggeration}
             onChange={(e) => setVerticalExaggeration(Number(e.target.value))}
-            style={{ width: '130px' }}
+            style={{ width: '85px' }}
           />
-        </div>
-        <span style={{ fontSize: '10px', color: 'var(--text-dim)', maxWidth: '120px', lineHeight: 1.25 }}>
-          Scales centimeter settlement for visual inspection
-        </span>
-      </div>
-
-      {/* Subsidence Colormap Legend */}
-      <div className="glass-panel" style={{
-        position: 'absolute',
-        bottom: '20px',
-        right: '20px',
-        padding: '10px 14px',
-        zIndex: 10,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '6px'
-      }}>
-        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>
-          Surface Settlement (Δz)
-        </span>
-        <div style={{
-          width: '180px',
-          height: '10px',
-          borderRadius: '5px',
-          background: 'linear-gradient(to right, #38bdf8, #f59e0b, #ef4444)'
-        }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-          <span>0 cm (Stable)</span>
-          <span>8 cm</span>
-          <span>≥25 cm (Critical)</span>
+          <span className="mono-val" style={{ color: 'var(--color-primary)', fontSize: '11px', minWidth: '24px' }}>
+            {verticalExaggeration}×
+          </span>
         </div>
       </div>
     </div>

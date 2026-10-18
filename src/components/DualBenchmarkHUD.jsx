@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Zap, Clock, Activity, CheckCircle, Database, Gauge, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function DualBenchmarkHUD({ physicalState }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   // Dynamic calculation of speedup and parity
   const pinoLatencyMs = 2.3;
