@@ -184,3 +184,95 @@ export function computeGroundwaterState(params) {
     wells
   };
 }
+
+/**
+ * Resolves localized hydrogeological and geomechanical state at any spatial coordinate
+ * Grounded in Terzaghi effective stress: sigma' = sigma - u
+ * @param {number} worldX Three.js X position (-10 to +10)
+ * @param {number} worldY Three.js Y position (0 to -12)
+ * @param {number} worldZ Three.js Z position (-10 to +10)
+ * @param {Object} physicalState Result of computeGroundwaterState
+ * @returns {Object} Local hydrogeological data probe readout
+ */
+export function getPointHydrogeology(worldX, worldY, worldZ, physicalState) {
+  if (!physicalState) return null;
+
+  // Domain scaling: 20 Three.js units = 3,200 meters (1 unit = 160 meters)
+  const xMeters = Math.round((worldX / 10) * 1600);
+  const yMeters = Math.round((worldZ / 10) * 1600);
+  
+  // Vertical scaling: 0 units = 0m, -12 units = -120m (1 unit = 10m depth)
+  const depthMeters = Math.min(0, Math.max(-120, Math.round(worldY * 10)));
+
+  // Stratigraphic Layer Identification
+  let stratum = {
+    id: 'layer1',
+    name: 'Upper Unconfined Sand',
+    depthRange: '0 m to -30 m',
+    lithology: 'Fine to coarse alluvial sand',
+    kText: 'K_xx = 1.5 × 10⁻⁴ m/s',
+    color: '#e0a96d'
+  };
+
+  if (depthMeters < -60) {
+    stratum = {
+      id: 'layer3',
+      name: 'Lower Confined Aquifer',
+      depthRange: '-60 m to -120 m',
+      lithology: 'High-transmissivity production gravel & sand',
+      kText: 'K_xx = 2.0 × 10⁻⁴ m/s',
+      color: '#3b82f6'
+    };
+  } else if (depthMeters < -30) {
+    stratum = {
+      id: 'layer2',
+      name: 'Compressible Clay Aquitard',
+      depthRange: '-30 m to -60 m',
+      lithology: 'Overconsolidated compressible illite/smectite clay',
+      kText: 'K_zz = 1.2 × 10⁻⁸ m/s (Low permeability)',
+      color: '#a0522d'
+    };
+  }
+
+  // Bilinear interpolation on displacement and head grids
+  const res = physicalState.resolution;
+  const uNorm = Math.max(0, Math.min(1, (worldX + 10) / 20));
+  const vNorm = Math.max(0, Math.min(1, (worldZ + 10) / 20));
+  const gi = Math.max(0, Math.min(res - 1, Math.round(vNorm * (res - 1))));
+  const gj = Math.max(0, Math.min(res - 1, Math.round(uNorm * (res - 1))));
+  const idx = gi * res + gj;
+
+  const localSubMeters = physicalState.displacementGrid ? physicalState.displacementGrid[idx] : 0;
+  const localHeadM = physicalState.headGrid ? physicalState.headGrid[idx] : HYDRO_PARAMS.initialHead;
+  const localSubCm = localSubMeters * 100.0;
+
+  // Hydrostatic / Pore Pressure Calculation: u = rho_w * g * (h - z)
+  const elevationHead = 120 + depthMeters; // relative to impermeable datum
+  const pressureHead = Math.max(0, localHeadM - elevationHead);
+  const porePressureKPa = Math.round(pressureHead * 9.81);
+
+  // Total overburden stress: sigma = gamma_sat * depth (~19.5 kN/m^3)
+  const totalOverburdenKPa = Math.round(Math.abs(depthMeters) * 19.5);
+  // Terzaghi Effective Stress: sigma' = sigma - u
+  const effectiveStressKPa = Math.max(0, totalOverburdenKPa - porePressureKPa);
+
+  // Preconsolidation Status
+  const isYielding = localHeadM < HYDRO_PARAMS.preconsolidationHead && stratum.id === 'layer2';
+
+  return {
+    coordinates: {
+      x: xMeters,
+      y: yMeters,
+      depth: depthMeters
+    },
+    stratum,
+    hydraulicHeadM: parseFloat(localHeadM.toFixed(2)),
+    settlementCm: parseFloat(localSubCm.toFixed(2)),
+    porePressureKPa,
+    effectiveStressKPa,
+    isYielding,
+    statusText: isYielding 
+      ? 'Critical: Preconsolidation Breached (Plastic Compaction Active)'
+      : 'Elastic: Normal Hydromechanical Equilibrium'
+  };
+}

@@ -9,7 +9,8 @@ import {
   HelpCircle,
   Cpu, 
   RotateCcw,
-  X
+  X,
+  Activity
 } from 'lucide-react';
 import { DOMAIN, HYDRO_PARAMS } from '../physics/groundwaterPhysics';
 
@@ -368,6 +369,71 @@ export default function ControlsPanel({
               >
                 2-Well Cluster
               </button>
+            </div>
+          </div>
+
+          {/* Transient Consolidation & Hysteresis Curve (Physical Realism) */}
+          <div className="bg-surface-elevated/90 p-3 rounded-lg border border-white/5 flex flex-col gap-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-semibold text-white flex items-center gap-1.5">
+                <Activity size={13} className="text-primary" /> Transient Subsidence Curve
+              </span>
+              <span className="text-[10px] font-mono text-text-dim">
+                t = {params.pumpingDays} days
+              </span>
+            </div>
+
+            {/* SVG Hysteresis & Delayed Drainage Curve */}
+            <div className="relative w-full h-22 bg-deep/90 rounded-md border border-white/5 p-1.5 overflow-hidden">
+              <svg viewBox="0 0 280 75" className="w-full h-full select-none">
+                {/* Preconsolidation threshold line (88.0m / critical settlement boundary) */}
+                <line x1="20" y1="42" x2="270" y2="42" stroke="#ef4444" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+                <text x="24" y="39" fill="#ef4444" fontSize="6.5" fontFamily="monospace" opacity="0.85">Yield Threshold (Head &lt; 88.0m)</text>
+
+                {/* Grid Lines */}
+                <line x1="20" y1="10" x2="270" y2="10" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                <line x1="20" y1="65" x2="270" y2="65" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+                <line x1="20" y1="10" x2="20" y2="65" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+
+                {/* Time tick labels */}
+                <text x="20" y="72" fill="#64748b" fontSize="6.5" fontFamily="monospace">0d</text>
+                <text x="140" y="72" fill="#64748b" fontSize="6.5" fontFamily="monospace">180d</text>
+                <text x="255" y="72" fill="#64748b" fontSize="6.5" fontFamily="monospace">365d</text>
+
+                {/* Simulated Transient Compaction Path */}
+                {(() => {
+                  const points = [];
+                  const maxS = physicalState.maxSubsidenceCm;
+                  for (let m = 0; m <= 12; m++) {
+                    const x = 20 + (m / 12) * 245;
+                    const tFrac = m / 12;
+                    const sRatio = 1 - Math.exp(-tFrac * 3.2);
+                    const yVal = 10 + Math.min(52, sRatio * (maxS / 28) * 52);
+                    points.push(`${x.toFixed(1)},${yVal.toFixed(1)}`);
+                  }
+                  const pathStr = `M ${points.join(' L ')}`;
+                  const activeX = 20 + Math.min(1, params.pumpingDays / 365) * 245;
+                  const activeRatio = 1 - Math.exp(-(params.pumpingDays / 365) * 3.2);
+                  const activeY = 10 + Math.min(52, activeRatio * (maxS / 28) * 52);
+
+                  return (
+                    <>
+                      <path d={pathStr} fill="none" stroke={physicalState.isPreconsolidationBreached ? '#f43f5e' : '#38bdf8'} strokeWidth="2" strokeLinecap="round" />
+                      <circle cx={activeX} cy={activeY} r="3.5" fill={physicalState.isPreconsolidationBreached ? '#f43f5e' : '#38bdf8'} stroke="#ffffff" strokeWidth="1.5" />
+                    </>
+                  );
+                })()}
+              </svg>
+            </div>
+
+            <div className="flex items-center justify-between text-[10px] text-text-dim">
+              <span className="flex items-center gap-1">
+                <span className={`w-1.5 h-1.5 rounded-full ${physicalState.isPreconsolidationBreached ? 'bg-danger animate-pulse' : 'bg-primary'}`} />
+                Cumulative Δz: <strong className="text-white font-mono">{physicalState.maxSubsidenceCm} cm</strong>
+              </span>
+              <span className="font-mono text-[9px] text-text-muted">
+                {physicalState.inelasticPercent}% Plastic Strain
+              </span>
             </div>
           </div>
 

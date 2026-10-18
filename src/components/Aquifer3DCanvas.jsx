@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Layers, RefreshCw, Compass, Activity, Info, Eye } from 'lucide-react';
-import { DOMAIN, HYDRO_PARAMS } from '../physics/groundwaterPhysics';
+import { Layers, RefreshCw, Compass, Activity, Info, Eye, Crosshair, MapPin, X, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { DOMAIN, HYDRO_PARAMS, getPointHydrogeology } from '../physics/groundwaterPhysics';
 
 export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setLayerVisibilities }) {
   const containerRef = useRef(null);
@@ -18,6 +18,8 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
   const clayBlockRef = useRef(null);
   const waterTablePlaneRef = useRef(null);
   const clippingPlanesRef = useRef([]);
+  const probeGroupRef = useRef(null);
+  const compassNeedleRef = useRef(null);
 
   // Viewport Settings
   const [verticalExaggeration, setVerticalExaggeration] = useState(15);
@@ -25,6 +27,17 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
   const [isWireframe, setIsWireframe] = useState(false);
   const [showWaterTable, setShowWaterTable] = useState(true);
   const [cameraView, setCameraView] = useState('isometric');
+
+  // Interactive 3D Subsurface Data Probe State
+  const [probedData, setProbedData] = useState(null);
+  const [isProbePinned, setIsProbePinned] = useState(false);
+  const [isProbeActive, setIsProbeActive] = useState(true);
+
+  // Physical State Ref for 60fps Raycasting
+  const physicalStateRef = useRef(physicalState);
+  useEffect(() => {
+    physicalStateRef.current = physicalState;
+  }, [physicalState]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -153,7 +166,49 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     scene.add(wellGroup);
     wellMeshGroupRef.current = wellGroup;
 
-    // 11. Animation Loop (Modern timestamp tracking, zero deprecations)
+    // 11. Subsurface Raycast Probe Marker Group (3D Target Indicator)
+    const probeGroup = new THREE.Group();
+    probeGroup.visible = false;
+
+    // Vertical dashed probe line from surface to bedrock
+    const lineGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 1.5, 0),
+      new THREE.Vector3(0, -12.1, 0)
+    ]);
+    const lineMat = new THREE.LineDashedMaterial({
+      color: 0x38bdf8,
+      dashSize: 0.35,
+      gapSize: 0.2,
+      transparent: true,
+      opacity: 0.75
+    });
+    const probeLine = new THREE.Line(lineGeo, lineMat);
+    probeLine.computeLineDistances();
+    probeGroup.add(probeLine);
+
+    // Glowing cyan horizontal target ring
+    const ringGeo = new THREE.RingGeometry(0.35, 0.48, 32);
+    ringGeo.rotateX(-Math.PI / 2);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.95
+    });
+    const probeRing = new THREE.Mesh(ringGeo, ringMat);
+    probeRing.name = 'probeRing';
+    probeGroup.add(probeRing);
+
+    // Center illuminated target bead
+    const beadGeo = new THREE.SphereGeometry(0.12, 16, 16);
+    const beadMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const probeBead = new THREE.Mesh(beadGeo, beadMat);
+    probeGroup.add(probeBead);
+
+    scene.add(probeGroup);
+    probeGroupRef.current = probeGroup;
+
+    // 12. Animation Loop (Modern timestamp tracking, zero deprecations)
     let animationFrameId;
     let startTime = performance.now();
 
@@ -170,10 +225,90 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         }
       }
 
+      // Pulse probe target ring
+      if (probeGroupRef.current && probeGroupRef.current.visible) {
+        const pRing = probeGroupRef.current.getObjectByName('probeRing');
+        if (pRing) {
+          const ps = 1 + Math.sin(elapsedSec * 4.5) * 0.15;
+          pRing.scale.set(ps, ps, 1);
+        }
+      }
+
+      // Update 60 FPS Camera Compass Azimuth
+      if (controls && compassNeedleRef.current) {
+        const azimuthRad = controls.getAzimuthalAngle();
+        const deg = (azimuthRad * 180) / Math.PI;
+        compassNeedleRef.current.style.transform = `rotate(${-deg}deg)`;
+      }
+
       controls.update();
       renderer.render(scene, camera);
     };
     animate();
+
+    // 13. Interactive 3D Raycasting Probe Listeners
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const getRaycastHit = (e) => {
+      if (!container) return null;
+      const rect = container.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+
+      const targets = [];
+      if (surfaceMeshRef.current) targets.push(surfaceMeshRef.current);
+      ['layer1', 'layer2', 'layer3'].forEach(name => {
+        const obj = scene.getObjectByName(name);
+        if (obj && obj.visible) targets.push(obj);
+      });
+
+      const intersects = raycaster.intersectObjects(targets, false);
+      return intersects.length > 0 ? intersects[0] : null;
+    };
+
+    const handlePointerMove = (e) => {
+      if (!isProbeActive) return;
+      const hit = getRaycastHit(e);
+      if (hit) {
+        const hitPoint = hit.point;
+        if (probeGroupRef.current) {
+          probeGroupRef.current.position.set(hitPoint.x, hitPoint.y, hitPoint.z);
+          probeGroupRef.current.visible = true;
+        }
+
+        const hydro = getPointHydrogeology(hitPoint.x, hitPoint.y, hitPoint.z, physicalStateRef.current);
+        if (hydro) {
+          setProbedData(prev => (prev?.isPinned ? prev : hydro));
+        }
+      }
+    };
+
+    const handlePointerDown = (e) => {
+      if (!isProbeActive) return;
+      if (e.target.closest('button') || e.target.closest('.camera-controls-bar') || e.target.closest('.bottom-dock-bar') || e.target.closest('.probe-hud-card')) {
+        return;
+      }
+
+      const hit = getRaycastHit(e);
+      if (hit) {
+        const hitPoint = hit.point;
+        if (probeGroupRef.current) {
+          probeGroupRef.current.position.set(hitPoint.x, hitPoint.y, hitPoint.z);
+          probeGroupRef.current.visible = true;
+        }
+
+        const hydro = getPointHydrogeology(hitPoint.x, hitPoint.y, hitPoint.z, physicalStateRef.current);
+        if (hydro) {
+          setProbedData({ ...hydro, isPinned: true });
+          setIsProbePinned(true);
+        }
+      }
+    };
+
+    container.addEventListener('pointermove', handlePointerMove);
+    container.addEventListener('pointerdown', handlePointerDown);
 
     // Resize Handler
     const handleResize = () => {
@@ -188,13 +323,15 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      container.removeEventListener('pointermove', handlePointerMove);
+      container.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('resize', handleResize);
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
     };
-  }, []);
+  }, [isProbeActive]);
 
   // Helper: Build stratified hydrogeology blocks
   function buildStratigraphy(scene, cutawayPlane) {
@@ -416,13 +553,29 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
 
   return (
     <div className="canvas-wrapper relative w-full h-full overflow-hidden select-none">
-      <div ref={containerRef} className="w-full h-full" />
+      <div ref={containerRef} className="w-full h-full cursor-crosshair" />
 
       {/* Floating 3D Navigation Controls (NN/g: Visibility & Control) */}
       <div className="camera-controls-bar absolute top-4 left-4 flex items-center gap-1.5 p-1.5 px-2.5 z-10 overflow-x-auto max-w-[calc(100%-140px)] rounded-xl bg-surface/90 backdrop-blur-xl border border-white/10 shadow-xl">
         <span className="text-[11px] text-text-muted font-semibold flex items-center gap-1 mr-1 shrink-0">
           <Compass size={14} className="text-primary" /> CAMERA
         </span>
+
+        {/* Dynamic Compass Azimuth */}
+        <div 
+          className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-surface-elevated/90 border border-white/10 text-[10px] text-text-dim"
+          title="Basin Geographic Orientation (Azimuth)"
+        >
+          <div className="relative w-3.5 h-3.5 flex items-center justify-center">
+            <div 
+              ref={compassNeedleRef} 
+              className="absolute inset-0 flex items-center justify-center transition-transform duration-75"
+            >
+              <div className="w-0.5 h-3 bg-linear-to-t from-slate-400 via-white to-primary rounded-full" />
+            </div>
+          </div>
+          <span className="font-mono font-bold text-primary text-[10px]">N</span>
+        </div>
 
         <button
           className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
@@ -492,7 +645,102 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         >
           <Activity size={13} /> {isWireframe ? 'Solid' : 'Wire'}
         </button>
+
+        <button
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+            isProbeActive 
+              ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-xs' 
+              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted border border-white/5'
+          }`}
+          onClick={() => {
+            setIsProbeActive(!isProbeActive);
+            if (isProbeActive) {
+              setProbedData(null);
+              setIsProbePinned(false);
+              if (probeGroupRef.current) probeGroupRef.current.visible = false;
+            }
+          }}
+          title="Toggle Interactive 3D Subsurface Probe"
+        >
+          <Crosshair size={13} /> {isProbeActive ? 'Probe ON' : 'Probe OFF'}
+        </button>
       </div>
+
+      {/* Interactive Subsurface Hydrogeological Probe HUD Card */}
+      {probedData && isProbeActive && (
+        <div className="probe-hud-card absolute bottom-20 left-4 z-20 w-[350px] max-w-[calc(100vw-32px)] p-3.5 rounded-xl bg-surface/95 backdrop-blur-xl border border-primary/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-2.5">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_10px_hsl(187,92%,48%)] animate-pulse" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-text-dim uppercase tracking-wider">
+                  Subsurface Data Probe
+                </span>
+                <span className="text-[11px] font-mono font-semibold text-white">
+                  X: {probedData.coordinates.x > 0 ? `+${probedData.coordinates.x}` : probedData.coordinates.x}m · Y: {probedData.coordinates.y > 0 ? `+${probedData.coordinates.y}` : probedData.coordinates.y}m · Depth: {probedData.coordinates.depth}m
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isProbePinned ? 'bg-primary/20 text-primary border border-primary/40' : 'bg-white/5 text-text-dim'}`}>
+                {isProbePinned ? 'Pinned' : 'Live'}
+              </span>
+              <button
+                onClick={() => {
+                  setProbedData(null);
+                  setIsProbePinned(false);
+                  if (probeGroupRef.current) probeGroupRef.current.visible = false;
+                }}
+                className="p-1 rounded text-text-muted hover:text-white cursor-pointer"
+                title="Dismiss Probe"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Stratum Tag */}
+          <div className="flex items-center gap-2 mb-2 p-1.5 px-2.5 rounded-lg bg-surface-elevated/80 border border-white/5 text-[11px]">
+            <div className="w-2.5 h-2.5 rounded-xs shrink-0" style={{ backgroundColor: probedData.stratum.color }} />
+            <div className="flex-1 truncate">
+              <strong className="text-white block">{probedData.stratum.name}</strong>
+              <span className="text-[10px] text-text-muted font-mono">{probedData.stratum.kText}</span>
+            </div>
+          </div>
+
+          {/* 3-Column Hydrogeological Metrics */}
+          <div className="grid grid-cols-3 gap-2 mb-2.5">
+            <div className="p-2 rounded bg-surface-elevated/60 border border-white/5 flex flex-col">
+              <span className="text-[9.5px] text-text-muted">Head (h)</span>
+              <span className="font-mono text-xs font-bold text-secondary">
+                {probedData.hydraulicHeadM} <span className="text-[9px] font-normal">m</span>
+              </span>
+            </div>
+            <div className="p-2 rounded bg-surface-elevated/60 border border-white/5 flex flex-col">
+              <span className="text-[9.5px] text-text-muted">Settlement (Δz)</span>
+              <span className={`font-mono text-xs font-bold ${probedData.settlementCm > 15 ? 'text-danger' : 'text-primary'}`}>
+                {probedData.settlementCm} <span className="text-[9px] font-normal">cm</span>
+              </span>
+            </div>
+            <div className="p-2 rounded bg-surface-elevated/60 border border-white/5 flex flex-col">
+              <span className="text-[9.5px] text-text-muted">Eff. Stress (σ')</span>
+              <span className="font-mono text-xs font-bold text-amber-400">
+                {probedData.effectiveStressKPa} <span className="text-[9px] font-normal">kPa</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Critical Yield State Indicator */}
+          <div className={`p-1.5 px-2 rounded flex items-center gap-2 text-[10px] ${
+            probedData.isYielding 
+              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' 
+              : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+          }`}>
+            {probedData.isYielding ? <AlertTriangle size={13} className="shrink-0 text-rose-400" /> : <ShieldCheck size={13} className="shrink-0 text-emerald-400" />}
+            <span className="leading-tight font-medium">{probedData.statusText}</span>
+          </div>
+        </div>
+      )}
 
       {/* Consolidated Geological Status & Exaggeration Toolbar (Bottom Dock) */}
       <div className="bottom-dock-bar absolute bottom-4 left-4 right-4 p-2.5 px-4 z-10 flex items-center justify-between flex-wrap gap-3 rounded-xl bg-surface/90 backdrop-blur-xl border border-white/10 shadow-xl">
