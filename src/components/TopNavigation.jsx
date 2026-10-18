@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, Maximize, RotateCcw, BookOpen, Layers } from 'lucide-react';
+import { Camera, Maximize, RotateCcw, BookOpen, Layers, Sliders } from 'lucide-react';
 import { SCENARIO_PRESETS } from '../data/scenarioPresets';
 
 export default function TopNavigation({
