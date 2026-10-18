@@ -84,7 +84,7 @@ export default function TopNavigation({
           title="Open Hydrogeology & Architecture Guide"
         >
           <BookOpen size={14} className="text-primary" />
-          <span className="hidden md:inline">Guide</span>
+          <span className="hidden lg:inline">Guide</span>
         </button>
 
         <button
@@ -93,7 +93,7 @@ export default function TopNavigation({
           title="Capture clean PNG snapshot of the 3D scene for your presentation slides"
         >
           <Camera size={14} className="text-primary" />
-          <span className="hidden md:inline">Snapshot</span>
+          <span className="hidden lg:inline">Snapshot</span>
         </button>
 
         <button
@@ -102,7 +102,7 @@ export default function TopNavigation({
           title="Reset simulation parameters to default baseline"
         >
           <RotateCcw size={14} />
-          <span className="hidden md:inline">Reset</span>
+          <span className="hidden lg:inline">Reset</span>
         </button>
 
         {/* Sidebar Drawer Toggle (Responsive Controls button for Desktop & Tablet) */}

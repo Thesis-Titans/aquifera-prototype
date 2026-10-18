@@ -142,6 +142,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   width: var(--sidebar-width);
   height: calc(100vh - var(--nav-height) - 32px);
   margin: 16px 16px 16px 0;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -169,29 +170,30 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* Tablet Landscape (< 1180px) */
 @media (max-width: 1180px) {
   :root {
-    --sidebar-width: 330px;
+    --sidebar-width: 340px;
   }
   .presets-scroll-container {
-    max-width: 44vw;
+    max-width: 42vw;
   }
 }
 
-/* Tablet Portrait & Small Screens (< 920px - iPad Portrait) */
+/* Tablet Portrait & Small Screens (< 920px - iPad Portrait & Split Screen) */
 @media (max-width: 920px) {
   .app-sidebar {
     position: fixed;
-    top: var(--nav-height);
-    right: 0;
-    bottom: 0;
-    height: calc(100vh - var(--nav-height));
+    top: calc(var(--nav-height) + 12px);
+    right: 12px;
+    bottom: 12px;
+    height: calc(100vh - var(--nav-height) - 24px);
     margin: 0 !important;
-    width: min(380px, 92vw) !important;
-    border-radius: 12px 0 0 12px;
+    width: min(390px, calc(100vw - 24px)) !important;
+    border-radius: 16px !important;
     z-index: 50;
-    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8) !important;
   }
   .app-sidebar.sidebar-closed {
-    transform: translateX(105%) !important;
+    transform: translateX(calc(100% + 24px)) !important;
     pointer-events: none !important;
     opacity: 0 !important;
   }
@@ -205,7 +207,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
     position: fixed;
     inset: 0;
     top: var(--nav-height);
-    background: rgba(4, 9, 18, 0.65);
+    background: rgba(4, 9, 18, 0.7);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     z-index: 45;
@@ -215,13 +217,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
     display: none !important;
   }
   .presets-scroll-container {
-    max-width: 38vw;
+    max-width: 36vw;
   }
 
   .bottom-dock-bar {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 8px !important;
     bottom: 12px !important;
     left: 12px !important;
     right: 12px !important;
