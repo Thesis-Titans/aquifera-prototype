@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Sliders } from 'lucide-react';
 import TopNavigation from './components/TopNavigation';
 import Aquifer3DCanvas from './components/Aquifer3DCanvas';
 import ControlsPanel from './components/ControlsPanel';
@@ -31,6 +32,9 @@ export default function App() {
   // Modal State
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+
+  // Responsive Sidebar State (for Tablet / iPad 11th Gen)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Compute physical state reactively (< 5ms calculation)
   const physicalState = useMemo(() => {
@@ -81,6 +85,8 @@ export default function App() {
         onResetParams={handleResetParams}
         onCaptureScreenshot={handleCaptureScreenshot}
         onOpenGuide={() => setIsGuideOpen(true)}
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
       />
 
       {/* Main Interactive Stage */}
@@ -96,7 +102,27 @@ export default function App() {
 
           {/* Floating Dual-Engine Benchmark HUD */}
           <DualBenchmarkHUD physicalState={physicalState} />
+
+          {/* Floating Tablet Toggle Button when sidebar drawer is closed */}
+          {!isSidebarOpen && (
+            <button
+              className="btn btn-primary btn-sm sidebar-float-toggle"
+              onClick={() => setIsSidebarOpen(true)}
+              title="Open Parameters Drawer"
+            >
+              <Sliders size={14} /> Parameters
+            </button>
+          )}
         </div>
+
+        {/* Backdrop for tablet/mobile when sidebar drawer is open */}
+        {isSidebarOpen && (
+          <div 
+            className="sidebar-backdrop" 
+            onClick={() => setIsSidebarOpen(false)}
+            aria-hidden="true" 
+          />
+        )}
 
         {/* Right: Hydrogeological Simulation Controls Sidebar */}
         <ControlsPanel
@@ -109,6 +135,8 @@ export default function App() {
           layerVisibilities={layerVisibilities}
           setLayerVisibilities={setLayerVisibilities}
           onOpenVerification={() => setIsVerificationOpen(true)}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
         />
       </main>
 

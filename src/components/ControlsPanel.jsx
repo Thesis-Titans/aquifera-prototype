@@ -8,7 +8,8 @@ import {
   Clock, 
   HelpCircle,
   Cpu, 
-  RotateCcw
+  RotateCcw,
+  X
 } from 'lucide-react';
 import { DOMAIN, HYDRO_PARAMS } from '../physics/groundwaterPhysics';
 
@@ -18,7 +19,9 @@ export default function ControlsPanel({
   physicalState, 
   layerVisibilities, 
   setLayerVisibilities,
-  onOpenVerification
+  onOpenVerification,
+  isOpen = true,
+  onClose
 }) {
   const [activeTooltip, setActiveTooltip] = useState(null);
 
@@ -37,32 +40,43 @@ export default function ControlsPanel({
   };
 
   return (
-    <aside className="glass-panel" style={{
-      width: 'var(--sidebar-width)',
-      height: 'calc(100vh - var(--nav-height) - 32px)',
-      margin: '16px 16px 16px 0',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-      zIndex: 20
-    }}>
+    <aside className={`glass-panel app-sidebar ${isOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
       {/* Header */}
       <div style={{
-        padding: '16px 20px',
+        padding: '14px 18px',
         borderBottom: '1px solid var(--border-subtle)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Sliders size={18} color="var(--color-primary)" />
-          <h2 style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '-0.2px' }}>
-            Scenario Parameters
+          <Sliders size={17} color="var(--color-primary)" />
+          <h2 style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '-0.2px' }}>
+            Parameters
           </h2>
         </div>
-        <span className="badge badge-primary" style={{ fontSize: '10px' }}>
-          Real-Time
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span className="badge badge-primary" style={{ fontSize: '9px', padding: '2px 6px' }}>
+            Real-Time
+          </span>
+          {onClose && (
+            <button
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '2px'
+              }}
+              title="Close Drawer"
+            >
+              <X size={17} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Scrollable Content */}

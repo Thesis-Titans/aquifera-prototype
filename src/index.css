@@ -249,3 +249,121 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-weight: 600;
   letter-spacing: -0.3px;
 }
+
+/* ==========================================================================
+   Responsive Tablet & iPad 11th Gen Styles (NN/g Usability & Touch Support)
+   ========================================================================== */
+
+/* Touch Ergonomics & Target Sizing */
+@media (pointer: coarse) {
+  input[type="range"]::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+    box-shadow: 0 0 12px var(--color-primary);
+  }
+  .btn {
+    min-height: 36px;
+  }
+}
+
+/* Canvas Touch Control */
+.canvas-wrapper {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* Responsive Sidebar Drawer */
+.app-sidebar {
+  width: var(--sidebar-width);
+  height: calc(100vh - var(--nav-height) - 32px);
+  margin: 16px 16px 16px 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 20;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+/* Tablet Landscape (< 1180px) */
+@media (max-width: 1180px) {
+  :root {
+    --sidebar-width: 330px;
+  }
+  .presets-scroll-container {
+    max-width: 46vw;
+  }
+}
+
+/* Tablet Portrait & Small Screens (< 920px - iPad Portrait) */
+@media (max-width: 920px) {
+  .app-sidebar {
+    position: fixed;
+    top: var(--nav-height);
+    right: 0;
+    bottom: 0;
+    height: calc(100vh - var(--nav-height));
+    margin: 0;
+    width: min(380px, 92vw);
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    z-index: 50;
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.7);
+  }
+  .app-sidebar.sidebar-closed {
+    transform: translateX(105%);
+    pointer-events: none;
+    opacity: 0;
+  }
+  .app-sidebar.sidebar-open {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    top: var(--nav-height);
+    background: rgba(4, 9, 18, 0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 45;
+  }
+
+  .nav-brand-subtitle {
+    display: none !important;
+  }
+  .btn-label-responsive {
+    display: none !important;
+  }
+  .presets-scroll-container {
+    max-width: 42vw;
+  }
+
+  .bottom-dock-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    bottom: 12px !important;
+    left: 12px !important;
+    right: 12px !important;
+  }
+  .bottom-dock-bar-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+/* Floating Sidebar Toggle Button for Tablet Portrait */
+.sidebar-float-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 35;
+  box-shadow: var(--shadow-md);
+}
+@media (min-width: 921px) {
+  .sidebar-float-toggle {
+    display: none !important;
+  }
+}

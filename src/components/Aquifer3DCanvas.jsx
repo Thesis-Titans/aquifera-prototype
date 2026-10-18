@@ -419,7 +419,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
       {/* Floating 3D Navigation Controls (NN/g: Visibility & Control) */}
-      <div className="glass-panel" style={{
+      <div className="glass-panel camera-controls-bar" style={{
         position: 'absolute',
         top: '16px',
         left: '16px',
@@ -427,9 +427,12 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         alignItems: 'center',
         gap: '6px',
         padding: '6px 10px',
-        zIndex: 10
+        zIndex: 10,
+        overflowX: 'auto',
+        maxWidth: 'calc(100% - 140px)',
+        scrollbarWidth: 'none'
       }}>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', marginRight: '4px' }}>
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', marginRight: '4px', flexShrink: 0 }}>
           <Compass size={14} color="var(--color-primary)" /> CAMERA
         </span>
 
@@ -452,7 +455,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
           Plan View (Top)
         </button>
 
-        <div style={{ width: '1px', height: '16px', background: 'var(--border-subtle)', margin: '0 4px' }} />
+        <div style={{ width: '1px', height: '16px', background: 'var(--border-subtle)', margin: '0 4px', flexShrink: 0 }} />
 
         <button
           className={`btn btn-sm ${isCutaway ? 'btn-secondary' : ''}`}
@@ -460,7 +463,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
           onClick={() => setIsCutaway(!isCutaway)}
           title="Toggle 50% Volumetric Cutaway to inspect internal clay compaction"
         >
-          <Layers size={13} /> {isCutaway ? 'Cutaway View' : 'Solid Block'}
+          <Layers size={13} /> {isCutaway ? 'Cutaway' : 'Solid'}
         </button>
 
         <button
@@ -468,7 +471,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
           onClick={() => setShowWaterTable(!showWaterTable)}
           title="Toggle Piezometric Water Table Plane"
         >
-          <Eye size={13} /> {showWaterTable ? 'Piezometric Head' : 'Hide Head'}
+          <Eye size={13} /> {showWaterTable ? 'Head' : 'Hide Head'}
         </button>
 
         <button
@@ -476,12 +479,12 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
           onClick={() => setIsWireframe(!isWireframe)}
           title="Toggle Terrain Mesh Wireframe"
         >
-          <Activity size={13} /> {isWireframe ? 'Mesh Solid' : 'Mesh Wire'}
+          <Activity size={13} /> {isWireframe ? 'Solid' : 'Wire'}
         </button>
       </div>
 
       {/* Consolidated Geological Status & Exaggeration Toolbar (Bottom Dock) */}
-      <div className="glass-panel" style={{
+      <div className="glass-panel bottom-dock-bar" style={{
         position: 'absolute',
         bottom: '16px',
         left: '16px',

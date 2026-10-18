@@ -7,7 +7,9 @@ export default function TopNavigation({
   onSelectPreset,
   onResetParams,
   onCaptureScreenshot,
-  onOpenGuide
+  onOpenGuide,
+  isSidebarOpen,
+  onToggleSidebar
 }) {
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -28,14 +30,14 @@ export default function TopNavigation({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 20px',
+      padding: '0 16px',
       zIndex: 30
     }}>
       {/* Brand & Project Metadata */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
         <div style={{
-          width: '38px',
-          height: '38px',
+          width: '36px',
+          height: '36px',
           borderRadius: '50%',
           overflow: 'hidden',
           border: '1.5px solid var(--color-primary)',
@@ -59,33 +61,29 @@ export default function TopNavigation({
         </div>
 
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h1 style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '-0.3px', color: 'var(--text-main)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <h1 style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '-0.3px', color: 'var(--text-main)' }}>
               AQUIFERA
             </h1>
-            <span className="badge badge-primary" style={{ fontSize: '10px' }}>
-              3D SIMULATION PLATFORM
+            <span className="badge badge-primary" style={{ fontSize: '9px', padding: '2px 6px' }}>
+              SIMULATION
             </span>
           </div>
-          <p style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '0.4px', fontWeight: 600 }}>
+          <p className="nav-brand-subtitle" style={{ fontSize: '9.5px', color: 'var(--text-dim)', letterSpacing: '0.4px', fontWeight: 600 }}>
             SIMULATE • VERIFY • SUSTAIN
           </p>
         </div>
       </div>
 
-      {/* Preset Scenarios for Presentation Defense */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.3px' }}>
-          PRESETS:
-        </span>
-
+      {/* Preset Scenarios for Presentation Defense (Horizontally scrollable on tablets) */}
+      <div className="presets-scroll-container">
         {SCENARIO_PRESETS.map((preset) => {
           const isActive = activePresetId === preset.id;
           const labelMap = {
             sustainable: '1. Sustainable',
-            overextraction: '2. Crisis Pumping',
-            recharge: '3. Managed Recharge',
-            catastrophic: '4. Drought Shock'
+            overextraction: '2. Crisis',
+            recharge: '3. Recharge',
+            catastrophic: '4. Drought'
           };
           const displayName = labelMap[preset.id] || preset.name.split('.')[1].trim();
           return (
@@ -95,9 +93,10 @@ export default function TopNavigation({
               onClick={() => onSelectPreset(preset)}
               title={`${preset.name}\n${preset.description}`}
               style={{
-                fontSize: '11.5px',
-                padding: '4px 9px',
-                borderRadius: 'var(--radius-sm)'
+                fontSize: '11px',
+                padding: '4px 8px',
+                borderRadius: 'var(--radius-sm)',
+                whiteSpace: 'nowrap'
               }}
             >
               {displayName}
@@ -106,14 +105,15 @@ export default function TopNavigation({
         })}
       </div>
 
-      {/* Action Tools (Guide, Screenshot, Reset, Fullscreen) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      {/* Action Tools (Guide, Screenshot, Reset, Controls Toggle, Fullscreen) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
         <button
           className="btn btn-secondary btn-sm"
           onClick={onOpenGuide}
           title="Open Hydrogeology & Architecture Guide"
         >
-          <BookOpen size={14} color="var(--color-primary)" /> Guide
+          <BookOpen size={14} color="var(--color-primary)" />
+          <span className="btn-label-responsive">Guide</span>
         </button>
 
         <button
@@ -121,7 +121,8 @@ export default function TopNavigation({
           onClick={onCaptureScreenshot}
           title="Capture clean PNG snapshot of the 3D scene for your presentation slides"
         >
-          <Camera size={14} color="var(--color-primary)" /> Slide Snapshot
+          <Camera size={14} color="var(--color-primary)" />
+          <span className="btn-label-responsive">Snapshot</span>
         </button>
 
         <button
@@ -129,7 +130,18 @@ export default function TopNavigation({
           onClick={onResetParams}
           title="Reset simulation parameters to default baseline"
         >
-          <RotateCcw size={14} /> Reset
+          <RotateCcw size={14} />
+          <span className="btn-label-responsive">Reset</span>
+        </button>
+
+        {/* Sidebar Drawer Toggle for Tablet / Mobile */}
+        <button
+          className={`btn btn-sm ${isSidebarOpen ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={onToggleSidebar}
+          title={isSidebarOpen ? "Close Controls Panel" : "Open Controls Panel"}
+        >
+          <Sliders size={14} />
+          <span className="btn-label-responsive">Controls</span>
         </button>
 
         <button
