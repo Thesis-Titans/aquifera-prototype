@@ -77,7 +77,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-deep)' }}>
+    <div className="w-screen h-screen flex flex-col bg-deep text-text-main font-sans overflow-hidden">
       {/* Top Header Navigation */}
       <TopNavigation
         activePresetId={activePresetId}
@@ -90,10 +90,10 @@ export default function App() {
       />
 
       {/* Main Interactive Stage */}
-      <main style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
+      <main className="flex-1 flex relative overflow-hidden">
         
         {/* Left/Center: Three.js 3D Stratified Viewport */}
-        <div style={{ flex: 1, position: 'relative', height: '100%' }}>
+        <div className="flex-1 relative h-full">
           <Aquifer3DCanvas
             physicalState={physicalState}
             layerVisibilities={layerVisibilities}
@@ -106,7 +106,7 @@ export default function App() {
           {/* Floating Tablet Toggle Button when sidebar drawer is closed */}
           {!isSidebarOpen && (
             <button
-              className="btn btn-primary btn-sm sidebar-float-toggle"
+              className="sidebar-float-toggle flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-linear-to-r from-primary to-cyan-400 text-deep shadow-lg hover:shadow-cyan-500/25 transition-all"
               onClick={() => setIsSidebarOpen(true)}
               title="Open Parameters Drawer"
             >

@@ -1,62 +1,33 @@
 import React from 'react';
-import { X, BookOpen, Layers, Zap, Cpu, ShieldCheck } from 'lucide-react';
+import { X, BookOpen } from 'lucide-react';
 
 export default function GuideModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      background: 'rgba(4, 9, 18, 0.82)',
-      backdropFilter: 'blur(12px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 110
-    }}>
-      <div className="glass-panel" style={{
-        width: '640px',
-        maxWidth: '92vw',
-        maxHeight: '85vh',
-        background: 'hsl(222, 40%, 11%)',
-        border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-lg)',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
+    <div className="fixed inset-0 w-screen h-screen bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="w-[640px] max-w-full max-h-[85vh] rounded-2xl bg-surface/95 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div style={{
-          padding: '16px 22px',
-          borderBottom: '1px solid var(--border-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BookOpen size={18} color="var(--color-primary)" />
-            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-main)' }}>
+        <div className="p-4 px-6 border-b border-white/10 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <BookOpen size={18} className="text-primary" />
+            <h3 className="text-sm font-bold text-white tracking-tight">
               Aquifera Technical & Hydrogeological Guide
             </h3>
           </div>
           <button 
             onClick={onClose}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+            className="p-1 rounded-lg text-text-muted hover:text-white transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Scrollable Body */}
-        <div style={{ padding: '20px 22px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+        <div className="p-6 overflow-y-auto flex flex-col gap-4 text-xs text-text-muted leading-relaxed">
           
           <div>
-            <h4 style={{ color: 'var(--color-primary)', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>
+            <h4 className="text-primary font-bold mb-1 text-sm">
               1. The Hydrogeological Problem
             </h4>
             <p>
@@ -65,7 +36,7 @@ export default function GuideModal({ isOpen, onClose }) {
           </div>
 
           <div>
-            <h4 style={{ color: 'var(--color-warning)', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>
+            <h4 className="text-amber-400 font-bold mb-1 text-sm">
               2. Elastic vs. Inelastic Clay Compaction (Terzaghi Theory)
             </h4>
             <p>
@@ -75,7 +46,7 @@ export default function GuideModal({ isOpen, onClose }) {
           </div>
 
           <div>
-            <h4 style={{ color: 'var(--color-secondary)', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>
+            <h4 className="text-secondary font-bold mb-1 text-sm">
               3. The Computing Breakthrough (PINO Surrogate)
             </h4>
             <p>
@@ -84,7 +55,7 @@ export default function GuideModal({ isOpen, onClose }) {
           </div>
 
           <div>
-            <h4 style={{ color: 'var(--color-success)', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>
+            <h4 className="text-success font-bold mb-1 text-sm">
               4. Verification Architecture (Tier 4 Fallback)
             </h4>
             <p>
@@ -95,8 +66,11 @@ export default function GuideModal({ isOpen, onClose }) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '12px 22px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', display: 'flex', justifyContent: 'flex-end' }}>
-          <button className="btn btn-primary btn-sm" onClick={onClose}>
+        <div className="p-3.5 px-6 border-t border-white/10 bg-surface-elevated/70 flex justify-end">
+          <button 
+            className="px-4 py-2 rounded-lg text-xs font-semibold bg-linear-to-r from-primary to-cyan-400 text-deep shadow-lg shadow-cyan-500/25 hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer"
+            onClick={onClose}
+          >
             Got it, Return to Simulation
           </button>
         </div>

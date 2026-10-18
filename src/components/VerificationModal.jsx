@@ -74,141 +74,104 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      background: 'rgba(4, 9, 18, 0.82)',
-      backdropFilter: 'blur(12px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 100
-    }}>
-      <div className="glass-panel" style={{
-        width: '680px',
-        maxWidth: '92vw',
-        background: 'hsl(222, 40%, 11%)',
-        border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-lg)',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
+    <div className="fixed inset-0 w-screen h-screen bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="w-[680px] max-w-full rounded-2xl bg-surface/95 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div style={{
-          padding: '16px 24px',
-          borderBottom: '1px solid var(--border-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Cpu size={20} color="var(--color-primary)" />
+        <div className="p-4 px-6 border-b border-white/10 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Cpu size={20} className="text-primary" />
             <div>
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-main)' }}>
+              <h3 className="text-sm font-bold text-white tracking-tight">
                 Tier 4 Asynchronous Verification Engine
               </h3>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              <span className="text-xs text-text-muted">
                 USGS MODFLOW 6 CSUB Numerical Cross-Validation Run
               </span>
             </div>
           </div>
           <button 
             onClick={onClose}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+            className="p-1 rounded-lg text-text-muted hover:text-white transition-colors cursor-pointer"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <div className="p-6 flex flex-col gap-4.5 overflow-y-auto max-h-[75vh]">
           
           {/* Progress Bar */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
-              <span style={{ color: isDone ? 'var(--color-success)' : 'var(--color-primary)', fontWeight: 600 }}>
+            <div className="flex justify-between items-center mb-2 text-xs">
+              <span className={`font-semibold ${isDone ? 'text-success' : 'text-primary'}`}>
                 {isDone ? 'Verification Run Complete' : stageLabels[stage]}
               </span>
-              <span className="mono-val" style={{ color: 'var(--text-muted)' }}>
+              <span className="font-mono tabular-nums text-text-muted font-bold">
                 {progress}%
               </span>
             </div>
 
-            <div style={{ width: '100%', height: '8px', background: 'var(--bg-surface-elevated)', borderRadius: '4px', overflow: 'hidden' }}>
-              <div style={{
-                width: `${progress}%`,
-                height: '100%',
-                background: isDone 
-                  ? 'linear-gradient(90deg, #10b981, #059669)'
-                  : 'linear-gradient(90deg, var(--color-primary), var(--color-secondary))',
-                transition: 'width 0.12s ease'
-              }} />
+            <div className="w-full h-2 bg-surface-elevated rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-150 ${
+                  isDone 
+                    ? 'bg-linear-to-r from-emerald-500 to-teal-400'
+                    : 'bg-linear-to-r from-primary to-cyan-400'
+                }`}
+                style={{ width: `${progress}%` }}
+              />
             </div>
           </div>
 
           {isDone && (
             <>
               {/* Statistical Verification Metrics */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '12px'
-              }}>
-                <div style={{ background: 'var(--bg-surface-elevated)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: '10px', color: 'var(--text-dim)', display: 'block' }}>Correlation (R²):</span>
-                  <span className="mono-val" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-success)' }}>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-surface-elevated/90 p-3 rounded-xl border border-white/5">
+                  <span className="text-[10.5px] text-text-dim block">Correlation (R²):</span>
+                  <span className="font-mono tabular-nums text-xl font-bold text-success block mt-0.5">
                     0.942
                   </span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>Passes threshold (≥0.90)</span>
+                  <span className="text-[10px] text-text-muted block mt-1">Passes threshold (≥0.90)</span>
                 </div>
 
-                <div style={{ background: 'var(--bg-surface-elevated)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: '10px', color: 'var(--text-dim)', display: 'block' }}>Wilcoxon Test:</span>
-                  <span className="mono-val" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-primary)' }}>
+                <div className="bg-surface-elevated/90 p-3 rounded-xl border border-white/5">
+                  <span className="text-[10.5px] text-text-dim block">Wilcoxon Test:</span>
+                  <span className="font-mono tabular-nums text-xl font-bold text-primary block mt-0.5">
                     p = 0.824
                   </span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>No systematic bias (p &gt; 0.05)</span>
+                  <span className="text-[10px] text-text-muted block mt-1">No systematic bias (p &gt; 0.05)</span>
                 </div>
 
-                <div style={{ background: 'var(--bg-surface-elevated)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: '10px', color: 'var(--text-dim)', display: 'block' }}>Peak Residual Error:</span>
-                  <span className="mono-val" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-success)' }}>
+                <div className="bg-surface-elevated/90 p-3 rounded-xl border border-white/5">
+                  <span className="text-[10.5px] text-text-dim block">Peak Residual Error:</span>
+                  <span className="font-mono tabular-nums text-xl font-bold text-success block mt-0.5">
                     3.4 mm
                   </span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>Below 5.0 mm acceptance</span>
+                  <span className="text-[10px] text-text-muted block mt-1">Below 5.0 mm acceptance</span>
                 </div>
               </div>
 
               {/* 2D Cross-Section Settlement Comparison Chart */}
-              <div style={{
-                background: 'var(--bg-surface-elevated)',
-                padding: '16px',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border-subtle)'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)' }}>
+              <div className="bg-surface-elevated/90 p-4 rounded-xl border border-white/5">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs font-semibold text-white">
                     Radial Subsidence Profile (West to East Cross-Section)
                   </span>
-                  <div style={{ display: 'flex', gap: '14px', fontSize: '11px' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--color-primary)' }}>
-                      <div style={{ width: '12px', height: '3px', background: 'var(--color-primary)' }} />
+                  <div className="flex gap-3.5 text-xs">
+                    <span className="flex items-center gap-1.5 text-primary font-medium">
+                      <div className="w-3 h-0.5 bg-primary" />
                       PINO Surrogate
                     </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--color-warning)' }}>
-                      <div style={{ width: '12px', height: '3px', borderTop: '2px dashed var(--color-warning)' }} />
+                    <span className="flex items-center gap-1.5 text-amber-400 font-medium">
+                      <div className="w-3 h-0.5 border-t border-dashed border-amber-400" />
                       USGS MODFLOW 6
                     </span>
                   </div>
                 </div>
 
                 {/* SVG Visual Chart */}
-                <div style={{ width: '100%', height: '135px', position: 'relative' }}>
+                <div className="w-full h-32 relative">
                   <svg width="100%" height="100%" viewBox="0 0 600 130" preserveAspectRatio="none">
                     <line x1="0" y1="20" x2="600" y2="20" stroke="rgba(255,255,255,0.08)" />
                     <line x1="0" y1="65" x2="600" y2="65" stroke="rgba(255,255,255,0.08)" />
@@ -223,7 +186,7 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
                         return i === 0 ? `M ${px} ${py}` : `${acc} L ${px} ${py}`;
                       }, '')}
                       fill="none"
-                      stroke="var(--color-primary)"
+                      stroke="hsl(187, 92%, 48%)"
                       strokeWidth="2.5"
                     />
 
@@ -235,14 +198,14 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
                         return i === 0 ? `M ${px} ${py}` : `${acc} L ${px} ${py}`;
                       }, '')}
                       fill="none"
-                      stroke="var(--color-warning)"
+                      stroke="hsl(38, 92%, 50%)"
                       strokeWidth="2"
                       strokeDasharray="4 4"
                     />
                   </svg>
                 </div>
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-dim)', marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
+                <div className="flex justify-between text-[10px] text-text-dim mt-1 font-mono tabular-nums">
                   <span>-1,600 m (West Boundary)</span>
                   <span>Extraction Center (0 m)</span>
                   <span>+1,600 m (East Boundary)</span>
@@ -250,17 +213,9 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
               </div>
 
               {/* Parity Status Badge */}
-              <div style={{
-                background: 'hsla(158, 85%, 44%, 0.1)',
-                border: '1px solid hsla(158, 85%, 44%, 0.3)',
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-sm)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}>
-                <ShieldCheck size={20} color="var(--color-success)" style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: '12px', color: 'var(--color-success)', fontWeight: 500, lineHeight: 1.4 }}>
+              <div className="bg-success/10 border border-success/30 p-3 rounded-xl flex items-center gap-2.5">
+                <ShieldCheck size={20} className="text-success shrink-0" />
+                <span className="text-xs text-emerald-300 font-medium leading-relaxed">
                   <strong>ISO/IEC 25010 Verification Passed:</strong> Neural surrogate predictions match USGS MODFLOW 6 within the 5% error tolerance across the domain, confirming physical consistency.
                 </span>
               </div>
@@ -270,21 +225,20 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
         </div>
 
         {/* Footer */}
-        <div style={{
-          padding: '14px 24px',
-          borderTop: '1px solid var(--border-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'var(--bg-surface)'
-        }}>
+        <div className="p-3.5 px-6 border-t border-white/10 flex items-center justify-between bg-surface-elevated/70">
           {isDone ? (
-            <button className="btn btn-secondary btn-sm" onClick={handleExportCSV}>
+            <button 
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated hover:bg-white/10 border border-white/10 text-white transition-all cursor-pointer"
+              onClick={handleExportCSV}
+            >
               <Download size={14} /> Export Profile Data (.CSV)
             </button>
           ) : <div />}
 
-          <button className="btn btn-secondary" onClick={onClose}>
+          <button 
+            className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/15 text-white border border-white/10 transition-all cursor-pointer"
+            onClick={onClose}
+          >
             Close Report
           </button>
         </div>

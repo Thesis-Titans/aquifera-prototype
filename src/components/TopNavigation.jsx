@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, Maximize, RotateCcw, BookOpen, Layers, Sliders } from 'lucide-react';
+import { Camera, Maximize, RotateCcw, BookOpen, Sliders } from 'lucide-react';
 import { SCENARIO_PRESETS } from '../data/scenarioPresets';
 
 export default function TopNavigation({
@@ -22,61 +22,34 @@ export default function TopNavigation({
   };
 
   return (
-    <header style={{
-      height: 'var(--nav-height)',
-      background: 'var(--bg-surface)',
-      backdropFilter: 'blur(16px)',
-      borderBottom: '1px solid var(--border-subtle)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 16px',
-      zIndex: 30
-    }}>
+    <header className="h-[60px] bg-surface/90 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-4 z-30 shrink-0">
       {/* Brand & Project Metadata */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-        <div style={{
-          width: '36px',
-          height: '36px',
-          borderRadius: '50%',
-          overflow: 'hidden',
-          border: '1.5px solid var(--color-primary)',
-          boxShadow: '0 0 14px var(--color-primary-glow)',
-          background: '#040d1a',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0
-        }}>
+      <div className="flex items-center gap-2.5 shrink-0">
+        <div className="w-9 h-9 rounded-full overflow-hidden border border-primary/70 shadow-[0_0_12px_rgba(34,211,238,0.3)] bg-[#040d1a] flex items-center justify-center shrink-0">
           <img 
             src="/aquifera-logo.png" 
             alt="Aquifera Brandmark" 
-            style={{ 
-              width: '130%', 
-              height: '130%', 
-              objectFit: 'cover',
-              objectPosition: 'center 18%' 
-            }} 
+            className="w-[130%] h-[130%] object-cover object-[center_18%]"
           />
         </div>
 
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <h1 style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '-0.3px', color: 'var(--text-main)' }}>
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-sm font-extrabold tracking-tight text-white">
               AQUIFERA
             </h1>
-            <span className="badge badge-primary" style={{ fontSize: '9px', padding: '2px 6px' }}>
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-primary/15 text-primary border border-primary/30">
               SIMULATION
             </span>
           </div>
-          <p className="nav-brand-subtitle" style={{ fontSize: '9.5px', color: 'var(--text-dim)', letterSpacing: '0.4px', fontWeight: 600 }}>
+          <p className="nav-brand-subtitle text-[9.5px] text-text-dim tracking-widest font-semibold">
             SIMULATE • VERIFY • SUSTAIN
           </p>
         </div>
       </div>
 
       {/* Preset Scenarios for Presentation Defense (Horizontally scrollable on tablets) */}
-      <div className="presets-scroll-container">
+      <div className="presets-scroll-container flex items-center gap-1.5 overflow-x-auto max-w-[46vw] py-1 px-1 rounded-lg border border-white/5 bg-deep/40">
         {SCENARIO_PRESETS.map((preset) => {
           const isActive = activePresetId === preset.id;
           const labelMap = {
@@ -85,19 +58,17 @@ export default function TopNavigation({
             recharge: '3. Recharge',
             catastrophic: '4. Drought'
           };
-          const displayName = labelMap[preset.id] || preset.name.split('.')[1].trim();
+          const displayName = labelMap[preset.id] || preset.name.split('.')[1]?.trim() || preset.name;
           return (
             <button
               key={preset.id}
-              className={`btn btn-sm ${isActive ? 'btn-primary' : 'btn-secondary'}`}
+              className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                isActive 
+                  ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-md shadow-cyan-500/25 scale-[1.02]' 
+                  : 'bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
+              }`}
               onClick={() => onSelectPreset(preset)}
               title={`${preset.name}\n${preset.description}`}
-              style={{
-                fontSize: '11px',
-                padding: '4px 8px',
-                borderRadius: 'var(--radius-sm)',
-                whiteSpace: 'nowrap'
-              }}
             >
               {displayName}
             </button>
@@ -106,27 +77,27 @@ export default function TopNavigation({
       </div>
 
       {/* Action Tools (Guide, Screenshot, Reset, Controls Toggle, Fullscreen) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+      <div className="flex items-center gap-1.5 shrink-0">
         <button
-          className="btn btn-secondary btn-sm"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-primary/50 transition-all cursor-pointer"
           onClick={onOpenGuide}
           title="Open Hydrogeology & Architecture Guide"
         >
-          <BookOpen size={14} color="var(--color-primary)" />
+          <BookOpen size={14} className="text-primary" />
           <span className="btn-label-responsive">Guide</span>
         </button>
 
         <button
-          className="btn btn-secondary btn-sm"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-primary/50 transition-all cursor-pointer"
           onClick={onCaptureScreenshot}
           title="Capture clean PNG snapshot of the 3D scene for your presentation slides"
         >
-          <Camera size={14} color="var(--color-primary)" />
+          <Camera size={14} className="text-primary" />
           <span className="btn-label-responsive">Snapshot</span>
         </button>
 
         <button
-          className="btn btn-secondary btn-sm"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-white/20 transition-all cursor-pointer"
           onClick={onResetParams}
           title="Reset simulation parameters to default baseline"
         >
@@ -136,7 +107,11 @@ export default function TopNavigation({
 
         {/* Sidebar Drawer Toggle for Tablet / Mobile */}
         <button
-          className={`btn btn-sm ${isSidebarOpen ? 'btn-primary' : 'btn-secondary'}`}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+            isSidebarOpen 
+              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-md shadow-cyan-500/20' 
+              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10'
+          }`}
           onClick={onToggleSidebar}
           title={isSidebarOpen ? "Close Controls Panel" : "Open Controls Panel"}
         >
@@ -145,7 +120,7 @@ export default function TopNavigation({
         </button>
 
         <button
-          className="btn btn-secondary btn-sm"
+          className="inline-flex items-center justify-center p-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-white/20 transition-all cursor-pointer"
           onClick={toggleFullscreen}
           title="Toggle Fullscreen Presentation Mode"
         >

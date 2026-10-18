@@ -415,51 +415,54 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
   };
 
   return (
-    <div className="canvas-wrapper" style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+    <div className="canvas-wrapper relative w-full h-full overflow-hidden select-none">
+      <div ref={containerRef} className="w-full h-full" />
 
       {/* Floating 3D Navigation Controls (NN/g: Visibility & Control) */}
-      <div className="glass-panel camera-controls-bar" style={{
-        position: 'absolute',
-        top: '16px',
-        left: '16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '6px 10px',
-        zIndex: 10,
-        overflowX: 'auto',
-        maxWidth: 'calc(100% - 140px)',
-        scrollbarWidth: 'none'
-      }}>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', marginRight: '4px', flexShrink: 0 }}>
-          <Compass size={14} color="var(--color-primary)" /> CAMERA
+      <div className="camera-controls-bar absolute top-4 left-4 flex items-center gap-1.5 p-1.5 px-2.5 z-10 overflow-x-auto max-w-[calc(100%-140px)] rounded-xl bg-surface/90 backdrop-blur-xl border border-white/10 shadow-xl">
+        <span className="text-[11px] text-text-muted font-semibold flex items-center gap-1 mr-1 shrink-0">
+          <Compass size={14} className="text-primary" /> CAMERA
         </span>
 
         <button
-          className={`btn btn-sm ${cameraView === 'isometric' ? 'btn-primary' : 'btn-secondary'}`}
+          className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+            cameraView === 'isometric' 
+              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-sm shadow-cyan-500/25' 
+              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
+          }`}
           onClick={() => setPresetCamera('isometric')}
         >
           3D Oblique
         </button>
         <button
-          className={`btn btn-sm ${cameraView === 'crossSection' ? 'btn-primary' : 'btn-secondary'}`}
+          className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+            cameraView === 'crossSection' 
+              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-sm shadow-cyan-500/25' 
+              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
+          }`}
           onClick={() => setPresetCamera('crossSection')}
         >
           Cross Section
         </button>
         <button
-          className={`btn btn-sm ${cameraView === 'top' ? 'btn-primary' : 'btn-secondary'}`}
+          className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+            cameraView === 'top' 
+              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-sm shadow-cyan-500/25' 
+              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
+          }`}
           onClick={() => setPresetCamera('top')}
         >
           Plan View (Top)
         </button>
 
-        <div style={{ width: '1px', height: '16px', background: 'var(--border-subtle)', margin: '0 4px', flexShrink: 0 }} />
+        <div className="w-[1px] h-4 bg-white/10 mx-1 shrink-0" />
 
         <button
-          className={`btn btn-sm ${isCutaway ? 'btn-secondary' : ''}`}
-          style={{ borderColor: isCutaway ? 'var(--color-primary)' : 'var(--border-subtle)' }}
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+            isCutaway 
+              ? 'bg-primary/20 text-primary border border-primary/40' 
+              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted border border-white/5'
+          }`}
           onClick={() => setIsCutaway(!isCutaway)}
           title="Toggle 50% Volumetric Cutaway to inspect internal clay compaction"
         >
@@ -467,7 +470,11 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         </button>
 
         <button
-          className="btn btn-sm btn-secondary"
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+            showWaterTable 
+              ? 'bg-primary/20 text-primary border border-primary/40' 
+              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted border border-white/5'
+          }`}
           onClick={() => setShowWaterTable(!showWaterTable)}
           title="Toggle Piezometric Water Table Plane"
         >
@@ -475,7 +482,11 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         </button>
 
         <button
-          className="btn btn-sm btn-secondary"
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+            isWireframe 
+              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' 
+              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-muted border border-white/5'
+          }`}
           onClick={() => setIsWireframe(!isWireframe)}
           title="Toggle Terrain Mesh Wireframe"
         >
@@ -484,54 +495,37 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
       </div>
 
       {/* Consolidated Geological Status & Exaggeration Toolbar (Bottom Dock) */}
-      <div className="glass-panel bottom-dock-bar" style={{
-        position: 'absolute',
-        bottom: '16px',
-        left: '16px',
-        right: '16px',
-        padding: '8px 16px',
-        zIndex: 10,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '12px'
-      }}>
+      <div className="bottom-dock-bar absolute bottom-4 left-4 right-4 p-2.5 px-4 z-10 flex items-center justify-between flex-wrap gap-3 rounded-xl bg-surface/90 backdrop-blur-xl border border-white/10 shadow-xl">
         {/* Stratum Depth Legend */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '11px' }}>
-          <span style={{ fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.4px', fontSize: '10px' }}>
+        <div className="flex items-center gap-3.5 text-[11px]">
+          <span className="font-bold text-text-dim uppercase tracking-wider text-[10px]">
             STRATA:
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#38bdf8' }} />
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-[2px] bg-[#38bdf8]" />
             <span>0m Surface</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#c89666' }} />
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-[2px] bg-[#c89666]" />
             <span>-30m Sand</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#7c2d12' }} />
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-[2px] bg-[#7c2d12]" />
             <span>-60m Clay</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#1e3a8a' }} />
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-[2px] bg-[#1e3a8a]" />
             <span>-120m Aquifer</span>
           </div>
         </div>
 
         {/* Subsidence Colormap Legend */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-text-muted font-medium">
             Settlement (Δz):
           </span>
-          <div style={{
-            width: '120px',
-            height: '8px',
-            borderRadius: '4px',
-            background: 'linear-gradient(to right, #38bdf8, #f59e0b, #ef4444)'
-          }} />
-          <div style={{ display: 'flex', gap: '6px', fontSize: '10px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+          <div className="w-28 h-2 rounded-full bg-linear-to-r from-[#38bdf8] via-[#f59e0b] to-[#ef4444]" />
+          <div className="flex gap-1.5 text-[10px] text-text-dim font-mono tabular-nums">
             <span>0 cm</span>
             <span>→</span>
             <span>≥25 cm</span>
@@ -539,17 +533,17 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         </div>
 
         {/* Vertical Exaggeration Slider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Exaggeration:</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-text-muted">Exaggeration:</span>
           <input
             type="range"
             min="1"
             max="30"
             value={verticalExaggeration}
             onChange={(e) => setVerticalExaggeration(Number(e.target.value))}
-            style={{ width: '85px' }}
+            className="w-20 cursor-pointer accent-primary"
           />
-          <span className="mono-val" style={{ color: 'var(--color-primary)', fontSize: '11px', minWidth: '24px' }}>
+          <span className="font-mono tabular-nums text-primary text-[11px] font-bold min-w-[28px]">
             {verticalExaggeration}×
           </span>
         </div>

@@ -39,38 +39,64 @@ export default function ControlsPanel({
     setLayerVisibilities(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // Compute Subsidence Severity Level (Scientific & Defense Metric)
+  const maxS = physicalState.maxSubsidenceCm;
+  let riskTier = {
+    level: 1,
+    label: 'Minimal (Elastic)',
+    color: 'text-emerald-400',
+    bgColor: 'bg-emerald-500/15',
+    borderColor: 'border-emerald-500/30',
+    desc: 'Subsurface strains are within elastic preconsolidation bounds; 100% reversible.'
+  };
+
+  if (maxS > 25) {
+    riskTier = {
+      level: 4,
+      label: 'Critical Inelastic Yielding',
+      color: 'text-rose-400',
+      bgColor: 'bg-rose-500/20',
+      borderColor: 'border-rose-500/40',
+      desc: 'Permanent aquitard skeletal collapse. Permanent loss of pore volume storage.'
+    };
+  } else if (maxS > 15) {
+    riskTier = {
+      level: 3,
+      label: 'Severe Consolidation',
+      color: 'text-amber-400',
+      bgColor: 'bg-amber-500/20',
+      borderColor: 'border-amber-500/40',
+      desc: 'Aquitard pore pressure depleted; plastic deformation initiated.'
+    };
+  } else if (maxS > 5) {
+    riskTier = {
+      level: 2,
+      label: 'Moderate Settlement',
+      color: 'text-cyan-400',
+      bgColor: 'bg-cyan-500/15',
+      borderColor: 'border-cyan-500/30',
+      desc: 'Noticeable differential settlement; hydraulic head approaching yield envelope.'
+    };
+  }
+
   return (
-    <aside className={`glass-panel app-sidebar ${isOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+    <aside className={`app-sidebar ${isOpen ? 'sidebar-open' : 'sidebar-closed'} bg-surface/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl`}>
       {/* Header */}
-      <div style={{
-        padding: '14px 18px',
-        borderBottom: '1px solid var(--border-subtle)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Sliders size={17} color="var(--color-primary)" />
-          <h2 style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '-0.2px' }}>
+      <div className="p-3.5 px-4.5 border-b border-white/10 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sliders size={17} className="text-primary" />
+          <h2 className="text-sm font-bold tracking-tight text-white">
             Parameters
           </h2>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span className="badge badge-primary" style={{ fontSize: '9px', padding: '2px 6px' }}>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-primary/15 text-primary border border-primary/30">
             Real-Time
           </span>
           {onClose && (
             <button
               onClick={onClose}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-muted)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '2px'
-              }}
+              className="p-1 rounded text-text-muted hover:text-white transition-colors cursor-pointer"
               title="Close Drawer"
             >
               <X size={17} />
@@ -80,57 +106,37 @@ export default function ControlsPanel({
       </div>
 
       {/* Scrollable Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
         
-        {/* Dynamic Critical State Alert (NN/g: Clear Feedback & Actionable Remedy) */}
+        {/* Dynamic Critical State Alert */}
         {physicalState.isPreconsolidationBreached ? (
-          <div style={{
-            background: 'var(--color-danger-bg)',
-            border: '1px solid var(--border-danger)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '10px 12px',
-            boxShadow: 'var(--shadow-danger-glow)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <AlertTriangle size={16} color="var(--color-danger)" />
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-danger)', letterSpacing: '0.2px' }}>
+          <div className="bg-danger/15 border border-danger/40 rounded-lg p-3 shadow-lg shadow-rose-950/40">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1.5">
+                <AlertTriangle size={16} className="text-danger" />
+                <span className="text-[11px] font-bold text-danger tracking-wide">
                   PRECONSOLIDATION BREACHED
                 </span>
               </div>
-              <span className="mono-val" style={{ fontSize: '10px', color: 'var(--color-danger)', fontWeight: 700 }}>
+              <span className="font-mono tabular-nums text-[10px] text-danger font-bold">
                 {physicalState.inelasticPercent}% Permanent
               </span>
             </div>
-            <p style={{ fontSize: '11px', color: 'hsl(350, 80%, 90%)', lineHeight: 1.35, marginBottom: '6px' }}>
-              Head dropped to <strong className="mono-val">{physicalState.minHead} m</strong> (threshold: 88.0 m). Clay matrix collapsed.
+            <p className="text-[11px] text-rose-200/90 leading-tight mb-2">
+              Head dropped to <strong className="font-mono tabular-nums">{physicalState.minHead} m</strong> (threshold: 88.0 m). Clay matrix collapsed.
             </p>
-            <div style={{ 
-              background: 'rgba(0, 0, 0, 0.3)', 
-              padding: '4px 8px', 
-              borderRadius: '4px', 
-              fontSize: '10px', 
-              color: 'hsl(350, 75%, 92%)' 
-            }}>
+            <div className="bg-black/30 p-1.5 px-2 rounded text-[10px] text-rose-100">
               <strong>Remedy:</strong> Reduce Q ≤ 1,400 m³/d or increase R ≥ 2.5 mm/d.
             </div>
           </div>
         ) : (
-          <div style={{
-            background: 'var(--color-success-bg)',
-            border: '1px solid hsla(158, 85%, 44%, 0.3)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '8px 12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <CheckCircle2 size={16} color="var(--color-success)" style={{ flexShrink: 0 }} />
+          <div className="bg-success/15 border border-success/30 rounded-lg p-2.5 flex items-center gap-2">
+            <CheckCircle2 size={16} className="text-success shrink-0" />
             <div>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-success)' }}>
+              <div className="text-[11px] font-semibold text-success">
                 Elastic Range Maintained
               </div>
-              <div style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+              <div className="text-[10.5px] text-text-muted">
                 Head ({physicalState.minHead} m) ≥ 88.0 m. Subsidence is 100% reversible.
               </div>
             </div>
@@ -138,49 +144,63 @@ export default function ControlsPanel({
         )}
 
         {/* Primary Readout Metrics Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '10px'
-        }}>
-          <div className="glass-panel" style={{ padding: '10px 12px', background: 'var(--bg-surface-elevated)' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="p-2.5 px-3 rounded-lg bg-surface-elevated/90 border border-white/5">
+            <span className="text-[11px] text-text-muted block mb-0.5">
               Max Settlement (Δz)
             </span>
-            <span className="mono-val" style={{
-              fontSize: '20px',
-              fontWeight: 700,
-              color: physicalState.maxSubsidenceCm > 15 ? 'var(--color-danger)' : 'var(--color-primary)'
-            }}>
-              {physicalState.maxSubsidenceCm} <span style={{ fontSize: '12px', fontWeight: 500 }}>cm</span>
+            <span className={`font-mono tabular-nums text-xl font-bold ${
+              physicalState.maxSubsidenceCm > 15 ? 'text-danger' : 'text-primary'
+            }`}>
+              {physicalState.maxSubsidenceCm} <span className="text-xs font-normal">cm</span>
             </span>
           </div>
 
-          <div className="glass-panel" style={{ padding: '10px 12px', background: 'var(--bg-surface-elevated)' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>
+          <div className="p-2.5 px-3 rounded-lg bg-surface-elevated/90 border border-white/5">
+            <span className="text-[11px] text-text-muted block mb-0.5">
               Lowest Aquifer Head (h)
             </span>
-            <span className="mono-val" style={{
-              fontSize: '20px',
-              fontWeight: 700,
-              color: physicalState.isPreconsolidationBreached ? 'var(--color-danger)' : 'var(--color-secondary)'
-            }}>
-              {physicalState.minHead} <span style={{ fontSize: '12px', fontWeight: 500 }}>m</span>
+            <span className={`font-mono tabular-nums text-xl font-bold ${
+              physicalState.isPreconsolidationBreached ? 'text-danger' : 'text-secondary'
+            }`}>
+              {physicalState.minHead} <span className="text-xs font-normal">m</span>
             </span>
           </div>
         </div>
 
+        {/* Subsidence Severity Risk Gauge */}
+        <div className={`p-2.5 rounded-lg border ${riskTier.borderColor} ${riskTier.bgColor} flex flex-col gap-1.5`}>
+          <div className="flex justify-between items-center text-[11px]">
+            <span className="font-bold uppercase tracking-wider text-text-dim text-[10px]">
+              Subsidence Severity Level
+            </span>
+            <span className={`font-bold ${riskTier.color}`}>
+              Tier {riskTier.level}: {riskTier.label}
+            </span>
+          </div>
+          {/* 4-segment visual gauge bar */}
+          <div className="grid grid-cols-4 gap-1 h-1.5 w-full">
+            <div className={`rounded-full transition-all ${riskTier.level >= 1 ? 'bg-emerald-400' : 'bg-white/10'}`} />
+            <div className={`rounded-full transition-all ${riskTier.level >= 2 ? 'bg-cyan-400' : 'bg-white/10'}`} />
+            <div className={`rounded-full transition-all ${riskTier.level >= 3 ? 'bg-amber-400' : 'bg-white/10'}`} />
+            <div className={`rounded-full transition-all ${riskTier.level >= 4 ? 'bg-rose-500 animate-pulse' : 'bg-white/10'}`} />
+          </div>
+          <p className="text-[10.5px] text-text-muted leading-tight">
+            {riskTier.desc}
+          </p>
+        </div>
+
         {/* Parameter Sliders with Direct Numeric Inputs (NN/g Heuristic #7) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="flex flex-col gap-4">
           
           {/* Pumping Rate Control */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Droplet size={14} color="var(--color-primary)" /> Pumping Discharge (Q)
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                <Droplet size={14} className="text-primary" /> Pumping Discharge (Q)
                 <button 
                   onClick={() => setActiveTooltip(activeTooltip === 'Q' ? null : 'Q')}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: 0 }}
+                  className="text-text-dim hover:text-white transition-colors cursor-pointer p-0"
                   title="Click for parameter definition"
                 >
                   <HelpCircle size={12} />
@@ -188,7 +208,7 @@ export default function ControlsPanel({
               </span>
               
               {/* Dual Direct Input Box */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div className="flex items-center gap-1">
                 <input
                   type="number"
                   min="0"
@@ -196,24 +216,14 @@ export default function ControlsPanel({
                   step="50"
                   value={params.pumpingRate}
                   onChange={(e) => updateParam('pumpingRate', e.target.value)}
-                  className="mono-val"
-                  style={{
-                    width: '64px',
-                    padding: '2px 6px',
-                    background: 'var(--bg-surface-elevated)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '4px',
-                    color: 'var(--color-primary)',
-                    fontSize: '12px',
-                    textAlign: 'right'
-                  }}
+                  className="w-16 px-1.5 py-0.5 bg-surface-elevated border border-white/10 rounded text-right font-mono tabular-nums text-xs text-primary focus:border-primary focus:outline-none"
                 />
-                <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>m³/d</span>
+                <span className="text-[11px] text-text-dim">m³/d</span>
               </div>
             </div>
 
             {activeTooltip === 'Q' && (
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'var(--bg-surface-elevated)', padding: '6px 8px', borderRadius: '4px', marginBottom: '6px', lineHeight: 1.35 }}>
+              <div className="text-[11px] text-text-muted bg-surface-elevated/90 p-2 rounded mb-1.5 border border-white/5 leading-snug">
                 Volumetric pumping extraction rate from deep municipal and industrial production wells.
               </div>
             )}
@@ -225,8 +235,9 @@ export default function ControlsPanel({
               step="50"
               value={params.pumpingRate}
               onChange={(e) => updateParam('pumpingRate', e.target.value)}
+              className="w-full accent-primary cursor-pointer"
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-dim)', marginTop: '2px' }}>
+            <div className="flex justify-between text-[10px] text-text-dim mt-0.5">
               <span>0 (Idle)</span>
               <span>1,200 (Municipal)</span>
               <span>2,500 (Heavy)</span>
@@ -235,19 +246,19 @@ export default function ControlsPanel({
 
           {/* Stress Period Duration Control */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Clock size={14} color="var(--color-secondary)" /> Stress Duration (t)
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                <Clock size={14} className="text-secondary" /> Stress Duration (t)
                 <button 
                   onClick={() => setActiveTooltip(activeTooltip === 't' ? null : 't')}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: 0 }}
+                  className="text-text-dim hover:text-white transition-colors cursor-pointer p-0"
                   title="Click for parameter definition"
                 >
                   <HelpCircle size={12} />
                 </button>
               </span>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div className="flex items-center gap-1">
                 <input
                   type="number"
                   min="10"
@@ -255,24 +266,14 @@ export default function ControlsPanel({
                   step="5"
                   value={params.pumpingDays}
                   onChange={(e) => updateParam('pumpingDays', e.target.value)}
-                  className="mono-val"
-                  style={{
-                    width: '64px',
-                    padding: '2px 6px',
-                    background: 'var(--bg-surface-elevated)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '4px',
-                    color: 'var(--color-secondary)',
-                    fontSize: '12px',
-                    textAlign: 'right'
-                  }}
+                  className="w-16 px-1.5 py-0.5 bg-surface-elevated border border-white/10 rounded text-right font-mono tabular-nums text-xs text-secondary focus:border-secondary focus:outline-none"
                 />
-                <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>days</span>
+                <span className="text-[11px] text-text-dim">days</span>
               </div>
             </div>
 
             {activeTooltip === 't' && (
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'var(--bg-surface-elevated)', padding: '6px 8px', borderRadius: '4px', marginBottom: '6px', lineHeight: 1.35 }}>
+              <div className="text-[11px] text-text-muted bg-surface-elevated/90 p-2 rounded mb-1.5 border border-white/5 leading-snug">
                 Duration of continuous groundwater withdrawal before seasonal rest or aquifer recovery.
               </div>
             )}
@@ -284,8 +285,9 @@ export default function ControlsPanel({
               step="5"
               value={params.pumpingDays}
               onChange={(e) => updateParam('pumpingDays', e.target.value)}
+              className="w-full accent-primary cursor-pointer"
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-dim)', marginTop: '2px' }}>
+            <div className="flex justify-between text-[10px] text-text-dim mt-0.5">
               <span>10 days</span>
               <span>180 days (Seasonal)</span>
               <span>365 days (1 yr)</span>
@@ -294,19 +296,19 @@ export default function ControlsPanel({
 
           {/* Infiltration Recharge Rate Control */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Droplet size={14} color="var(--color-success)" /> Surface Recharge (R)
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                <Droplet size={14} className="text-success" /> Surface Recharge (R)
                 <button 
                   onClick={() => setActiveTooltip(activeTooltip === 'R' ? null : 'R')}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: 0 }}
+                  className="text-text-dim hover:text-white transition-colors cursor-pointer p-0"
                   title="Click for parameter definition"
                 >
                   <HelpCircle size={12} />
                 </button>
               </span>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div className="flex items-center gap-1">
                 <input
                   type="number"
                   min="0"
@@ -314,24 +316,14 @@ export default function ControlsPanel({
                   step="0.1"
                   value={params.rechargeRateMmDay}
                   onChange={(e) => updateParam('rechargeRateMmDay', e.target.value)}
-                  className="mono-val"
-                  style={{
-                    width: '64px',
-                    padding: '2px 6px',
-                    background: 'var(--bg-surface-elevated)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '4px',
-                    color: 'var(--color-success)',
-                    fontSize: '12px',
-                    textAlign: 'right'
-                  }}
+                  className="w-16 px-1.5 py-0.5 bg-surface-elevated border border-white/10 rounded text-right font-mono tabular-nums text-xs text-success focus:border-success focus:outline-none"
                 />
-                <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>mm/d</span>
+                <span className="text-[11px] text-text-dim">mm/d</span>
               </div>
             </div>
 
             {activeTooltip === 'R' && (
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'var(--bg-surface-elevated)', padding: '6px 8px', borderRadius: '4px', marginBottom: '6px', lineHeight: 1.35 }}>
+              <div className="text-[11px] text-text-muted bg-surface-elevated/90 p-2 rounded mb-1.5 border border-white/5 leading-snug">
                 Net surface precipitation percolation and artificial recharge basins replenishing the water table.
               </div>
             )}
@@ -343,8 +335,9 @@ export default function ControlsPanel({
               step="0.1"
               value={params.rechargeRateMmDay}
               onChange={(e) => updateParam('rechargeRateMmDay', e.target.value)}
+              className="w-full accent-primary cursor-pointer"
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-dim)', marginTop: '2px' }}>
+            <div className="flex justify-between text-[10px] text-text-dim mt-0.5">
               <span>0 (Drought)</span>
               <span>2.5 (Normal)</span>
               <span>5.0 (Managed)</span>
@@ -352,25 +345,25 @@ export default function ControlsPanel({
           </div>
 
           {/* Well Configuration Cluster Toggle */}
-          <div style={{
-            background: 'var(--bg-surface-elevated)',
-            padding: '10px 12px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--border-subtle)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Well Distribution:</span>
-            <div style={{ display: 'flex', gap: '6px' }}>
+          <div className="bg-surface-elevated/90 p-2.5 px-3 rounded-lg border border-white/5 flex items-center justify-between">
+            <span className="text-xs text-text-muted">Well Distribution:</span>
+            <div className="flex gap-1.5">
               <button
-                className={`btn btn-sm ${params.wellCount === 1 ? 'btn-primary' : 'btn-secondary'}`}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-all cursor-pointer ${
+                  params.wellCount === 1 
+                    ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-sm' 
+                    : 'bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
+                }`}
                 onClick={() => updateParam('wellCount', 1)}
               >
                 Single Well
               </button>
               <button
-                className={`btn btn-sm ${params.wellCount === 2 ? 'btn-primary' : 'btn-secondary'}`}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-all cursor-pointer ${
+                  params.wellCount === 2 
+                    ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-sm' 
+                    : 'bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/5'
+                }`}
                 onClick={() => updateParam('wellCount', 2)}
               >
                 2-Well Cluster
@@ -381,12 +374,12 @@ export default function ControlsPanel({
         </div>
 
         {/* Stratigraphy Layer Inspector (Compact 3-Pill Toggle) */}
-        <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '10px' }}>
-          <span style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
+        <div className="border-t border-white/10 pt-2.5">
+          <span className="text-[10.5px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5 mb-2">
             <Layers size={13} /> Geological Strata Visibility
           </span>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+          <div className="grid grid-cols-3 gap-1.5">
             {DOMAIN.layers.map(layer => {
               const isVis = layerVisibilities[layer.id];
               const shortNames = {
@@ -398,23 +391,15 @@ export default function ControlsPanel({
                 <button
                   key={layer.id}
                   onClick={() => toggleLayer(layer.id)}
-                  className={`btn btn-sm ${isVis ? 'btn-secondary' : ''}`}
-                  style={{
-                    padding: '6px 4px',
-                    fontSize: '10.5px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '3px',
-                    border: '1px solid',
-                    borderColor: isVis ? layer.color : 'var(--border-subtle)',
-                    opacity: isVis ? 1 : 0.4,
-                    background: isVis ? 'var(--bg-surface-elevated)' : 'transparent'
-                  }}
+                  className={`p-1.5 py-2 rounded-lg flex flex-col items-center gap-1 border transition-all cursor-pointer ${
+                    isVis 
+                      ? 'bg-surface-elevated/90 border-primary/50 opacity-100 shadow-sm' 
+                      : 'bg-transparent border-white/5 opacity-40 hover:opacity-70'
+                  }`}
                   title={`${layer.name} (${layer.thickness} m)`}
                 >
-                  <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: layer.color }} />
-                  <span style={{ fontSize: '10px', fontWeight: 600, color: isVis ? 'var(--text-main)' : 'var(--text-dim)' }}>
+                  <div className="w-2 h-2 rounded-[2px]" style={{ background: layer.color }} />
+                  <span className={`text-[10px] font-semibold ${isVis ? 'text-white' : 'text-text-dim'}`}>
                     {shortNames[layer.id] || layer.name}
                   </span>
                 </button>
@@ -426,14 +411,9 @@ export default function ControlsPanel({
       </div>
 
       {/* Verification Action Footer */}
-      <div style={{
-        padding: '14px 20px',
-        borderTop: '1px solid var(--border-subtle)',
-        background: 'var(--bg-surface-elevated)'
-      }}>
+      <div className="p-3.5 px-4.5 border-t border-white/10 bg-surface-elevated/90">
         <button
-          className="btn btn-primary"
-          style={{ width: '100%', padding: '10px', fontWeight: 600 }}
+          className="w-full py-2.5 px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 bg-linear-to-r from-primary to-cyan-400 text-deep shadow-lg shadow-cyan-500/25 hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer"
           onClick={onOpenVerification}
         >
           <Cpu size={16} /> Run USGS MODFLOW 6 Verification
