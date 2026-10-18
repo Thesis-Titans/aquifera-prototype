@@ -455,7 +455,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
           Plan View (Top)
         </button>
 
-        <div className="w-[1px] h-4 bg-white/10 mx-1 shrink-0" />
+        <div className="w-px h-4 bg-white/10 mx-1 shrink-0" />
 
         <button
           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
@@ -502,19 +502,19 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
             STRATA:
           </span>
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-[2px] bg-[#38bdf8]" />
+            <div className="w-2 h-2 rounded-xs bg-[#38bdf8]" />
             <span>0m Surface</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-[2px] bg-[#c89666]" />
+            <div className="w-2 h-2 rounded-xs bg-[#c89666]" />
             <span>-30m Sand</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-[2px] bg-[#7c2d12]" />
+            <div className="w-2 h-2 rounded-xs bg-[#7c2d12]" />
             <span>-60m Clay</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-[2px] bg-[#1e3a8a]" />
+            <div className="w-2 h-2 rounded-xs bg-[#1e3a8a]" />
             <span>-120m Aquifer</span>
           </div>
         </div>
@@ -543,7 +543,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
             onChange={(e) => setVerticalExaggeration(Number(e.target.value))}
             className="w-20 cursor-pointer accent-primary"
           />
-          <span className="font-mono tabular-nums text-primary text-[11px] font-bold min-w-[28px]">
+          <span className="font-mono tabular-nums text-primary text-[11px] font-bold min-w-7">
             {verticalExaggeration}×
           </span>
         </div>

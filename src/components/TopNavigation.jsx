@@ -22,7 +22,7 @@ export default function TopNavigation({
   };
 
   return (
-    <header className="h-[60px] bg-surface/90 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-4 z-30 shrink-0">
+    <header className="h-15 bg-surface/90 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-4 z-30 shrink-0">
       {/* Brand & Project Metadata */}
       <div className="flex items-center gap-2.5 shrink-0">
         <div className="w-9 h-9 rounded-full overflow-hidden border border-primary/70 shadow-[0_0_12px_rgba(34,211,238,0.3)] bg-[#040d1a] flex items-center justify-center shrink-0">
@@ -79,48 +79,49 @@ export default function TopNavigation({
       {/* Action Tools (Guide, Screenshot, Reset, Controls Toggle, Fullscreen) */}
       <div className="flex items-center gap-1.5 shrink-0">
         <button
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-primary/50 transition-all cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-primary/50 transition-all cursor-pointer active:scale-95"
           onClick={onOpenGuide}
           title="Open Hydrogeology & Architecture Guide"
         >
           <BookOpen size={14} className="text-primary" />
-          <span className="btn-label-responsive">Guide</span>
+          <span className="hidden md:inline">Guide</span>
         </button>
 
         <button
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-primary/50 transition-all cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-primary/50 transition-all cursor-pointer active:scale-95"
           onClick={onCaptureScreenshot}
           title="Capture clean PNG snapshot of the 3D scene for your presentation slides"
         >
           <Camera size={14} className="text-primary" />
-          <span className="btn-label-responsive">Snapshot</span>
+          <span className="hidden md:inline">Snapshot</span>
         </button>
 
         <button
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-white/20 transition-all cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-white/20 transition-all cursor-pointer active:scale-95"
           onClick={onResetParams}
           title="Reset simulation parameters to default baseline"
         >
           <RotateCcw size={14} />
-          <span className="btn-label-responsive">Reset</span>
+          <span className="hidden md:inline">Reset</span>
         </button>
 
-        {/* Sidebar Drawer Toggle for Tablet / Mobile */}
+        {/* Sidebar Drawer Toggle (Responsive Controls button for Desktop & Tablet) */}
         <button
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+          id="controls-toggle-btn"
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer active:scale-95 ${
             isSidebarOpen 
-              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-md shadow-cyan-500/20' 
-              : 'bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10'
+              ? 'bg-linear-to-r from-primary to-cyan-400 text-deep font-semibold shadow-md shadow-cyan-500/25' 
+              : 'bg-surface-elevated/90 hover:bg-white/10 text-text-main border border-white/10 hover:border-primary/50'
           }`}
           onClick={onToggleSidebar}
-          title={isSidebarOpen ? "Close Controls Panel" : "Open Controls Panel"}
+          title={isSidebarOpen ? "Collapse Parameters Panel" : "Expand Parameters Panel"}
         >
           <Sliders size={14} />
-          <span className="btn-label-responsive">Controls</span>
+          <span>Controls</span>
         </button>
 
         <button
-          className="inline-flex items-center justify-center p-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-white/20 transition-all cursor-pointer"
+          className="inline-flex items-center justify-center p-1.5 rounded-lg text-xs font-medium bg-surface-elevated/80 hover:bg-white/10 text-text-main border border-white/10 hover:border-white/20 transition-all cursor-pointer active:scale-95"
           onClick={toggleFullscreen}
           title="Toggle Fullscreen Presentation Mode"
         >

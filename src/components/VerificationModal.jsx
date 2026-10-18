@@ -75,7 +75,7 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="w-[680px] max-w-full rounded-2xl bg-surface/95 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col">
+      <div className="w-170 max-w-full rounded-2xl bg-surface/95 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-4 px-6 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">

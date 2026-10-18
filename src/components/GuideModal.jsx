@@ -6,7 +6,7 @@ export default function GuideModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="w-[640px] max-w-full max-h-[85vh] rounded-2xl bg-surface/95 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col">
+      <div className="w-160 max-w-full max-h-[85vh] rounded-2xl bg-surface/95 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-4 px-6 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2.5">

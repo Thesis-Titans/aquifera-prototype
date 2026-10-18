@@ -398,7 +398,7 @@ export default function ControlsPanel({
                   }`}
                   title={`${layer.name} (${layer.thickness} m)`}
                 >
-                  <div className="w-2 h-2 rounded-[2px]" style={{ background: layer.color }} />
+                  <div className="w-2 h-2 rounded-xs" style={{ background: layer.color }} />
                   <span className={`text-[10px] font-semibold ${isVis ? 'text-white' : 'text-text-dim'}`}>
                     {shortNames[layer.id] || layer.name}
                   </span>
