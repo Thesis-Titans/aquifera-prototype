@@ -327,7 +327,7 @@ export default function MapLibreMap({
   };
 
   return (
-    <div className="relative w-full h-full min-h-[460px] bg-[#050e18] overflow-hidden select-none">
+    <div className="relative w-full h-full min-h-115 bg-[#050e18] overflow-hidden select-none">
       {/* 1. MapLibre GL Canvas Container */}
       <div ref={mapContainerRef} className="w-full h-full" />
 
@@ -372,11 +372,14 @@ export default function MapLibreMap({
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-1.5">
             <Layers size={13} className="text-cyan-400" />
-            <span className="text-xs font-bold text-slate-100">Cumulative Subsidence (2025–2050)</span>
+            <span className="text-xs font-bold text-slate-100">Cumulative Subsidence (2025-2050)</span>
           </div>
           <span className="text-[9px] font-mono text-cyan-400 font-semibold">SYNTHETIC</span>
         </div>
-        <div className="w-full h-2 rounded bg-gradient-to-r from-cyan-400 via-emerald-400 via-amber-400 to-rose-600 mb-1 border border-white/10" />
+        <div
+          className="w-full h-2 rounded mb-1 border border-white/10"
+          style={{ background: 'linear-gradient(to right, #22d3ee, #34d399, #fbbf24, #e11d48)' }}
+        />
         <div className="flex justify-between text-[10px] font-mono text-slate-300">
           <span>&lt; 2 cm</span>
           <span>10 cm</span>

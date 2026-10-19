@@ -102,7 +102,7 @@ export default function App() {
       />
 
       {/* 2. Middle Interactive Stage (Left Sidebar + Central Dual Viewport) */}
-      <main className="flex-1 flex flex-col md:flex-row gap-4 px-4 pt-3 pb-2 min-h-[520px] max-w-[1920px] w-full mx-auto">
+      <main className="flex-1 flex flex-col md:flex-row gap-4 px-4 pt-3 pb-2 min-h-130 max-w-[1920px] w-full mx-auto">
         
         {/* Left: Scenario Setup Panel Sidebar */}
         <ScenarioSetupPanel

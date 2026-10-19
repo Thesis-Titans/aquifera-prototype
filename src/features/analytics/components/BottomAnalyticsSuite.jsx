@@ -202,7 +202,10 @@ export default function BottomAnalyticsSuite({
                 Subsidence (m)
               </span>
               <div className="flex items-center gap-1.5 flex-1 py-0.5">
-                <div className="w-2.5 h-full rounded-xs bg-linear-to-b from-[#d91e18] via-[#f1c40f] via-[#00c0ef] to-[#0044ff] border border-white/20" />
+                <div
+                  className="w-2.5 h-full rounded-xs border border-white/20"
+                  style={{ background: 'linear-gradient(to bottom, #d91e18, #f1c40f, #00c0ef, #0044ff)' }}
+                />
                 <div className="flex flex-col justify-between h-full text-[8.5px] font-mono text-slate-300 text-left">
                   <span>0.30</span>
                   <span>0.20</span>
