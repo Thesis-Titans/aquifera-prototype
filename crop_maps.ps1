@@ -1,6 +1,6 @@
 Add-Type -AssemblyName System.Drawing
 
-$srcDir = "c:\Users\markc\_Projects\capstone-research\BSIT Capstone Research\Concepts\Groundwater and Land Subsidence\Aquifera\aquifera-prototype"
+$srcDir = "c:\Users\markc\_Projects\capstone-research\BSIT Capstone Research\Concepts\Aquifera\aquifera-prototype"
 $outDir = Join-Path $srcDir "public\assets\maps"
 if (!(Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir -Force }
 
