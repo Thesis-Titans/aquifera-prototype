@@ -1,104 +1,112 @@
 import React, { useState } from 'react';
-import { Map, Box, Plus, Minus, RotateCcw, Compass } from 'lucide-react';
-import MetroIloilo2DMap from './MetroIloilo2DMap';
-import Aquifer3DCanvas from './Aquifer3DCanvas';
-import MapLayersOverlay from './MapLayersOverlay';
 
 export default function CentralViewport({
-  physicalState,
-  onMoveWell,
   visualizationConfig,
   viewMode = '2D',
   setViewMode
 }) {
-  // Layer visibility state for MapLayersOverlay
-  const [layers, setLayers] = useState({
-    subsidence: true,
-    groundwater: true,
-    terrain3D: true,
-    roads: true,
-    rivers: true,
-    subsurface: true
-  });
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
 
-  // Layer visibilities format for Aquifer3DCanvas compatibility
-  const aquiferLayerVisibilities = {
-    layer1: layers.subsurface,
-    layer2: layers.subsurface,
-    layer3: layers.subsurface
+  const is3D = viewMode === '3D';
+
+  const handleZoom = (delta) => {
+    setZoomLevel(prev => Math.max(1, Math.min(2.2, prev + delta)));
   };
 
-  const handleSetAquiferLayers = (updater) => {
-    // Keep in sync
+  const handleResetZoom = () => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
   };
+
+  // Switch between 2D Subsidence, 2D Insights (with 3D Terrain layer), and 3D Simulation
+  const mapImageSrc = is3D
+    ? `${import.meta.env.BASE_URL}assets/maps/metro_iloilo_3d_simulation.png`
+    : `${import.meta.env.BASE_URL}assets/maps/metro_iloilo_2d_subsidence.png`;
+
+  const opacityFilter = (visualizationConfig?.opacity || 70) / 70;
 
   return (
-    <div className="relative flex-1 h-full w-full bg-slate-950 overflow-hidden flex flex-col">
-      {/* Top Floating Viewport Control Bar */}
-      <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-        {/* Location & View Mode Status Badge */}
-        <div className="flex items-center gap-2 bg-slate-950/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/10 shadow-lg">
-          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span className="text-xs font-bold text-white tracking-wide">
-            {viewMode === '2D' ? 'Metro Iloilo – 2D Map View' : 'Metro Iloilo – 3D View'}
-          </span>
-          <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
-            10.72°N, 122.56°E
-          </span>
-        </div>
-
-        {/* 2D Map ⇄ 3D View Toggle Pill */}
-        <div className="flex items-center bg-slate-950/90 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-lg">
-          <button
-            onClick={() => setViewMode('2D')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              viewMode === '2D'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                : 'text-slate-400 hover:text-white border border-transparent'
-            }`}
-          >
-            <Map size={13} />
-            <span>2D Map</span>
-          </button>
-
-          <button
-            onClick={() => setViewMode('3D')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              viewMode === '3D'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                : 'text-slate-400 hover:text-white border border-transparent'
-            }`}
-          >
-            <Box size={13} />
-            <span>3D View</span>
-          </button>
-        </div>
+    <div className="relative flex-1 h-full w-full bg-[#050e18] overflow-hidden select-none">
+      
+      {/* Map Graphic with Interactive Zoom & Pan */}
+      <div 
+        className="w-full h-full relative overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing"
+        style={{
+          transform: `scale(${zoomLevel}) translate(${panOffset.x}px, ${panOffset.y}px)`,
+          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
+        }}
+      >
+        <img
+          src={mapImageSrc}
+          alt={is3D ? "Metro Iloilo 3D Simulation" : "Metro Iloilo 2D Subsidence Map"}
+          className="w-full h-full object-cover pointer-events-none"
+          style={{
+            filter: `brightness(${0.88 + opacityFilter * 0.12}) contrast(${0.92 + opacityFilter * 0.08})`
+          }}
+        />
       </div>
 
-      {/* Floating Layers Overlay (Top Right) */}
-      <MapLayersOverlay
-        layers={layers}
-        setLayers={setLayers}
-        is3D={viewMode === '3D'}
+      {/* Interactive Hit-Targets mapped directly to the visual controls on the map */}
+      
+      {/* 1. Top-Right Mode Switcher: [ 2D Map ] [ 3D View ] */}
+      <div className="absolute top-2.5 right-3 z-30 flex items-center gap-1">
+        {/* 2D Map Hitbox */}
+        <button
+          onClick={() => setViewMode('2D')}
+          className="w-20 h-9 rounded-lg cursor-pointer transition-opacity opacity-0 hover:opacity-20 hover:bg-white"
+          title="Switch to 2D Map View"
+        />
+        {/* 3D View Hitbox */}
+        <button
+          onClick={() => setViewMode('3D')}
+          className="w-20 h-9 rounded-lg cursor-pointer transition-opacity opacity-0 hover:opacity-20 hover:bg-white"
+          title="Switch to 3D Simulation View"
+        />
+      </div>
+
+      {/* 2. Top-Left Badge: Click to toggle 2D / 3D */}
+      <div 
+        onClick={() => setViewMode(is3D ? '2D' : '3D')}
+        className="absolute top-2.5 left-3 w-56 h-12 rounded-xl z-30 cursor-pointer opacity-0 hover:opacity-10 hover:bg-white transition-opacity"
+        title="Toggle Map Perspective"
       />
 
-      {/* Primary Display: 2D GIS Map or 3D Three.js Stratigraphic Scene */}
-      <div className="relative flex-1 h-full w-full overflow-hidden">
-        {viewMode === '2D' ? (
-          <MetroIloilo2DMap
-            physicalState={physicalState}
-            layers={layers}
-            visualizationConfig={visualizationConfig}
-          />
-        ) : (
-          <Aquifer3DCanvas
-            physicalState={physicalState}
-            layerVisibilities={aquiferLayerVisibilities}
-            setLayerVisibilities={handleSetAquiferLayers}
-            onMoveWell={onMoveWell}
-          />
-        )}
+      {/* 3. Layers Panel: Click on 3D Terrain row to toggle 3D */}
+      <div 
+        onClick={() => setViewMode(is3D ? '2D' : '3D')}
+        className="absolute top-48 right-3 w-56 h-7 rounded z-30 cursor-pointer opacity-0 hover:opacity-20 hover:bg-white transition-opacity"
+        title="Toggle 3D Terrain Layer"
+      />
+
+      {/* 4. Zoom Controls on Right Edge */}
+      <div className="absolute bottom-16 right-3 z-30 flex flex-col gap-1 w-8">
+        {/* Zoom In */}
+        <button
+          onClick={() => handleZoom(0.2)}
+          className="w-8 h-8 rounded-lg cursor-pointer opacity-0 hover:opacity-20 hover:bg-white transition-opacity"
+          title="Zoom In"
+        />
+        {/* Zoom Out */}
+        <button
+          onClick={() => handleZoom(-0.2)}
+          className="w-8 h-8 rounded-lg cursor-pointer opacity-0 hover:opacity-20 hover:bg-white transition-opacity"
+          title="Zoom Out"
+        />
+        {/* Re-center */}
+        <button
+          onClick={handleResetZoom}
+          className="w-8 h-8 rounded-lg cursor-pointer opacity-0 hover:opacity-20 hover:bg-white transition-opacity"
+          title="Reset Zoom"
+        />
+        {/* 2D / 3D toggle */}
+        <button
+          onClick={() => setViewMode(is3D ? '2D' : '3D')}
+          className="w-8 h-8 rounded-lg cursor-pointer opacity-0 hover:opacity-20 hover:bg-white transition-opacity"
+          title="Toggle 2D / 3D"
+        />
       </div>
+
     </div>
   );
 }
