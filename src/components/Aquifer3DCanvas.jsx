@@ -740,7 +740,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
       <div ref={containerRef} className="w-full h-full cursor-crosshair" />
 
       {/* Floating 3D Navigation Controls Toolbar */}
-      <div className="camera-controls-bar absolute top-4 left-4 flex items-center gap-2 p-1.5 px-2.5 z-10 overflow-x-auto no-scrollbar max-w-[calc(100%-160px)] rounded-2xl bg-slate-950/85 backdrop-blur-xl border border-white/12 shadow-2xl">
+      <div className="camera-controls-bar absolute top-16 left-4 flex items-center gap-2 p-1.5 px-2.5 z-10 overflow-x-auto no-scrollbar max-w-[calc(100%-160px)] rounded-2xl bg-slate-950/85 backdrop-blur-xl border border-white/12 shadow-2xl">
         {/* Dynamic Compass Azimuth Badge */}
         <div 
           className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-slate-900/80 border border-white/10 text-xs text-slate-300 shrink-0 shadow-xs"

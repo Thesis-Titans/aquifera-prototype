@@ -1,29 +1,28 @@
 import React from 'react';
-import { Camera, Maximize, RotateCcw, BookOpen, Sliders } from 'lucide-react';
-import { SCENARIO_PRESETS } from '../data/scenarioPresets';
+import { Camera, Maximize, RotateCcw, BookOpen, Sliders, ChevronDown, CheckCircle2 } from 'lucide-react';
 
 export default function TopNavigation({
-  activePresetId,
-  onSelectPreset,
-  onResetParams,
-  onCaptureScreenshot,
+  activeTab = 'Scenarios',
+  onSelectTab,
   onOpenGuide,
+  onCaptureScreenshot,
+  onResetParams,
   isSidebarOpen,
   onToggleSidebar
 }) {
+  const navTabs = ['Home', 'Scenarios', 'Results', 'Reports', 'About'];
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
     }
   };
 
   return (
-    <header className="h-16 bg-slate-950/95 backdrop-blur-2xl border-b border-white/15 flex items-center justify-between px-3 sm:px-6 z-30 shrink-0">
-      {/* Brand & Project Metadata */}
+    <header className="h-16 bg-slate-950/95 backdrop-blur-2xl border-b border-white/10 flex items-center justify-between px-3 sm:px-6 z-30 shrink-0">
+      {/* Brand & Slogan */}
       <div className="flex items-center gap-3 shrink-0">
         <div className="w-10 h-10 rounded-full overflow-hidden border border-primary/70 shadow-[0_0_14px_rgba(34,211,238,0.35)] bg-slate-950 flex items-center justify-center shrink-0">
           <img 
@@ -38,62 +37,54 @@ export default function TopNavigation({
             <h1 className="text-base font-extrabold tracking-tight text-white shrink-0">
               AQUIFERA
             </h1>
-            <span className="hidden lg:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-primary/20 text-primary border border-primary/40 shadow-xs">
-              SIMULATION
+            <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-primary/20 text-primary border border-primary/40 shadow-xs">
+              RESEARCH PROTOTYPE
             </span>
           </div>
-          <p className="nav-brand-subtitle text-[10px] text-slate-400 tracking-widest font-semibold">
-            SIMULATE • VERIFY • SUSTAIN
+          <p className="text-[10.5px] text-slate-400 font-medium tracking-tight">
+            Groundwater Insights for a Sustainable Tomorrow
           </p>
         </div>
       </div>
 
-      {/* Preset Scenarios for Presentation Defense */}
-      <div className="flex items-center justify-center min-w-0 max-w-[55vw]">
-        <div className="presets-scroll-container flex items-center gap-1 p-1 rounded-xl bg-slate-950/60 backdrop-blur-md border border-white/10 shadow-inner overflow-x-auto no-scrollbar">
-          {SCENARIO_PRESETS.map((preset) => {
-            const isActive = activePresetId === preset.id;
-            const labelMap = {
-              sustainable: { num: '1.', short: 'Safe', full: 'Safe (Elastic)' },
-              overextraction: { num: '2.', short: 'Crisis', full: 'Crisis (Mandurriao)' },
-              recharge: { num: '3.', short: 'Recharge', full: 'Recharge (MAR)' },
-              catastrophic: { num: '4.', short: 'Drought', full: 'Drought Shock' }
-            };
-            const meta = labelMap[preset.id] || { num: '', short: preset.name, full: preset.name };
-            return (
-              <button
-                key={preset.id}
-                className={isActive ? 'aquifera-preset-btn-active shrink-0' : 'aquifera-preset-btn shrink-0'}
-                onClick={() => onSelectPreset(preset)}
-                title={`${preset.name}\n${preset.description}`}
-              >
-                <span className={`font-mono mr-1.5 font-bold ${isActive ? 'text-primary' : 'text-slate-400'}`}>{meta.num}</span>
-                <span className="inline xl:hidden">{meta.short}</span>
-                <span className="hidden xl:inline">{meta.full}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* Main Navigation Tabs */}
+      <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-white/10 backdrop-blur-md">
+        {navTabs.map((tab) => {
+          const isActive = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => onSelectTab && onSelectTab(tab)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                isActive
+                  ? 'bg-primary/20 text-primary border border-primary/40 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              {tab}
+            </button>
+          );
+        })}
+      </nav>
 
-      {/* Action Tools (Guide, Screenshot, Reset, Controls Toggle, Fullscreen) */}
+      {/* Right Tools & User Profile */}
       <div className="flex items-center gap-2 shrink-0">
         <button
           className="aquifera-tool-btn"
           onClick={onOpenGuide}
           title="Open Hydrogeology & Architecture Guide"
         >
-          <BookOpen size={15} className="text-primary" />
-          <span className="hidden lg:inline">Guide</span>
+          <BookOpen size={14} className="text-primary" />
+          <span className="hidden xl:inline">Guide</span>
         </button>
 
         <button
           className="aquifera-tool-btn"
           onClick={onCaptureScreenshot}
-          title="Capture clean PNG snapshot of the 3D scene for your presentation slides"
+          title="Capture clean PNG snapshot of the simulation"
         >
-          <Camera size={15} className="text-primary" />
-          <span className="hidden lg:inline">Snapshot</span>
+          <Camera size={14} className="text-primary" />
+          <span className="hidden xl:inline">Snapshot</span>
         </button>
 
         <button
@@ -101,28 +92,36 @@ export default function TopNavigation({
           onClick={onResetParams}
           title="Reset simulation parameters to default baseline"
         >
-          <RotateCcw size={15} />
-          <span className="hidden lg:inline">Reset</span>
+          <RotateCcw size={14} />
+          <span className="hidden xl:inline">Reset</span>
         </button>
 
-        {/* Sidebar Drawer Toggle (Responsive Controls button for Desktop & Tablet) */}
+        {/* Sidebar Toggle for Tablet / Mobile */}
         <button
           id="controls-toggle-btn"
           className={isSidebarOpen ? 'aquifera-tool-btn-active' : 'aquifera-tool-btn'}
           onClick={onToggleSidebar}
           title={isSidebarOpen ? "Collapse Parameters Panel" : "Expand Parameters Panel"}
         >
-          <Sliders size={15} />
-          <span>Controls</span>
+          <Sliders size={14} />
+          <span className="hidden sm:inline">Scenario</span>
         </button>
 
         <button
           className="aquifera-tool-btn px-2.5!"
           onClick={toggleFullscreen}
-          title="Toggle Fullscreen Presentation Mode"
+          title="Toggle Fullscreen"
         >
-          <Maximize size={15} />
+          <Maximize size={14} />
         </button>
+
+        {/* User Profile Avatar (MA - Mark Adrian) */}
+        <div className="flex items-center gap-2 pl-2 border-l border-white/10 ml-1">
+          <div className="w-8 h-8 rounded-full bg-linear-to-br from-cyan-500 to-blue-600 text-slate-950 font-bold text-xs flex items-center justify-center shadow-md border border-cyan-300/40">
+            MA
+          </div>
+          <ChevronDown size={14} className="text-slate-400 cursor-pointer hover:text-white transition-colors" />
+        </div>
       </div>
     </header>
   );

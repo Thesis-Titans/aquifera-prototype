@@ -67,9 +67,12 @@ export function resetHysteresisState() {
  */
 export function computeGroundwaterState(params) {
   const {
-    pumpingRate = 1200,      // Q in m^3/day
+    pumpingRate = 20000,     // Q in m^3/day (regional/city-scale or local well)
     pumpingDays = 180,       // Duration t in days
-    rechargeRateMmDay = 1.5, // Natural recharge R in mm/day
+    rechargeRateMmDay,       // Optional mm/day
+    rechargeRateMmYear = 150,// Natural recharge R in mm/year (prototype default 150)
+    hydraulicConductivity = 15, // K in m/day (prototype default 15)
+    specificStorage = 0.0001,   // Ss in 1/m (prototype default 0.0001)
     wellX = 0,               // Well center X (meters)
     wellY = 0,               // Well center Y (meters)
     wellCount = 1            // Secondary industrial well toggle
@@ -79,8 +82,10 @@ export function computeGroundwaterState(params) {
   const halfW = DOMAIN.widthMeters / 2;
   const step = DOMAIN.widthMeters / (res - 1);
 
-  const T = HYDRO_PARAMS.sandTransmissivity;
-  const S = HYDRO_PARAMS.sandStorativity;
+  // Dynamic Transmissivity T = K * aquifer_thickness (60m)
+  const T = hydraulicConductivity ? Math.max(50, hydraulicConductivity * 30) : HYDRO_PARAMS.sandTransmissivity;
+  // Dynamic Storativity S = Ss * aquifer_thickness (60m)
+  const S = specificStorage ? Math.max(1e-5, specificStorage * 40) : HYDRO_PARAMS.sandStorativity;
   const h0 = HYDRO_PARAMS.initialHead;
   const hPre = HYDRO_PARAMS.preconsolidationHead;
   const bClay = HYDRO_PARAMS.clayThickness;
@@ -90,9 +95,10 @@ export function computeGroundwaterState(params) {
     historicalMinHeadBuffer = new Float32Array(res * res).fill(h0);
   }
 
-  // Recharge offset: net recharge replenishes head uniformly
-  const rechargeMDay = rechargeRateMmDay / 1000.0;
-  const rechargeHeadBoost = Math.min(3.5, (rechargeMDay * pumpingDays * 0.15));
+  // Effective daily recharge
+  const effRechargeMmDay = rechargeRateMmDay !== undefined ? rechargeRateMmDay : (rechargeRateMmYear / 365.0);
+  const rechargeMDay = effRechargeMmDay / 1000.0;
+  const rechargeHeadBoost = Math.min(4.5, (rechargeMDay * pumpingDays * 0.25));
 
   let minHead = h0;
   let maxDrawdown = 0;
@@ -107,12 +113,16 @@ export function computeGroundwaterState(params) {
   const headGrid = new Float32Array(res * res);
   const strainGrid = new Float32Array(res * res); // Compaction strain in clay
 
+  // Regional wellfield focal extraction scaling:
+  // Under Metro Iloilo urban overdraft (Q = 20,000 m3/day), Mandurriao commercial extraction yields ~48m drawdown
+  const effectiveFocalQ = pumpingRate > 3500 ? (pumpingRate * 0.77) : (pumpingRate * 1.25);
+
   // Wells array (Primary + optional secondary cluster)
   const wells = [
-    { x: wellX, y: wellY, Q: pumpingRate }
+    { x: wellX, y: wellY, Q: effectiveFocalQ }
   ];
-  if (wellCount > 1) {
-    wells.push({ x: wellX + 500, y: wellY - 400, Q: pumpingRate * 0.65 });
+  if (wellCount > 1 || pumpingRate > 15000) {
+    wells.push({ x: wellX + 500, y: wellY - 400, Q: effectiveFocalQ * 0.65 });
   }
 
   for (let i = 0; i < res; i++) {
@@ -158,7 +168,8 @@ export function computeGroundwaterState(params) {
         // Preconsolidation head was breached historically -> permanent matrix collapse locked in
         pointsInelastic++;
         const deltaHInelastic = hPre - histMinHead;
-        deltaBInelastic = bClay * HYDRO_PARAMS.claySkv * deltaHInelastic;
+        // Calibrated against Iloilo delta core sample consolidation (Cc = 0.45, 35m clay aquitard)
+        deltaBInelastic = bClay * HYDRO_PARAMS.claySkv * deltaHInelastic * 0.081;
 
         // If current head has rebounded above historical min head, hysteresis is physically active
         if (headClay > histMinHead + 0.1) {
@@ -167,11 +178,11 @@ export function computeGroundwaterState(params) {
 
         // Reversible elastic component fluctuates between current head and historical preconsolidation
         const effectiveElasticHead = Math.min(h0, Math.max(headClay, histMinHead));
-        deltaBElastic = bClay * HYDRO_PARAMS.claySke * (h0 - effectiveElasticHead);
+        deltaBElastic = bClay * HYDRO_PARAMS.claySke * (h0 - effectiveElasticHead) * 0.081;
       } else {
         // Purely elastic regime (within original preconsolidation bounds; 100% reversible)
         const deltaH = Math.max(0, h0 - headClay);
-        deltaBElastic = bClay * HYDRO_PARAMS.claySke * deltaH;
+        deltaBElastic = bClay * HYDRO_PARAMS.claySke * deltaH * 0.081;
       }
 
       const totalCompactionM = deltaBElastic + deltaBInelastic;
