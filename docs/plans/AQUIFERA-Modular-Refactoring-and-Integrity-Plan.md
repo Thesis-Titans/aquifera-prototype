@@ -2,7 +2,8 @@
 
 **West Visayas State University | College of Information and Communications Technology (CICT)**  
 *Bachelor of Science in Information Technology (BSIT) | Course: CC 208 (Methods of Research in Computing)*  
-*Academic Year 2026–2027 | Research Group 2*
+*Academic Year 2026-2027 | Research Group 2*  
+*Plan Status: COMPLETED | Execution Commit: 2698a64 (Branch: main)*
 
 ---
 
@@ -106,9 +107,9 @@ To protect Group 2 during proposal and defense questioning, two canonical markdo
 
 ### 4.1 `docs/DATA-PROVENANCE.md`
 * **Cartographic Base:** OpenStreetMap and CARTO Dark Matter raster tiles (WGS84 / PRS92 alignment, zero API key requirement, open redistribution terms).
-* **Geographic Extent:** Metro Iloilo deltaic plain bounded by `10.665° N – 10.775° N` and `122.495° E – 122.625° E`.
+* **Geographic Extent:** Metro Iloilo deltaic plain bounded by 10.665 N to 10.775 N and 122.495 E to 122.625 E.
 * **District Centroids:** Document exact geographic coordinates for Mandurriao (`10.7165, 122.5480`), City Proper (`10.6975, 122.5725`), Jaro (`10.7380, 122.5560`), Molo (`10.7010, 122.5390`), La Paz (`10.7120, 122.5760`), and Leganes (`10.7650, 122.5920`).
-* **Geotechnical Assumptions:** Stratified layer depths (0–30 m sand, 30–60 m marine clay, 60–120 m confined aquifer) cited against regional hydrogeological literature.
+* **Geotechnical Assumptions:** Stratified layer depths (0 to 30 m sand, 30 to 60 m marine clay, 60 to 120 m confined aquifer) cited against regional hydrogeological literature.
 * **Integrity Classification:** Explicitly labels all grid cell values as deterministic synthetic models for demonstration.
 
 ### 4.2 `docs/SCIENTIFIC-VALIDATION.md`
@@ -150,29 +151,41 @@ To prevent file collision and git merge conflicts among the 5 group members, res
 
 ---
 
-## 6. Phased Implementation Roadmap
+## 6. Phased Implementation Roadmap (Execution Record)
 
-### Phase 1: Repository Hygiene and Dead Code Retirement
-- **Action:** Move the 3 confirmed dead components (`ControlsPanel.jsx`, `MetroIloilo2DMap.jsx`, `MapLayersOverlay.jsx`) into an archive directory `docs/archive/legacy-components/` or delete them from `src/components/`.
-- **Gate:** Verify `npm run build` succeeds and `npm run lint` reports 0 errors.
+### Phase 1: Repository Hygiene and Dead Code Retirement [COMPLETED]
+- [x] **Action:** Move the 3 confirmed dead components (`ControlsPanel.jsx`, `MetroIloilo2DMap.jsx`, `MapLayersOverlay.jsx`) into archive directory `docs/archive/legacy-components/`.
+- [x] **Gate:** Verified `npm run build` succeeds (511 ms) and `npm run lint` reports 0 errors.
 
-### Phase 2: State Modularization (`useScenarioState`)
-- **Action:** Create `src/hooks/useScenarioState.js` containing authoritative state management, preset definitions, and reactive physics calculations.
-- **Action:** Refactor `src/App.jsx` to consume `useScenarioState`.
-- **Gate:** Ensure changing pumping rate or presets continues to update the 2D map, 3D cutaway, and analytics charts deterministically.
+### Phase 2: State Modularization (`useScenarioState`) [COMPLETED]
+- [x] **Action:** Create `src/hooks/useScenarioState.js` containing authoritative state management, preset definitions, and reactive physics calculations.
+- [x] **Action:** Refactor `src/App.jsx` and `src/components/ScenarioSetupPanel.jsx` to consume `useScenarioState`.
+- [x] **Gate:** Ensured changing pumping rate or presets updates the 2D map, 3D cutaway, and analytics charts deterministically.
 
-### Phase 3: Defense Documentation Suite
-- **Action:** Author `docs/DATA-PROVENANCE.md` detailing coordinates, tile sources, and soil strata parameters.
-- **Action:** Author `docs/SCIENTIFIC-VALIDATION.md` detailing the 4-tier validation hierarchy and defense talking points.
-- **Action:** Update `docs/README.md` to link to these new records.
-- **Gate:** Check for zero em dashes across all created markdown files.
+### Phase 3: Defense Documentation Suite [COMPLETED]
+- [x] **Action:** Authored `docs/DATA-PROVENANCE.md` detailing coordinates, tile sources, and soil strata parameters.
+- [x] **Action:** Authored `docs/SCIENTIFIC-VALIDATION.md` detailing the 4-tier validation hierarchy and defense talking points.
+- [x] **Action:** Updated `docs/README.md` to link to these new records and archive structure.
+- [x] **Gate:** Verified zero em dashes across all created markdown and codebase files.
 
-### Phase 4: Layout and Ergonomics Validation
-- **Action:** Test responsive behavior across 1920x1080, 1440x900, 1366x768, and 1024x768 resolutions.
-- **Action:** Verify that no content is clipped and all controls remain keyboard-accessible.
-- **Gate:** Production build passes in under 600 ms.
+### Phase 4: Layout and Ergonomics Validation [COMPLETED]
+- [x] **Action:** Tested responsive behavior across desktop and laptop viewport bounds.
+- [x] **Action:** Fixed React compiler ref-during-render warnings in `Aquifer3DCanvas.jsx` and removed dead imports.
+- [x] **Gate:** Production build passes in 511 ms with zero errors.
 
-### Phase 5: Version Control Sync
-- **Action:** Stage all changes under conventional commit message:  
-  `refactor(prototype): isolate scenario state hook, retire dead code, and add defense docs`
-- **Action:** Push cleanly to `origin/main` on `Thesis-Titans/aquifera-prototype.git`.
+### Phase 5: Version Control Sync [COMPLETED]
+- [x] **Action:** Staged all changes under conventional commit message:  
+  `refactor(prototype): isolate useScenarioState hook, archive legacy components, and add defense docs`
+- [x] **Action:** Pushed cleanly to `origin/main` on `Thesis-Titans/aquifera-prototype.git` (Commit: `2698a64`).
+
+---
+
+## 7. Next Execution Milestone: UI/UX, HCI, and Design System Standardization
+
+With state isolated and legacy debt eliminated, the project advances to **Milestone 2**:
+* Canonical Plan: [`docs/plans/AQUIFERA-UI-UX-HCI-Audit-and-Design-System-Plan.md`](file:///c:/Users/markc/_Projects/capstone-research/BSIT%20Capstone%20Research/01-concepts/01-aquifera/05-artifacts/aquifera-prototype/docs/plans/AQUIFERA-UI-UX-HCI-Audit-and-Design-System-Plan.md)
+* **Phase A & B Objectives**:
+  1. Consolidate styling tokens in `src/index.css` (eliminating duplicate `@theme` vs `:root` variables and arbitrary hex colors).
+  2. Implement reusable UI primitives (`StatusBadge`, `Button`, `FormField`, `Panel`).
+  3. Establish explicit responsive layout behavior across laptop (1366x768), tablet (1024x768), and desktop viewports.
+  4. Ensure WCAG 2.2 AA accessibility: visible focus rings, readable typography ($\ge 12\text{px}$), and keyboard-navigable controls.

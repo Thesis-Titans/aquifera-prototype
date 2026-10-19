@@ -14,7 +14,7 @@ export default function TopNavigation({
   ];
 
   return (
-    <header className="h-16 bg-[#06111e] border-b border-[#122336] flex items-center justify-between px-6 z-30 shrink-0 select-none">
+    <header className="h-16 bg-[#06111e] border-b border-[#122336] flex items-center justify-between px-6 z-30 shrink-0">
       {/* Brand & Slogan */}
       <div className="flex items-center gap-3 shrink-0">
         <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-cyan-500/30">

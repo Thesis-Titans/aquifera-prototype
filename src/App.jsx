@@ -78,12 +78,26 @@ export default function App() {
     }
   };
 
+  // Navigation tab selection with smooth viewport scrolling
+  const handleSelectTab = (tabId) => {
+    setActiveTab(tabId);
+    if (tabId === 'Scenarios') {
+      const el = document.getElementById('scenario-setup-panel');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    } else if (tabId === 'Results') {
+      const el = document.getElementById('bottom-analytics-suite');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    } else if (tabId === 'Home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
-    <div className="w-full min-h-screen flex flex-col bg-[#050e18] text-slate-100 font-sans select-none">
+    <div className="w-full min-h-screen flex flex-col bg-[#070d17] text-slate-100 font-sans">
       {/* 1. Top Header Navigation */}
       <TopNavigation
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={handleSelectTab}
         onOpenGuide={() => setIsGuideOpen(true)}
         onCaptureScreenshot={handleCaptureScreenshot}
       />

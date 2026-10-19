@@ -118,7 +118,7 @@ export default function BottomAnalyticsSuite({
   }, [activeResultsTab, params.pumpingRate, pRatio]);
 
   return (
-    <section className="h-68 bg-[#06111e] border-t border-[#122336] px-5 py-3 shrink-0 z-20 select-none">
+    <section id="bottom-analytics-suite" className="min-h-68 bg-[#06111e] border-t border-[#122336] px-5 py-3 shrink-0 z-20">
       <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-[1920px] mx-auto">
         
         {/* CARD 1: Simulation Results */}

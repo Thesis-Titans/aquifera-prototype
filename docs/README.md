@@ -26,9 +26,11 @@ docs/
 ├── ARCHITECTURE.md                # 4-Tier system architecture, Three.js 3D cutaway & FloPy verification
 ├── DATA-PROVENANCE.md             # Cartographic basemap sources, WGS84/PRS92, grid specs & geotechnical strata
 ├── SCIENTIFIC-VALIDATION.md       # 4-Tier validation hierarchy, Theis/Cooper-Jacob, Terzaghi hysteresis & oral defense FAQ
+├── DESIGN-SYSTEM.md               # Scientific workstation design tokens, WCAG 2.2 AA accessibility & responsive layout contract
 ├── UI-UX-GUIDE.md                 # Design system, HSL tokens, Three.js viewport & HUD layout
 ├── plans/                         # Project implementation plans and historical revisions
 │   ├── AQUIFERA-Modular-Refactoring-and-Integrity-Plan.md  # Comprehensive 5-phase modular refactoring plan
+│   ├── AQUIFERA-UI-UX-HCI-Audit-and-Design-System-Plan.md  # UI/UX, HCI consistency, and design system plan
 │   └── prototype-plan-v2.md       # Implementation roadmap and demonstration state design
 ├── archive/                       # Deprecated and retired code artifacts
 │   └── legacy-components/         # Retired 2D canvas and overlay components preserved for audit

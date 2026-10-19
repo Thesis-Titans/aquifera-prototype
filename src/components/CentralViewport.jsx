@@ -23,7 +23,7 @@ export default function CentralViewport({
   const is3D = viewMode === '3D';
 
   return (
-    <div className="relative flex-1 h-full w-full min-h-[500px] bg-[#050e18] rounded-xl border border-[#122336] overflow-hidden flex flex-col select-none shadow-2xl">
+    <div className="relative flex-1 h-full w-full min-h-[500px] bg-[#050e18] rounded-xl border border-[#122336] overflow-hidden flex flex-col shadow-2xl">
       
       {/* 1. Viewport Top HUD Toolbar */}
       <div className="h-12 bg-slate-950/90 backdrop-blur-md border-b border-white/10 px-4 flex items-center justify-between gap-3 shrink-0 z-20">

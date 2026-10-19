@@ -77,7 +77,7 @@ export default function ScenarioSetupPanel({
   };
 
   return (
-    <aside className="w-80 bg-[#071524] border-r border-[#122336] p-5 flex flex-col justify-between overflow-y-auto select-none shrink-0 custom-scrollbar">
+    <aside id="scenario-setup-panel" className="w-80 bg-[#071524] border-r border-[#122336] p-5 flex flex-col justify-between overflow-y-auto shrink-0 custom-scrollbar">
       <div className="flex flex-col gap-4">
         
         {/* Header */}
