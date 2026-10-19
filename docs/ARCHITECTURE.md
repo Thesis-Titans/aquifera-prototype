@@ -3,7 +3,7 @@
 
 **West Visayas State University | College of Information and Communications Technology (CICT)**  
 *Bachelor of Science in Information Technology (BSIT) | Course: CC 208 (Methods of Research in Computing)*  
-*Academic Year 2026–2027 | Research Group 2*
+*Academic Year 2026-2027 | Research Group 2*
 
 ---
 
@@ -41,10 +41,10 @@ Aquifera implements a **4-Tier Decoupled Architecture** designed to balance real
 ### 2. Tier-by-Tier Component Specifications
 
 #### Tier 1: Client Presentation Layer
-- **Framework:** React 19, Vite 8.3, and Tailwind CSS.
+- **Framework:** React 19, Vite 8.3, and Tailwind CSS v4.
 - **3D Subsurface Viewport (Three.js):**
   - Renders a volumetric cutaway model of Metro Iloilo's alluvial aquifer system.
-  - Implements custom vertex shaders to deform the upper ground mesh in real time based on computed compaction values $\Delta b(x, y)$.
+  - Implements custom vertex displacement to deform the upper ground mesh in real time based on computed compaction values $\Delta b(x, y)$.
   - Uses clipping planes (`clippingPlanes: [plane]`) allowing users to slice into the 3D block to inspect internal aquitard compaction.
 - **Geographic Basemap Viewport (MapLibre GL JS):**
   - Displays geospatial overlays aligned with regional barangay boundaries (Mandurriao, Molo, City Proper, Jaro, La Paz, Arevalo).
@@ -101,12 +101,12 @@ Weights $\lambda_{\text{flow}}$ and $\lambda_{\text{comp}}$ are dynamically bala
 [ User Adjusts Well / Pumping Slider ]
                  │
                  ▼
-     [ Update React State (Zustand) ]
+ [ Update React State (useScenarioState Hook) ]
                  │
                  ├─────────────────────────────────────────┐
                  ▼                                         ▼
    [ Deform Three.js Surface Mesh ]          [ Update 2D MapLibre Iso-Lines ]
-   • Real-time vertex displacement           • Dynamic SVG / Canvas overlay
+   • Real-time vertex displacement           • Dynamic GeoJSON fill & lines
    • Recalculate face normals                • Color code subsidence bowls
                  │                                         │
                  └───────────────────┬─────────────────────┘
@@ -116,3 +116,104 @@ Weights $\lambda_{\text{flow}}$ and $\lambda_{\text{comp}}$ are dynamically bala
                       • Preconsolidation Flag: ACTIVE
                       • Status: Stable
 ```
+
+---
+
+### 5. Frontend Feature-Oriented Project Structure and Component Contracts
+
+The client application adopts a **feature-oriented architectural pattern** that separates user-facing functional capabilities from shared presentation primitives, domain schemas, and physics models.
+
+#### 5.1 Directory Layout
+
+```text
+src/
+├── app/
+│   ├── App.jsx                                  # Application shell and feature coordinator
+│   └── (App-level providers / routers)
+│
+├── features/
+│   ├── scenarios/                               # Scenario configuration and parameter management
+│   │   ├── components/ScenarioSetupPanel.jsx   # Well rate sliders, MAR toggles, preset selectors
+│   │   ├── hooks/useScenarioState.js           # Authoritative scenario state hook & reset logic
+│   │   └── index.js                            # Public feature export barrel
+│   │
+│   ├── simulation/                              # Dual-engine telemetry and benchmark monitoring
+│   │   ├── components/DualBenchmarkHUD.jsx     # PINO vs MODFLOW 6 latency and error metrics
+│   │   └── index.js                            # Public feature export barrel
+│   │
+│   ├── map/                                     # 2D geospatial map visualization
+│   │   ├── components/MapLibreMap.jsx          # MapLibre GL JS basemap, synthetic GeoJSON grid
+│   │   └── index.js                            # Public feature export barrel
+│   │
+│   ├── aquifer-visualization/                  # 3D WebGL subsurface cutaway
+│   │   ├── components/CentralViewport.jsx      # Split/Single view container & view mode switcher
+│   │   ├── components/Aquifer3DCanvas.jsx      # Three.js scene, strata layers, cutaway clipping
+│   │   └── index.js                            # Public feature export barrel
+│   │
+│   ├── analytics/                               # Subsidence, drawdown, and flood analytics
+│   │   ├── components/BottomAnalyticsSuite.jsx # Recharts multi-station drawdown & flood metrics
+│   │   └── index.js                            # Public feature export barrel
+│   │
+│   └── verification/                            # Verification dialog and benchmark cross-checks
+│       ├── components/VerificationModal.jsx    # Simulated numerical solver verification dialog
+│       └── index.js                            # Public feature export barrel
+│
+├── components/
+│   ├── layout/
+│   │   ├── TopNavigation.jsx                   # Primary application header & mode toggles
+│   │   └── index.js                            # Layout export barrel
+│   └── ui/
+│       ├── GuideModal.jsx                      # User onboarding and guidance modal
+│       └── index.js                            # UI components export barrel
+│
+├── domain/
+│   └── scenario/
+│       ├── scenarioDefaults.js                 # Authoritative scenario presets and domain bounds
+│       └── index.js                            # Domain export barrel
+│
+├── data/
+│   └── geographic/
+│       ├── metroIloiloGIS.js                   # District coordinates, bounding box, spatial bounds
+│       └── index.js                            # Geographic data export barrel
+│
+├── physics/
+│   ├── groundwaterPhysics.js                   # Client-side analytical Darcy-Theis calculations
+│   └── README.md                               # Scientific boundary and demonstration integrity notes
+│
+├── index.css                                   # Tailwind CSS v4 directives & custom utilities
+└── main.jsx                                    # Application bootstrapping entrypoint
+```
+
+#### 5.2 Responsibility Contracts
+
+| Module / Component | Single Responsibility | Explicit Non-Responsibilities |
+| :--- | :--- | :--- |
+| **`src/app/App.jsx`** | Composes top-level layout regions, coordinates cross-feature state via `useScenarioState`, and handles modal visibility. | Does not calculate groundwater physics, instantiate Three.js scenes, or configure MapLibre layers directly. |
+| **`features/scenarios`** | Manages scenario parameters, well pumping extraction rates, MAR injection, preset switching, and parameter reset behavior. | Does not render 3D meshes or manage map layer styling. |
+| **`features/simulation`** | Displays dual-engine HUD telemetry (PINO inference latency, speedup factors, memory footprints, and $L_2$ relative errors). | Does not execute server-side neural operator inference directly; reflects telemetry provided by simulation state. |
+| **`features/map`** | Renders 2D MapLibre GL JS basemap, Carto dark raster tiles, synthetic GeoJSON subsidence grid, district markers, and popup inspection. | Does not own scenario parameters or alter global simulation presets. |
+| **`features/aquifer-visualization`** | Manages Three.js WebGL scene lifecycle, 3-layer geological strata (sand/clay/sand), real-time mesh deformation, and volumetric cutaway clipping. | Does not define geographic coordinate projections or replace authoritative numerical solvers. |
+| **`features/analytics`** | Renders multi-station drawdown time series, Terzaghi consolidation curves, and coastal flood risk meters via Recharts. | Does not re-calculate raw Darcy equations; consumes outputs computed by domain physics. |
+| **`features/verification`** | Displays numerical verification dialog with simulated MODFLOW 6 CSUB benchmark cross-checks and Wilcoxon signed-rank results. | Does not present client-side simulated curves as live production solver connections. |
+| **`components/layout`** | Renders header branding, mode switches (2D GIS, 3D Subsurface, Split View), and verification launch triggers. | Does not contain scenario state logic. |
+| **`components/ui`** | Reusable presentation primitives and informational modals (e.g., `GuideModal.jsx`). | Contains no groundwater domain business logic. |
+| **`domain/scenario`** | Centralizes scenario presets (Sustainable Baseline, Over-Extraction Crisis, MAR Injection, Drought Shock) and parameter boundary contracts. | Contains zero React rendering code. |
+| **`data/geographic`** | Houses Metro Iloilo geographic district centroids, bounding boxes, and Carto tile endpoint constants. | Free of UI rendering or state logic. |
+| **`physics/`** | Implements deterministic Darcy-Theis drawdown and 1D Terzaghi clay compaction for interactive browser demonstration. | Clearly documented in `physics/README.md` as illustrative client-side physics, not a replacement for offline-trained PINO or USGS MODFLOW 6. |
+
+#### 5.3 Barrel Export Pattern
+
+Every feature and shared module encapsulates internal implementation details behind an `index.js` barrel file:
+```javascript
+// Example: src/features/scenarios/index.js
+export { default as ScenarioSetupPanel } from './components/ScenarioSetupPanel.jsx';
+export { useScenarioState } from './hooks/useScenarioState.js';
+```
+This isolates consumer imports in `App.jsx` and across features, preventing deep relative path couplings and enabling team members to refactor internal feature components without breaking other modules.
+
+#### 5.4 State Management and Determinism
+
+The prototype deliberately maintains **one authoritative scenario state** via `useScenarioState`:
+- **Deterministic:** Given identical inputs (wells, pumping rates, MAR status), the client-side physics model computes identical drawdown and subsidence outputs.
+- **Isolated editing:** Adjusting sliders updates scenario state without triggering unintended side-effects in unrelated features.
+- **Lightweight:** Uses React standard hooks (`useState`, `useCallback`, `useMemo`) without introducing extraneous third-party global state libraries like Redux or Zustand.

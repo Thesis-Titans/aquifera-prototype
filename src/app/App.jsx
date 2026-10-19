@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import TopNavigation from './components/TopNavigation';
-import ScenarioSetupPanel from './components/ScenarioSetupPanel';
-import CentralViewport from './components/CentralViewport';
-import BottomAnalyticsSuite from './components/BottomAnalyticsSuite';
-import VerificationModal from './components/VerificationModal';
-import GuideModal from './components/GuideModal';
-import { useScenarioState } from './hooks/useScenarioState';
+import { TopNavigation } from '../components/layout';
+import { ScenarioSetupPanel, useScenarioState } from '../features/scenarios';
+import { CentralViewport } from '../features/aquifer-visualization';
+import { BottomAnalyticsSuite } from '../features/analytics';
+import { VerificationModal } from '../features/verification';
+import { GuideModal } from '../components/ui';
 
 export default function App() {
   // Hydrogeological Scenario and Physics Engine State

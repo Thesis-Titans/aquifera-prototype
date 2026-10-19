@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Layers, Compass, Activity, Eye, Crosshair, X, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { DOMAIN, HYDRO_PARAMS, getPointHydrogeology } from '../physics/groundwaterPhysics';
+import { DOMAIN, HYDRO_PARAMS, getPointHydrogeology } from '../../../physics/groundwaterPhysics';
 
 export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setLayerVisibilities, onMoveWell }) {
   const containerRef = useRef(null);

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as maplibregl from 'maplibre-gl';
-import { METRO_ILOILO_GIS } from '../data/metroIloiloGIS';
+import { METRO_ILOILO_GIS } from '../../../data/geographic/metroIloiloGIS';
 import { Navigation, ZoomIn, ZoomOut, RotateCcw, Layers } from 'lucide-react';
 
 // Free, fast, reliable Dark Matter basemap (OpenStreetMap & CARTO data, no API key required)

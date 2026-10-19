@@ -6,7 +6,7 @@ export default function DualBenchmarkHUD({ physicalState }) {
 
   // Target Benchmarking Specifications from ARCHITECTURE.md
   const targetPinoLatencyMs = '< 250';
-  const baselineModflowSec = '180 – 300';
+  const baselineModflowSec = '180 to 300';
   const targetSpeedup = '~80,000×';
 
   if (isCollapsed) {

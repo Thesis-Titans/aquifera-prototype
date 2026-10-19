@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { computeGroundwaterState, resetHysteresisState } from '../physics/groundwaterPhysics';
+import { computeGroundwaterState, resetHysteresisState } from '../../../physics/groundwaterPhysics';
 
 export const SCENARIO_PRESETS = {
   baseline: {

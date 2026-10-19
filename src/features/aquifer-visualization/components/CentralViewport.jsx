@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import MapLibreMap from './MapLibreMap';
+import { MapLibreMap } from '../../map';
 import Aquifer3DCanvas from './Aquifer3DCanvas';
-import DualBenchmarkHUD from './DualBenchmarkHUD';
-import { Map, Box, AlertCircle, Info } from 'lucide-react';
+import { DualBenchmarkHUD } from '../../simulation';
+import { Map, Box, AlertCircle } from 'lucide-react';
 
 export default function CentralViewport({
   physicalState,
