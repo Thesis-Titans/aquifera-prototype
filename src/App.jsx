@@ -8,12 +8,12 @@ import GuideModal from './components/GuideModal';
 import { computeGroundwaterState, resetHysteresisState } from './physics/groundwaterPhysics';
 
 export default function App() {
-  // Primary Hydrogeological Simulation Parameters (matching target prototype defaults)
+  // Primary Hydrogeological Simulation Parameters
   const [params, setParams] = useState({
-    pumpingRate: 20000,          // Q = 20,000 m3/day
+    pumpingRate: 12000,          // Q = 12,000 m3/day (baseline)
     hydraulicConductivity: 15,   // K = 15 m/day
     specificStorage: 0.0001,     // Ss = 0.0001 1/m
-    rechargeRateMmYear: 150,     // R = 150 mm/year
+    rechargeRateMmYear: 200,     // R = 200 mm/year
     pumpingDays: 180,
     wellCount: 1,
     wellX: 0,
@@ -22,14 +22,14 @@ export default function App() {
 
   // UI Navigation & View State
   const [activeTab, setActiveTab] = useState('Home');
-  const [viewMode, setViewMode] = useState('2D'); // '2D' or '3D'
+  const [viewMode, setViewMode] = useState('2D'); // '2D' (MapLibre) or '3D' (Three.js)
   const [isSimulating, setIsSimulating] = useState(false);
 
-  // Visualization Controls State (Bottom Card 4)
+  // Visualization Controls State
   const [visualizationConfig, setVisualizationConfig] = useState({
     dataType: 'subsidence',
     timeSlice: '2050',
-    opacity: 70,
+    opacity: 75,
     colorScale: 'Standard'
   });
 
@@ -37,27 +37,27 @@ export default function App() {
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
-  // Reactive physical state from PINO & Terzaghi solver
+  // Reactive physical state from Darcy/Theis & Terzaghi skeletal compaction engine
   const physicalState = useMemo(() => {
     return computeGroundwaterState(params);
   }, [params]);
 
-  // Run Simulation trigger with subtle solving state
+  // Run Demonstration trigger with smooth transition
   const handleRunSimulation = () => {
     setIsSimulating(true);
     setTimeout(() => {
       setIsSimulating(false);
-    }, 600);
+    }, 450);
   };
 
   // Reset to default baseline
   const handleResetParams = () => {
     resetHysteresisState();
     setParams({
-      pumpingRate: 20000,
+      pumpingRate: 12000,
       hydraulicConductivity: 15,
       specificStorage: 0.0001,
-      rechargeRateMmYear: 150,
+      rechargeRateMmYear: 200,
       pumpingDays: 180,
       wellCount: 1,
       wellX: 0,
@@ -66,28 +66,44 @@ export default function App() {
     setVisualizationConfig({
       dataType: 'subsidence',
       timeSlice: '2050',
-      opacity: 70,
+      opacity: 75,
       colorScale: 'Standard'
     });
   };
 
   // Screenshot capture for defense slides
   const handleCaptureScreenshot = () => {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) return;
+    // Look for canvas inside the active viewport
+    const canvases = document.querySelectorAll('canvas');
+    if (!canvases || canvases.length === 0) {
+      alert('No active WebGL canvas detected for snapshot export.');
+      return;
+    }
+    
+    // Choose the largest canvas (main viewport)
+    let targetCanvas = canvases[0];
+    let maxArea = 0;
+    canvases.forEach(c => {
+      const area = c.width * c.height;
+      if (area > maxArea) {
+        maxArea = area;
+        targetCanvas = c;
+      }
+    });
+
     try {
-      const dataUrl = canvas.toDataURL('image/png');
+      const dataUrl = targetCanvas.toDataURL('image/png');
       const link = document.createElement('a');
-      link.download = `aquifera_dashboard_snapshot_${Date.now()}.png`;
+      link.download = `aquifera_${viewMode.toLowerCase()}_snapshot_${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
     } catch (e) {
-      console.error('Screenshot capture failed', e);
+      console.error('Screenshot export failed:', e);
     }
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col bg-[#050e18] text-slate-100 font-sans overflow-x-hidden select-none">
+    <div className="w-full min-h-screen flex flex-col bg-[#050e18] text-slate-100 font-sans select-none">
       {/* 1. Top Header Navigation */}
       <TopNavigation
         activeTab={activeTab}
@@ -96,8 +112,8 @@ export default function App() {
         onCaptureScreenshot={handleCaptureScreenshot}
       />
 
-      {/* 2. Middle Interactive Stage (Left Sidebar + Central Viewport) */}
-      <main className="flex-1 flex gap-4 px-4 pt-3 pb-2 min-h-[540px] max-w-[1920px] w-full mx-auto overflow-hidden">
+      {/* 2. Middle Interactive Stage (Left Sidebar + Central Dual Viewport) */}
+      <main className="flex-1 flex flex-col md:flex-row gap-4 px-4 pt-3 pb-2 min-h-[520px] max-w-[1920px] w-full mx-auto">
         
         {/* Left: Scenario Setup Panel Sidebar */}
         <ScenarioSetupPanel
@@ -107,7 +123,7 @@ export default function App() {
           isSimulating={isSimulating}
         />
 
-        {/* Central: Dual-Mode Viewport (2D Satellite GIS Map ⇄ 3D Terrain & Subsurface) */}
+        {/* Central: Dual-Mode Viewport (2D MapLibre GIS ⇄ 3D Three.js Subsurface) */}
         <CentralViewport
           physicalState={physicalState}
           params={params}
@@ -118,21 +134,13 @@ export default function App() {
 
       </main>
 
-      {/* 3. Bottom Analytics Suite (4-Card Grid) */}
+      {/* 3. Bottom Analytics Suite (4-Card Analytical Grid) */}
       <div className="px-4 pb-2 max-w-[1920px] w-full mx-auto shrink-0">
         <BottomAnalyticsSuite
           physicalState={physicalState}
           params={params}
           onOpenVerification={() => setIsVerificationOpen(true)}
-          onResetView={() => {
-            setViewMode('2D');
-            setVisualizationConfig({
-              dataType: 'subsidence',
-              timeSlice: '2050',
-              opacity: 70,
-              colorScale: 'Standard'
-            });
-          }}
+          onResetView={handleResetParams}
           visualizationConfig={visualizationConfig}
           setVisualizationConfig={setVisualizationConfig}
           is3D={viewMode === '3D'}
@@ -144,11 +152,12 @@ export default function App() {
         <div className="flex items-center gap-3">
           <span className="font-bold text-white tracking-wider">AQUIFERA</span>
           <span className="text-slate-500">|</span>
-          <span>Research Prototype</span>
-          <span className="font-mono text-slate-400">v0.1</span>
+          <span>Research Prototype v0.2</span>
+          <span className="text-slate-500">|</span>
+          <span className="font-mono text-cyan-400">MapLibre + Three.js Engine</span>
         </div>
         <div className="text-[11px] text-slate-400 font-normal">
-          Note: This is a research prototype. Results are based on model simulations and are not a substitute for field validation.
+          Note: This is a research demonstration prototype. Outputs are synthetic demonstration data for capstone defense.
         </div>
       </footer>
 

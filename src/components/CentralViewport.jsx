@@ -1,110 +1,97 @@
 import React, { useState } from 'react';
+import MapLibreMap from './MapLibreMap';
+import Aquifer3DCanvas from './Aquifer3DCanvas';
+import DualBenchmarkHUD from './DualBenchmarkHUD';
+import { Map, Box, AlertCircle, Info } from 'lucide-react';
 
 export default function CentralViewport({
+  physicalState,
+  params,
   visualizationConfig,
   viewMode = '2D',
-  setViewMode
+  setViewMode,
+  onSelectDistrict,
+  onMoveWell
 }) {
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [layerVisibilities, setLayerVisibilities] = useState({
+    sand1: true,
+    clay: true,
+    sand2: true,
+    subsidenceOverlay: true
+  });
 
   const is3D = viewMode === '3D';
 
-  const handleZoom = (delta) => {
-    setZoomLevel(prev => Math.max(1, Math.min(2.2, prev + delta)));
-  };
-
-  const handleResetZoom = () => {
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-  };
-
-  // Switch between 2D Subsidence, 2D Insights (with 3D Terrain layer), and 3D Simulation
-  const mapImageSrc = is3D
-    ? `${import.meta.env.BASE_URL}assets/maps/metro_iloilo_3d_simulation.png`
-    : `${import.meta.env.BASE_URL}assets/maps/metro_iloilo_2d_subsidence.png`;
-
-  const opacityFilter = (visualizationConfig?.opacity || 70) / 70;
-
   return (
-    <div className="relative flex-1 h-full w-full bg-[#050e18] overflow-hidden select-none">
+    <div className="relative flex-1 h-full w-full min-h-[500px] bg-[#050e18] rounded-xl border border-[#122336] overflow-hidden flex flex-col select-none shadow-2xl">
       
-      {/* Map Graphic with Interactive Zoom & Pan */}
-      <div 
-        className="w-full h-full relative overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing"
-        style={{
-          transform: `scale(${zoomLevel}) translate(${panOffset.x}px, ${panOffset.y}px)`,
-          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
-        }}
-      >
-        <img
-          src={mapImageSrc}
-          alt={is3D ? "Metro Iloilo 3D Simulation" : "Metro Iloilo 2D Subsidence Map"}
-          className="w-full h-full object-cover pointer-events-none"
-          style={{
-            filter: `brightness(${0.88 + opacityFilter * 0.12}) contrast(${0.92 + opacityFilter * 0.08})`
-          }}
-        />
+      {/* 1. Viewport Top HUD Toolbar */}
+      <div className="h-12 bg-slate-950/90 backdrop-blur-md border-b border-white/10 px-4 flex items-center justify-between gap-3 shrink-0 z-20">
+        
+        {/* Left: View Mode Segmented Controls */}
+        <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-lg border border-white/10">
+          <button
+            onClick={() => setViewMode('2D')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              !is3D
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+            }`}
+            title="Switch to 2D MapLibre Geographic Basemap"
+          >
+            <Map size={14} className={!is3D ? 'text-cyan-400' : 'text-slate-400'} />
+            <span>2D GIS Map (MapLibre)</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode('3D')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              is3D
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+            }`}
+            title="Switch to 3D Stratified Geotechnical Subsurface View"
+          >
+            <Box size={14} className={is3D ? 'text-cyan-400' : 'text-slate-400'} />
+            <span>3D Subsurface Cutaway</span>
+          </button>
+        </div>
+
+        {/* Center: Persistent Research Prototype Disclaimer */}
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-medium">
+          <AlertCircle size={13} className="text-amber-400 shrink-0" />
+          <span>RESEARCH PROTOTYPE: Outputs are synthetic demonstration data (no validated live PINO / MODFLOW solver connected).</span>
+        </div>
+
+        {/* Right: Active Spatial Mode Status Tag */}
+        <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+          <span className="text-[11px] text-slate-300 font-sans font-semibold">
+            {is3D ? 'Three.js WebGL (Stratified)' : 'MapLibre GL (PRS92 / WGS84)'}
+          </span>
+        </div>
       </div>
 
-      {/* Interactive Hit-Targets mapped directly to the visual controls on the map */}
-      
-      {/* 1. Top-Right Mode Switcher: [ 2D Map ] [ 3D View ] */}
-      <div className="absolute top-2.5 right-3 z-30 flex items-center gap-1">
-        {/* 2D Map Hitbox */}
-        <button
-          onClick={() => setViewMode('2D')}
-          className="w-20 h-9 rounded-lg cursor-pointer transition-opacity opacity-0 hover:opacity-20 hover:bg-white"
-          title="Switch to 2D Map View"
-        />
-        {/* 3D View Hitbox */}
-        <button
-          onClick={() => setViewMode('3D')}
-          className="w-20 h-9 rounded-lg cursor-pointer transition-opacity opacity-0 hover:opacity-20 hover:bg-white"
-          title="Switch to 3D Simulation View"
-        />
-      </div>
+      {/* 2. Interactive Viewport Stage (2D MapLibre or 3D Three.js) */}
+      <div className="relative flex-1 w-full h-[calc(100%-48px)] overflow-hidden">
+        {!is3D ? (
+          <MapLibreMap
+            physicalState={physicalState}
+            params={params}
+            visualizationConfig={visualizationConfig}
+            onSelectDistrict={onSelectDistrict}
+          />
+        ) : (
+          <Aquifer3DCanvas
+            physicalState={physicalState}
+            layerVisibilities={layerVisibilities}
+            setLayerVisibilities={setLayerVisibilities}
+            onMoveWell={onMoveWell}
+          />
+        )}
 
-      {/* 2. Top-Left Badge: Click to toggle 2D / 3D */}
-      <div 
-        onClick={() => setViewMode(is3D ? '2D' : '3D')}
-        className="absolute top-2.5 left-3 w-56 h-12 rounded-xl z-30 cursor-pointer opacity-0 hover:opacity-10 hover:bg-white transition-opacity"
-        title="Toggle Map Perspective"
-      />
-
-      {/* 3. Layers Panel: Click on 3D Terrain row to toggle 3D */}
-      <div 
-        onClick={() => setViewMode(is3D ? '2D' : '3D')}
-        className="absolute top-48 right-3 w-56 h-7 rounded z-30 cursor-pointer opacity-0 hover:opacity-20 hover:bg-white transition-opacity"
-        title="Toggle 3D Terrain Layer"
-      />
-
-      {/* 4. Zoom Controls on Right Edge */}
-      <div className="absolute bottom-16 right-3 z-30 flex flex-col gap-1 w-8">
-        {/* Zoom In */}
-        <button
-          onClick={() => handleZoom(0.2)}
-          className="w-8 h-8 rounded-lg cursor-pointer opacity-0 hover:opacity-20 hover:bg-white transition-opacity"
-          title="Zoom In"
-        />
-        {/* Zoom Out */}
-        <button
-          onClick={() => handleZoom(-0.2)}
-          className="w-8 h-8 rounded-lg cursor-pointer opacity-0 hover:opacity-20 hover:bg-white transition-opacity"
-          title="Zoom Out"
-        />
-        {/* Re-center */}
-        <button
-          onClick={handleResetZoom}
-          className="w-8 h-8 rounded-lg cursor-pointer opacity-0 hover:opacity-20 hover:bg-white transition-opacity"
-          title="Reset Zoom"
-        />
-        {/* 2D / 3D toggle */}
-        <button
-          onClick={() => setViewMode(is3D ? '2D' : '3D')}
-          className="w-8 h-8 rounded-lg cursor-pointer opacity-0 hover:opacity-20 hover:bg-white transition-opacity"
-          title="Toggle 2D / 3D"
-        />
+        {/* 3. Dual-Engine Benchmark Target HUD Overlay */}
+        <DualBenchmarkHUD physicalState={physicalState} />
       </div>
 
     </div>

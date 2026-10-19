@@ -81,10 +81,10 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
             <Cpu size={20} className="text-primary" />
             <div>
               <h3 className="text-sm font-bold text-white tracking-tight">
-                Tier 4 Asynchronous Verification Engine
+                Tier 4 Verification Pipeline (Architecture Demonstration)
               </h3>
               <span className="text-xs text-slate-400">
-                USGS MODFLOW 6 CSUB Numerical Cross-Validation Run
+                Simulated USGS MODFLOW 6 CSUB Numerical Cross-Validation Run
               </span>
             </div>
           </div>
@@ -284,7 +284,7 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
               <div className="bg-emerald-950/30 border border-emerald-500/35 p-3 rounded-xl flex items-center gap-2.5">
                 <ShieldCheck size={18} className="text-emerald-400 shrink-0" />
                 <span className="text-xs text-emerald-300 font-medium leading-relaxed">
-                  <strong>ISO/IEC 25010 Verification Passed:</strong> Neural surrogate predictions match USGS MODFLOW 6 within the 5% error tolerance across the domain, confirming physical consistency.
+                  <strong>Verification Protocol Parity:</strong> Demonstrates the ISO/IEC 25010 verification workflow. In full deployment, this compares live offline-trained PINO tensors against headless MODFLOW 6 CSUB runs within a 5% tolerance window.
                 </span>
               </div>
             </div>

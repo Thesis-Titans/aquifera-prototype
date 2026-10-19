@@ -70,15 +70,23 @@ The desktop interface follows a structured 4-region layout optimized for $1920 \
 - **Well Configuration Accordion:** Individual controls for up to 6 deep production wells. Adjusting sliders alters continuous pumping rates ($0$ to $5,000\text{ m}^3/\text{day}$).
 - **Geotechnical Parameters Panel:** Inspects layer hydraulic conductivities ($K_{zz}$) and storage coefficients ($S_{ske}, S_{skv}$).
 
-#### 3.3 Central Viewport: Three.js 3D Subsurface Cutaway
-- **Interactive Orbit Controls:** Left-click drag to orbit, right-click drag to pan, scroll wheel to zoom.
-- **Stratum Clipping Slider:** Horizontally slices into the block from $0\%$ to $100\%$ along the X-axis to expose internal aquitard compaction.
-- **Pumping Cones of Depression:** Dynamic 3D wireframe cones highlighting active well depressurization.
+#### 3.3 Central Viewport: Dual-Mode Geographic and 3D Subsurface Stage
+- **Mode Switching Toolbar:** Segmented pill controls allow instant toggling between `2D GIS Map (MapLibre)` and `3D Subsurface Cutaway (Three.js)`.
+- **2D Geographic Map (MapLibre GL JS):**
+  - High-performance WebGL basemap centered on Metro Iloilo (`10.72° N, 122.56° E`).
+  - Interactive synthetic GeoJSON polygon grid overlay showing color-coded cumulative subsidence ($cm$) and head drawdown ($m$).
+  - Full navigation capabilities: pan, zoom, pitch, bearing reset, and extent recentering.
+  - Interactive cell inspector: hover outlines and popup cards detailing cell ID, subsidence rate, and geological formation.
+- **3D Subsurface Cutaway (Three.js WebGL):**
+  - Volumetric block cutaway displaying Upper Sand (0 to 30 m), Clay Aquitard (30 to 60 m), and Lower Confined Sand (60 to 120 m).
+  - OrbitControls: left-click to orbit, right-click to pan, scroll wheel to zoom.
+  - Stratum clipping slider: horizontally slices into the block from $0\%$ to $100\%$ to expose internal compaction.
+  - Dynamic ground surface deformation visualizing the localized subsidence trough.
 
-#### 3.4 Right Sidebar: Dual-Engine Benchmark HUD
-- **Real-Time Latency Meter:** Displays live neural operator latency ($2.3\text{ ms}$) alongside the baseline USGS MODFLOW 6 runtime ($184.2\text{ s}$).
-- **Preconsolidation Alert Banner:** Changes dynamically from green (Safe Elastic Compression) to pulsing amber/red (Irreversible Inelastic Compaction) when head levels breach historical lows.
-- **Verification Button:** Dispatches asynchronous background jobs to the FloPy MODFLOW 6 container service.
+#### 3.4 Benchmark Target HUD Overlay
+- **Target Specifications:** Displays target neural operator latency ($< 250\text{ ms}$) versus baseline USGS MODFLOW 6 runtime ($180\text{ s}$ to $300\text{ s}$).
+- **Collapsible Ergonomics:** Minimizable floating pill in the upper-right viewport corner to maximize map viewing area.
+- **Academic Disclosures:** Explicitly labels performance targets as architectural specifications from proposal documentation, maintaining scientific integrity.
 
 #### 3.5 Bottom Analytics Suite
 - **Stratigraphic Cross-Section Heatmap:** Visualizes vertical pore-pressure gradients across depth ($0$ to $120\text{ m}$).

@@ -29,20 +29,26 @@ To preserve scientific rigor and prevent misleading user expectations, the platf
 
 ### 3. Functional Requirements (FR)
 
-#### FR-01: Stratified 3D Geotechnical Cutaway View
-- The system shall render an interactive 3D WebGL cutaway of the Metro Iloilo deltaic aquifer system comprising three distinct hydrostratigraphic layers:
-  - **Layer 1 (0 to 30 m):** Upper unconfined alluvial sand and silt aquifer.
-  - **Layer 2 (30 to 60 m):** Low-permeability, compressible marine clay aquitard.
-  - **Layer 3 (60 to 120 m):** Lower semi-confined to confined sand/gravel regional production aquifer.
-- The user shall have interactive camera controls (orbit, pan, zoom, preset views) and an adjustable clipping plane ($0\%$ to $100\%$) to inspect internal clay compaction.
+#### FR-01: Dual-Mode Geographic and Subsurface Viewport
+- **2D Geographic GIS Mode (MapLibre GL JS):**
+  - The system shall render an interactive geographic basemap centered on the Metro Iloilo deltaic basin (`10.72° N, 122.56° E`, WGS84 / PRS92 alignment).
+  - The map shall feature standard pan, zoom, pitch, and reset-to-extent navigation controls.
+  - The map shall render a dynamic GeoJSON synthetic polygon grid displaying localized cumulative land subsidence ($cm$) and head drawdown ($m$).
+  - Clicking any cell shall open an inspector popup detailing cell ID, estimated subsidence, head drawdown, geological soil classification, and synthetic demonstration status.
+- **3D Geotechnical Subsurface Mode (Three.js WebGL):**
+  - The system shall render an interactive 3D WebGL cutaway of the Metro Iloilo deltaic aquifer system comprising three distinct hydrostratigraphic layers:
+    - **Layer 1 (0 to 30 m):** Upper unconfined alluvial sand and silt aquifer.
+    - **Layer 2 (30 to 60 m):** Low-permeability, compressible marine clay aquitard.
+    - **Layer 3 (60 to 120 m):** Lower semi-confined to confined sand/gravel regional production aquifer.
+  - The user shall have interactive camera controls (orbit, pan, zoom, preset views) and an adjustable clipping plane ($0\%$ to $100\%$) to inspect internal clay compaction.
 
-#### FR-02: Spatial Well Placement and Extraction Schedules
-- The platform shall allow users to interactively place and configure multiple deep extraction wells across the spatial domain.
-- For each well, the user shall configure:
-  - Spatial coordinates $(x, y)$ in PRS92 / UTM Zone 51N (EPSG:3125).
-  - Pumping rate $Q$ ranging from $0$ to $5,000\text{ m}^3/\text{day}$.
-  - Screened depth interval (selecting either Layer 1 or Layer 3).
-  - Extraction schedule (continuous, seasonal rotation, or emergency drought pumping).
+#### FR-02: Spatial Parameter Configuration and Scenario Presets
+- The platform shall allow users to interactively test extraction scenarios using named illustrative presets or continuous sliders:
+  - **Preset 1 (Sustainable Baseline):** Modest municipal pumping ($12,000\text{ m}^3/\text{day}$) with normal recharge ($200\text{ mm/year}$).
+  - **Preset 2 (High Urban Overdraft):** Heavy commercial pumping ($26,000\text{ m}^3/\text{day}$) with diminished recharge ($100\text{ mm/year}$).
+  - **Preset 3 (Managed Aquifer Recharge):** Extraction ($15,000\text{ m}^3/\text{day}$) coupled with artificial infiltration wells ($320\text{ mm/year}$).
+  - **Preset 4 (Drought Shock):** Maximum emergency pumping ($32,000\text{ m}^3/\text{day}$) with severe drought recharge ($30\text{ mm/year}$).
+- For custom exploration, users configure pumping rate, hydraulic conductivity, specific storage, recharge rate, and geotechnical clay thickness.
 
 #### FR-03: Real-Time Coupled Drawdown and Compaction Inference
 - Upon adjusting extraction parameters, the surrogate engine shall compute:

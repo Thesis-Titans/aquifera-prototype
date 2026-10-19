@@ -348,8 +348,8 @@ export default function BottomAnalyticsSuite({
                 <tr>
                   <td className="py-1.5 text-slate-300 font-sans font-medium">RMSE (m)</td>
                   <td className="py-1.5 text-white">0.015</td>
-                  <td className="py-1.5 text-slate-400">—</td>
-                  <td className="py-1.5 text-right text-slate-500">—</td>
+                  <td className="py-1.5 text-slate-400">N/A</td>
+                  <td className="py-1.5 text-right text-slate-500">N/A</td>
                 </tr>
                 <tr>
                   <td className="py-1.5 text-slate-300 font-sans font-medium">Inference Time (s)</td>
