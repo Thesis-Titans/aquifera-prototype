@@ -1,4 +1,4 @@
-# AQUIFERA — Web-Based Simulation Platform
+# AQUIFERA: Web-Based Simulation Platform
 > **SIMULATE • VERIFY • SUSTAIN**  
 > *A Web-Based Simulation Platform and Automated Pipeline for Subsurface Compaction Modeling Using Physics-Informed Neural Operator Surrogates*
 
@@ -17,6 +17,18 @@
 Standard finite-difference numerical solvers (such as **USGS MODFLOW 6 CSUB**) require 3 to 5 minutes (or hours for large regional grids) to compute non-linear skeletal consolidation, preventing interactive scenario exploration during urban planning and water allocation meetings. 
 
 Aquifera solves this by deploying a **Physics-Informed Neural Operator (PINO)** surrogate engine that delivers **sub-second ($< 250\text{ ms}$, $\approx 80,000\times$ speedup)** 3D hydraulic head and land subsidence simulations on commodity workstation hardware, while maintaining on-demand numerical verification with the USGS gold standard.
+
+---
+
+## 📚 Documentation Suite
+
+Comprehensive engineering specifications, architectural contracts, and interface design guides are maintained in the [`docs/`](./docs) directory:
+
+* [**Documentation Master Index (`docs/README.md`)**](./docs/README.md): System overview, core metric table, quick reference, and operational setup.
+* [**Software Requirements & Specifications (`docs/SPECIFICATIONS.md`)**](./docs/SPECIFICATIONS.md): Functional (FR-01 to FR-08), non-functional (NFR-01 to NFR-08 based on ISO/IEC 25010:2023), domain parameter bounds, and anti-hallucination integrity rules.
+* [**System Architecture & Pipeline (`docs/ARCHITECTURE.md`)**](./docs/ARCHITECTURE.md): 4-tier architectural specification, PINO 3D surrogate formulation, FloPy/MODFLOW 6 CSUB verification pipeline, Darcy mass conservation, and interactive data flows.
+* [**UI/UX & HCI Design Guide (`docs/UI-UX-GUIDE.md`)**](./docs/UI-UX-GUIDE.md): Obsidian-dark design system, HSL color tokens, Three.js 3D viewport hierarchy, dual-engine benchmark HUD, and WCAG accessibility standards.
+* [**Prototype Implementation Plans (`docs/plans/`)**](./docs/plans): Phased implementation roadmaps, UI/UX audits, and demonstration state designs.
 
 ---
 
@@ -100,7 +112,7 @@ npm run preview
 ## 👥 Research Team & Academic Context
 
 * **Program:** Bachelor of Science in Information Technology (BSIT 3-A)
-* **Course:** CC 208 — Methods of Research in Computing
+* **Course:** CC 208: Methods of Research in Computing
 * **Institution:** College of Information and Communications Technology (CICT)
 * **Organization:** [Thesis-Titans](https://github.com/Thesis-Titans)
 * **Group:** Group 2

@@ -1,4 +1,4 @@
-# AQUIFERA Interactive Visualization Prototype — Revised Implementation Plan
+# AQUIFERA Interactive Visualization Prototype: Revised Implementation Plan
 
 Repository: https://github.com/Thesis-Titans/aquifera-prototype  
 Supersedes: `AQUIFERA-Prototype-Baseline-Audit-and-Revised-Plan.md`  
@@ -9,11 +9,11 @@ Current scope: A convincing, interactive research-demo prototype using determini
 
 Build a high-fidelity interactive visualization of the AQUIFERA concept: a groundwater and land-subsidence scenario exploration workspace focused on Metro Iloilo. Users should be able to change illustrative scenario parameters, run a deterministic demonstration, inspect a geographically aligned overlay, explore a conceptual 3D subsurface, scrub the displayed time horizon, inspect locations/cells, and compare scenario outputs across charts and summary panels.
 
-The prototype should look realistic because its geography, map controls, coordinate handling, visual hierarchy, units, legends, and interactions are coherent—not because synthetic scientific values are presented as real observations.
+The prototype should look realistic because its geography, map controls, coordinate handling, visual hierarchy, units, legends, and interactions are coherent, not because synthetic scientific values are presented as real observations.
 
 ## 2. Non-negotiable integrity rules
 
-- Keep a persistent, legible notice: **RESEARCH PROTOTYPE — OUTPUTS ARE SYNTHETIC DEMONSTRATION DATA; NO VALIDATED PINO OR MODFLOW RUN IS CONNECTED.**
+- Keep a persistent, legible notice: **RESEARCH PROTOTYPE: OUTPUTS ARE SYNTHETIC DEMONSTRATION DATA; NO VALIDATED PINO OR MODFLOW RUN IS CONNECTED.**
 - A real basemap is geographic context, not groundwater or subsidence evidence.
 - Do not invent or imply verified district boundaries, well locations, extraction measurements, aquifer properties, geology, or land-subsidence observations.
 - Do not display made-up accuracy, RMSE, speedup, significance tests, calibration, or benchmark claims as measured results.
@@ -72,7 +72,7 @@ Keep the demo model simple and documented. It may illustrate qualitative relatio
 
 ## 6. Revised implementation phases
 
-### P0 — Establish honest prototype status
+### P0: Establish honest prototype status
 
 - Update README to separate **Implemented**, **Synthetic demo behavior**, and **Future research-engine integration**.
 - Remove unsupported claims such as “MODFLOW benchmarked,” measured accuracy, speedup, calibration, or significance results.
@@ -83,7 +83,7 @@ Keep the demo model simple and documented. It may illustrate qualitative relatio
 
 **Acceptance:** no UI or README statement implies a trained PINO or MODFLOW run has happened when it has not.
 
-### P1 — Replace the schematic map with a real interactive map
+### P1: Replace the schematic map with a real interactive map
 
 - Replace `MetroIloilo2DMap.jsx`'s fixed 1000×650 canvas as the primary map with MapLibre GL JS.
 - Set a useful initial Metro Iloilo viewport without inventing an official study boundary.
@@ -94,7 +94,7 @@ Keep the demo model simple and documented. It may illustrate qualitative relatio
 
 **Acceptance:** geographic navigation behaves like a real map; the overlay stays spatially aligned; attribution is visible.
 
-### P2 — Build a coherent synthetic spatial overlay
+### P2: Build a coherent synthetic spatial overlay
 
 - Create a modest GeoJSON grid/polygon layer in valid longitude/latitude coordinates, explicitly labeled synthetic.
 - Keep geometry within the intended demo extent; do not label it as an official administrative boundary.
@@ -106,7 +106,7 @@ Keep the demo model simple and documented. It may illustrate qualitative relatio
 
 **Acceptance:** pan/zoom does not detach the overlay; every map control has a visible, working effect; no unsupported local observation is implied.
 
-### P3 — Make scenario controls functional and consistent
+### P3: Make scenario controls functional and consistent
 
 - Keep one source of truth for parameter values and selected scenario/year.
 - Provide clear min/max/step values and units; validate invalid values and show inline feedback.
@@ -114,11 +114,11 @@ Keep the demo model simple and documented. It may illustrate qualitative relatio
 - Implement **Run Demonstration** as a deterministic update of one result object, not a fake solver run.
 - Ensure map, selected-cell popup, time series, cross-section, metric cards, and comparison rows all use the same scenario/result version.
 - Add a reset-to-defaults action.
-- Use honest status text such as `Demonstration outputs updated — no PINO/MODFLOW computation executed`.
+- Use honest status text such as `Demonstration outputs updated (no PINO/MODFLOW computation executed)`.
 
 **Acceptance:** changing scenario or year produces consistent updates in every dependent view; repeated identical inputs reproduce identical outputs.
 
-### P4 — Improve the conceptual 3D subsurface view
+### P4: Improve the conceptual 3D subsurface view
 
 - Keep the current Three.js scene as a conceptual visualization, not a verified geologic model.
 - Add reliable camera presets: isometric, top, north, south, east, west; reset camera; orbit, pan and zoom.
@@ -131,7 +131,7 @@ Keep the demo model simple and documented. It may illustrate qualitative relatio
 
 **Acceptance:** all 3D controls work as labeled; synthetic geometry and depth values are visibly identified as conceptual.
 
-### P5 — Make analytics useful without fake scientific claims
+### P5: Make analytics useful without fake scientific claims
 
 - Keep a land-subsidence-style cross-section, selected-location time series, and scenario comparison panel only if they update from the shared demo result.
 - Label axes and units; show selected scenario, year range, and data status.
@@ -143,7 +143,7 @@ Keep the demo model simple and documented. It may illustrate qualitative relatio
 
 **Acceptance:** every chart and metric has a clear meaning, units and status; no fake validation is presented as evidence.
 
-### P6 — Visual polish and responsive behavior
+### P6: Visual polish and responsive behavior
 
 - Match the intended high-fidelity dark research-workstation design: compact top navigation, left scenario controls, large central map, right 3D view, and lower analytics suite.
 - Use consistent spacing, typography, icon style, borders, focus states and contrast.
@@ -154,7 +154,7 @@ Keep the demo model simple and documented. It may illustrate qualitative relatio
 
 **Acceptance:** the interface is legible and navigable at the intended demo resolution and smaller widths; error states are recoverable.
 
-### P7 — Tests and delivery
+### P7: Tests and delivery
 
 - Unit-test deterministic mock generation, parameter validation, units/status fields, and selected-year behavior.
 - Browser-test: map load/error, pan/zoom/reset, overlay opacity, layer toggles, cell popup, variable/year changes, scenario run/reset, chart synchronization, 3D camera/layers, and screenshot capture.
