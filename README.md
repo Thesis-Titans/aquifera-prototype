@@ -12,11 +12,32 @@
 
 ## 🌊 Overview
 
-**Aquifera** is an interactive web-based simulation platform and automated pipeline designed to address the severe computational bottlenecks of traditional regional groundwater modeling. 
+**Aquifera** is an interactive web-based simulation platform designed to address the severe computational bottlenecks of traditional regional groundwater modeling. 
 
-Standard finite-difference numerical solvers (such as **USGS MODFLOW 6 CSUB**) require 3 to 5 minutes (or hours for large regional grids) to compute non-linear skeletal consolidation, preventing interactive scenario exploration during urban planning and water allocation meetings. 
+Standard finite-difference numerical solvers (such as **USGS MODFLOW 6 CSUB**) require 3 to 45 minutes to compute non-linear skeletal consolidation, preventing interactive scenario exploration during metropolitan urban planning and water allocation meetings. 
 
-Aquifera solves this by deploying a **Physics-Informed Neural Operator (PINO)** surrogate engine that delivers **sub-second ($< 250\text{ ms}$, $\approx 80,000\times$ speedup)** 3D hydraulic head and land subsidence simulations on commodity workstation hardware, while maintaining on-demand numerical verification with the USGS gold standard.
+The Aquifera capstone research proposes an accessible computing intervention: coupling an offline-trained **Physics-Informed Neural Operator (PINO)** surrogate engine with a modern web dashboard. The proposed system targets sub-second ($< 250\text{ ms}$, $\approx 80,000\times$ speedup) 3D hydraulic head and land subsidence simulations on standard workstation hardware (e.g., NVIDIA RTX 4050 6 GB GPU), with on-demand numerical verification against benchmark USGS MODFLOW 6 CSUB physics.
+
+> [!NOTE]
+> **Prototype Status & Academic Integrity Statement:**  
+> This repository contains the **Tier 1 Interactive Web Prototype** created for proposal defense and UI/UX validation. Current in-browser calculations use an illustrative analytical Darcy-Theis and Terzaghi consolidation model (`src/physics/groundwaterPhysics.js`). Backend surrogate inference (Tier 3) and automated FloPy numerical verification (Tier 4) represent the **proposed research architecture** to be developed and evaluated during subsequent project phases. All HUD benchmark figures and verification curves are illustrative demonstration telemetry.
+
+---
+
+## 📊 Implementation Status & Verification Delineation
+
+| System Subsystem | Category | Current Status | Description & Academic Qualification |
+| :--- | :--- | :--- | :--- |
+| **Interactive Web Dashboard** | Client (Tier 1) | **Implemented** | React 19 SPA, Vite 8.3, Tailwind CSS v4, responsive layout. |
+| **3D Subsurface Viewport** | Client (Tier 1) | **Implemented** | Three.js WebGL canvas, 3-layer geotechnical strata cutaway, dynamic surface mesh displacement. |
+| **2D Geospatial Basemap** | Client (Tier 1) | **Implemented** | MapLibre GL JS with CARTO Dark basemap and synthetic demonstration GeoJSON grid. |
+| **Client-Side Physics Engine** | Client (Tier 1) | **Implemented (Illustrative)** | Analytical Darcy-Theis multi-well drawdown and Terzaghi skeletal compaction (`groundwaterPhysics.js`). Evaluated for interactive demonstration; not a substitute for numerical solvers. |
+| **Scenario Presets & Reset** | Client (Tier 1) | **Implemented** | Baseline, Overdraft, MAR, Drought Shock presets with isolated state resets. |
+| **Dual-Engine Telemetry HUD** | UI Prototype | **Illustrative Demo Telemetry** | Displays target engineering telemetry ($< 250\text{ ms}$, speedup, $R^2$, $L_2$). Clearly identified as demonstration placeholders, NOT measured results from a live model. |
+| **Verification Modal Cross-Checks** | UI Prototype | **Illustrative Demo Interface** | Interactive dialog demonstrating the proposed benchmark comparison interface and cross-section charts. |
+| **API Gateway & Orchestration** | Backend (Tier 2) | **Proposed Specification** | FastAPI async service, Redis caching, Celery queue. Documented in `docs/ARCHITECTURE.md` as target architecture. |
+| **PINO Surrogate Inference Engine**| Backend (Tier 3) | **Proposed Research Goal** | Pre-trained PyTorch 3D Physics-Informed Neural Operator to be trained and benchmarked during capstone methodology. |
+| **MODFLOW 6 Verification Pipeline** | Numerical (Tier 4) | **Proposed Benchmark Pipeline** | Automated FloPy / USGS MODFLOW 6 CSUB verification pipeline to be deployed for empirical cross-validation. |
 
 ---
 
@@ -32,21 +53,21 @@ Comprehensive engineering specifications, architectural contracts, and interface
 
 ---
 
-## 🏛️ 4-Tier System Architecture
+## 🏛️ 4-Tier Target System Architecture
 
 ```
-[ Tier 1: Client Presentation ]
-   └── React 19 + Three.js WebGL (Interactive 3D Cutaway, Real-Time Mesh Deformation)
-           │
-           ▼ (WebSocket / REST API)
-[ Tier 2: API Gateway & Orchestrator ]
-   └── FastAPI + Redis Caching (< 10 ms cache hits, celery background job dispatch)
-           │
-           ├─────────────────────────────────────────┐
-           ▼                                         ▼
+[ Tier 1: Client Presentation ] (IMPLEMENTED PROTOTYPE)
+   └── React 19 + Three.js WebGL + MapLibre GL JS (Interactive 3D Cutaway, Real-Time Mesh Deformation)
+            │
+            ▼ (HTTP / WebSocket - Target Specification)
+[ Tier 2: API Gateway & Orchestrator ] (PROPOSED BACKEND SPECIFICATION)
+   └── FastAPI + Redis Caching (< 10 ms cache hits, Celery background job dispatch)
+            │
+            ├─────────────────────────────────────────┐
+            ▼                                         ▼
 [ Tier 3: Surrogate Inference ]           [ Tier 4: Verification Pipeline ]
-   └── PyTorch CUDA PINO                     └── Headless USGS MODFLOW 6 CSUB
-       (< 250 ms, RTX 4050 <= 4.2 GB VRAM)       (FloPy Automated Discretization & Solvers)
+   └── PyTorch CUDA PINO (PROPOSED GOAL)      └── Headless USGS MODFLOW 6 CSUB (PROPOSED BENCHMARK)
+       (Target: < 250 ms, RTX 4050 <= 4.2 GB)     (FloPy Automated Discretization & Verification)
 ```
 
 ---
@@ -54,25 +75,26 @@ Comprehensive engineering specifications, architectural contracts, and interface
 ## ✨ Interactive Prototype Capabilities
 
 1. **Stratified 3D Geotechnical Cutaway (Three.js):**
-   * **Upper Unconfined Sand (0–30 m):** Permeable aquifer.
-   * **Clay Aquitard (30–60 m):** Highly compressible layer prone to irreversible skeletal collapse.
-   * **Lower Confined Sand (60–120 m):** High-transmissivity extraction aquifer.
+   * **Upper Unconfined Sand (0 to 30 m):** Permeable aquifer.
+   * **Clay Aquitard (30 to 60 m):** Highly compressible layer prone to irreversible skeletal collapse.
+   * **Lower Confined Sand (60 to 120 m):** High-transmissivity extraction aquifer.
    * **Dynamic Surface Mesh:** Real-time deformation showing the cone of depression and subsidence trough.
-   * **Volumetric Cutaway:** Toggle $50\%$ stratum clipping to inspect internal clay compaction.
+   * **Volumetric Cutaway:** Toggle 50% stratum clipping to inspect internal clay compaction.
 
-2. **Real-Time Hydromechanical Physics Engine:**
-   * Formulates multi-well radial drawdown (Theis equation) and 1D Terzaghi skeletal consolidation.
-   * **Preconsolidation Threshold Alert:** Triggers a critical alert when head drops below $h_{\text{pre}} = 88.0\text{ m}$, signaling irreversible plastic compaction ($S_{skv} = 2.8 \times 10^{-3}\text{ m}^{-1}$).
+2. **Client-Side Analytical Hydromechanical Physics Engine:**
+   * Formulates multi-well radial drawdown (Theis equation via Abramowitz-Stegun rational approximation) and 1D Terzaghi skeletal consolidation.
+   * **Preconsolidation Threshold Alert:** Triggers an alert when head drops below $h_{\text{pre}} = 88.0\text{ m}$, signaling irreversible plastic compaction ($S_{skv} = 2.8 \times 10^{-3}\text{ m}^{-1}$).
+   * **Isolated Scenario State:** Presets and resets operate with clean, independent state memory.
 
-3. **Dual-Engine Benchmark HUD:**
-   * Live latency tracker: **PINO ($2.3\text{ ms}$)** vs. **USGS MODFLOW 6 ($184.2\text{ s}$)**.
-   * Quality metrics: $R^2 = 0.942$, Relative $L_2 = 3.8\%$, $\text{RMSE} = 4.2\text{ mm}$.
-   * Testbed compliance: Formatted for NVIDIA RTX 4050 ($1.8\text{ GB}$ VRAM allocation).
+3. **Dual-Engine Benchmark HUD (Illustrative Target Metrics):**
+   * Real-time demonstration telemetry displaying target latency comparisons: **PINO ($< 250\text{ ms}$)** vs. **USGS MODFLOW 6 ($180\text{ s}$)**.
+   * Illustrative fidelity indicators: $R^2 = 0.942$, Relative $L_2 = 3.8\%$, $\text{RMSE} = 4.2\text{ mm}$ (calibrated as visual design targets, not measured experimental outcomes).
+   * Testbed hardware bounds: Formatted for NVIDIA RTX 4050 ($1.8\text{ GB}$ VRAM allocation).
 
-4. **Tier 4 Asynchronous Verification Engine:**
-   * Run on-demand simulated background solver cross-checks.
-   * Interactive 2D W-E cross-section graph proving tight alignment with USGS MODFLOW 6.
-   * Wilcoxon signed-rank test validation ($p = 0.824 > 0.05$).
+4. **Tier 4 Verification Dialog (Proposed Comparison Interface):**
+   * Demonstrates the proposed on-demand background solver cross-check workflow for stakeholders.
+   * Interactive 2D W-E cross-section graph illustrating comparative profile inspection.
+   * Displays target statistical evaluation concepts (e.g. Wilcoxon signed-rank test).
 
 5. **Defense Presentation Tooling:**
    * **Slide Snapshot:** One-click high-resolution PNG download for presentation decks.
@@ -101,8 +123,15 @@ npm run dev
 
 Open your browser at `http://localhost:5173/` to view the 3D simulation platform.
 
-### Production Build
+### Tests & Quality Validation
 ```bash
+# Run unit tests for physics engine and state isolation
+npm test
+
+# Run linter
+npm run lint
+
+# Production build
 npm run build
 npm run preview
 ```

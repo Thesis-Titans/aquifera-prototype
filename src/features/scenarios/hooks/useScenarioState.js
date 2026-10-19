@@ -73,7 +73,7 @@ export function useScenarioState(initialParams = DEFAULT_PARAMS) {
 
   // Compute reactive physical state via Darcy/Theis and Terzaghi skeletal compaction
   const physicalState = useMemo(() => {
-    return computeGroundwaterState(params);
+    return computeGroundwaterState(params, { trackHysteresis: true });
   }, [params]);
 
   // Update a single parameter and mark preset as custom
@@ -97,6 +97,8 @@ export function useScenarioState(initialParams = DEFAULT_PARAMS) {
   const applyPreset = useCallback((presetKey) => {
     const targetPreset = SCENARIO_PRESETS[presetKey];
     if (targetPreset) {
+      // Isolate scenario history: reset hysteresis buffer when switching scenarios
+      resetHysteresisState();
       setActivePreset(presetKey);
       setParamsState(prev => ({
         ...prev,

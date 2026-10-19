@@ -29,21 +29,25 @@ Where:
 * $s(r, t)$: Hydraulic head drawdown (m) at radial distance $r$ after duration $t$.
 * $T = K \times b$: Aquifer transmissivity (m2/day).
 * $S = S_s \times b$: Storage coefficient (dimensionless).
-* $W(u)$: Well function approximated via an accelerated polynomial series expansion.
+* $W(u)$: Well function approximated via Abramowitz and Stegun (1964) rational formulas:
+  * For $0 < u \le 1.0$: Polynomial expansion Formula 5.1.53 ($|\epsilon| < 2 \times 10^{-7}$).
+  * For $1.0 < u < 10.0$: Continued fraction rational form Formula 5.1.56 ($|\epsilon| < 2 \times 10^{-8}$).
+  * For $u \ge 10.0$: Truncated to 0 (negligible drawdown outside the cone of depression).
 
 #### 2.2 Terzaghi 1D Compaction and Hysteresis
 Overburden effective stress increments caused by pore pressure decline $\Delta u_w$:
 
 $$\Delta \sigma'_v = \rho_w g \Delta h_{\text{drawdown}}$$
 
-Plastic compaction is distinguished from elastic rebound using a stateful historical threshold $h_{\text{pre}} = -15.0\text{ m}$:
-1. **Elastic Reversible Strain ($h > h_{\text{pre}}$)**: Governed by the recompression index $C_r \approx 0.05$.
-2. **Virgin Plastic Permanent Compaction ($h \le h_{\text{pre}}$)**: Governed by the virgin compression index $C_c \approx 0.45$.
+Plastic compaction is distinguished from elastic rebound using a stateful historical threshold $h_{\text{pre}} = 88.0\text{ m}$ (7.0 m drawdown below initial head $h_0 = 95.0\text{ m}$):
+1. **Elastic Reversible Strain ($h > h_{\text{pre}}$)**: Governed by elastic skeletal storage $S_{ske} = 8.0 \times 10^{-5}\text{ m}^{-1}$ ($C_r \approx 0.05$).
+2. **Virgin Plastic Permanent Compaction ($h \le h_{\text{pre}}$)**: Governed by inelastic skeletal storage $S_{skv} = 2.8 \times 10^{-3}\text{ m}^{-1}$ ($C_c \approx 0.45$).
 
 ---
 
-### 3. Verification and Safety Bounds
+### 3. State Isolation, Reset Semantics, and Automated Testing
 
-* **Function Purity**: All spatial functions (`computeGroundwaterState`, `getPointHydrogeology`) are pure functions with zero network side effects.
-* **Hysteresis Register**: Permanent deformation history is tracked via `resetHysteresisState()` and preserved across parameter adjustments.
-* **Numerical Bounds**: Inputs are clamped to physically plausible ranges ($Q \in [0, 40000]\text{ m}^3/\text{d}$, $K \in [1, 50]\text{ m}/\text{d}$) to prevent division-by-zero or negative logarithmic arguments.
+* **Stateless Determinism by Default**: `computeGroundwaterState(params)` is 100% pure and deterministic when called without options. It does not mutate or depend on global state.
+* **Isolated Hysteresis Memory**: Hysteresis tracking is enabled via `{ trackHysteresis: true }` or by passing a dedicated `historyBuffer` instance (`createHysteresisBuffer()`).
+* **Clean Scenario Boundaries**: Switching scenario presets in `useScenarioState` triggers `resetHysteresisState()`, guaranteeing that deformation history from an overdraft scenario does not bleed into a subsequent baseline scenario.
+* **Automated Unit Testing**: Verified via Node.js native test runner (`npm test`), testing $W(u)$ numerical accuracy against reference tables, determinism, physical parameter sensitivity, and memory isolation.

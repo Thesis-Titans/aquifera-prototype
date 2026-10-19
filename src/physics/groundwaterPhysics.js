@@ -17,7 +17,24 @@ export const DOMAIN = {
   ]
 };
 
-// Physical Constants
+// Physical Constants and Reference Parameters (Representative Coastal Alluvium)
+/**
+ * Physical parameter definitions and illustrative assumptions:
+ * - initialHead: Initial potentiometric head (95.0 m AMSL). Representative baseline for deep confined alluvial aquifer.
+ * - preconsolidationHead: Critical preconsolidation threshold (88.0 m AMSL; 7.0 m drawdown below initial head).
+ *   Represents historical maximum effective stress in the aquitard. Breaching this triggers virgin plastic consolidation.
+ * - sandTransmissivity: Transmissivity of lower confined production sand (240.0 m^2/day; K ~ 4 m/day, b = 60 m).
+ * - sandStorativity: Confined aquifer storage coefficient (4.0e-4, dimensionless).
+ * - sandSke: Elastic skeletal specific storage of sand (2.5e-5 m^-1).
+ * - clayThickness: Nominal thickness of compressible clay aquitard (30.0 m).
+ * - claySke: Elastic (recompression) skeletal storage of clay (8.0e-5 m^-1; Cr ~ 0.04-0.06).
+ * - claySkv: Inelastic (virgin) skeletal storage of clay (2.8e-3 m^-1; Cc ~ 0.40-0.45 representative of soft estuarine clays).
+ * - clayTimeLagDays: Hydrodynamic pore pressure dissipation lag constant (30.0 days).
+ *
+ * NOTE: These values are illustrative representative parameters derived from published literature on coastal
+ * deltaic aquifers (e.g. Bangkok, Mekong, and Iloilo coastal plain alluvium). They are intended for demonstration
+ * and UI/UX evaluation and do not represent verified borehole-calibrated field values.
+ */
 export const HYDRO_PARAMS = {
   initialHead: 95.0,          // h0 in meters above datum
   preconsolidationHead: 88.0, // h_pre in meters (critical threshold: 7.0m drawdown)
@@ -31,41 +48,81 @@ export const HYDRO_PARAMS = {
 };
 
 /**
- * Well function W(u) approximation (Theis equation)
+ * Well function W(u) approximation for unsteady radial flow to a fully penetrating well (Theis, 1935).
+ * Evaluates the exponential integral: E_1(u) = \int_u^\infty (e^-t / t) dt.
+ *
+ * Employs Abramowitz and Stegun (1964) rational approximations:
+ * 1. For u < 0.05: Cooper-Jacob logarithmic truncation: W(u) ~ -ln(u) - 0.5772156649
+ * 2. For 0.05 <= u <= 1.0: Abramowitz & Stegun Formula 5.1.53 polynomial (|error| < 2e-7)
+ * 3. For 1.0 < u < 10.0: Abramowitz & Stegun Formula 5.1.56 rational continued-fraction (|error| < 2e-8)
+ * 4. For u >= 10.0: W(u) ~ 0 (negligible drawdown outside radius of influence)
+ *
+ * @param {number} u Dimensionless distance-time parameter: (r^2 * S) / (4 * T * t)
+ * @returns {number} Value of well function W(u)
  */
-function wellFunctionW(u) {
+export function wellFunctionW(u) {
   if (u <= 0) return 0;
-  if (u > 10) return 0;
-  if (u < 0.05) {
-    // Cooper-Jacob approximation
-    return -Math.log(u) - 0.5772156649;
+  if (u >= 10.0) return 0;
+  if (u <= 1.0) {
+    // Abramowitz & Stegun Formula 5.1.53 for 0 < u <= 1.0 (|error| < 2e-7)
+    const a0 = -0.57721566;
+    const a1 = 0.99999193;
+    const a2 = -0.24991055;
+    const a3 = 0.05519968;
+    const a4 = -0.00976004;
+    const a5 = 0.00107857;
+    return -Math.log(u) + a0 + u * (a1 + u * (a2 + u * (a3 + u * (a4 + u * a5))));
   }
-  // Polynomial approximation for moderate u
-  const a0 = -0.57721566;
-  const a1 = 0.99999193;
-  const a2 = -0.24991055;
-  const a3 = 0.05519968;
-  const a4 = -0.00976004;
-  const a5 = 0.00107857;
-  return -Math.log(u) + a0 + u * (a1 + u * (a2 + u * (a3 + u * (a4 + u * a5))));
+  // Abramowitz & Stegun Formula 5.1.56 for 1.0 < u < 10.0 (|error| < 2e-8)
+  const b1 = 8.5733287401;
+  const b2 = 18.0590174108;
+  const b3 = 8.6347608925;
+  const b4 = 0.2677737343;
+  const c1 = 9.5733223454;
+  const c2 = 25.6329105584;
+  const c3 = 21.0996530827;
+  const c4 = 3.9584969228;
+  const num = u * (u * (u * (u + b1) + b2) + b3) + b4;
+  const den = u * (u * (u * (u + c1) + c2) + c3) + c4;
+  return (Math.exp(-u) / u) * (num / den);
 }
 
-// Persistent Terzaghi Plastic Hysteresis Buffer (Tracks historic peak stress / minimum head)
-let historicalMinHeadBuffer = null;
+// Session-level hysteresis buffer used ONLY when stateful tracking is explicitly enabled
+let sessionHysteresisBuffer = null;
 
 /**
- * Resets the plastic hysteresis memory buffer (e.g., when switching scenarios or explicit reset)
+ * Creates an isolated, clean hysteresis state buffer initialized to initial hydraulic head.
+ * @param {number} resolution Grid resolution (default 64)
+ * @param {number} initialHead Initial head in meters (default 95.0)
+ * @returns {Float32Array} Initialized head buffer
+ */
+export function createHysteresisBuffer(resolution = DOMAIN.gridResolution, initialHead = HYDRO_PARAMS.initialHead) {
+  return new Float32Array(resolution * resolution).fill(initialHead);
+}
+
+/**
+ * Resets the session hysteresis memory buffer to break state dependencies between scenarios.
  */
 export function resetHysteresisState() {
-  historicalMinHeadBuffer = null;
+  sessionHysteresisBuffer = null;
 }
 
 /**
- * Calculates 3D hydraulic head and 2D surface compaction field
+ * Calculates 3D hydraulic head and 2D surface compaction field.
+ * By default (options.trackHysteresis = false), this computation is purely deterministic and stateless.
+ *
  * @param {Object} params Pumping and environmental parameters
- * @returns {Object} Full physical state for 3D renderer and HUD
+ * @param {Object} [options={}] Optional execution settings
+ * @param {Float32Array} [options.historyBuffer=null] Explicit caller-managed hysteresis buffer
+ * @param {boolean} [options.trackHysteresis=false] Whether to persist hysteresis in the session buffer
+ * @returns {Object} Full physical state for 3D renderer, map, and telemetry HUD
  */
-export function computeGroundwaterState(params) {
+export function computeGroundwaterState(params, options = {}) {
+  const {
+    historyBuffer = null,
+    trackHysteresis = false
+  } = options;
+
   const {
     pumpingRate = 20000,     // Q in m^3/day (regional/city-scale or local well)
     pumpingDays = 180,       // Duration t in days
@@ -90,9 +147,18 @@ export function computeGroundwaterState(params) {
   const hPre = HYDRO_PARAMS.preconsolidationHead;
   const bClay = HYDRO_PARAMS.clayThickness;
 
-  // Initialize or re-verify hysteresis buffer size
-  if (!historicalMinHeadBuffer || historicalMinHeadBuffer.length !== res * res) {
-    historicalMinHeadBuffer = new Float32Array(res * res).fill(h0);
+  // Resolve hysteresis buffer: explicit caller buffer > session buffer > isolated buffer
+  let minHeadBuffer;
+  if (historyBuffer && historyBuffer.length === res * res) {
+    minHeadBuffer = historyBuffer;
+  } else if (trackHysteresis) {
+    if (!sessionHysteresisBuffer || sessionHysteresisBuffer.length !== res * res) {
+      sessionHysteresisBuffer = createHysteresisBuffer(res, h0);
+    }
+    minHeadBuffer = sessionHysteresisBuffer;
+  } else {
+    // Isolated stateless buffer: identical inputs produce identical outputs with zero state bleed
+    minHeadBuffer = createHysteresisBuffer(res, h0);
   }
 
   // Effective daily recharge
@@ -113,8 +179,9 @@ export function computeGroundwaterState(params) {
   const headGrid = new Float32Array(res * res);
   const strainGrid = new Float32Array(res * res); // Compaction strain in clay
 
-  // Regional wellfield focal extraction scaling:
-  // Under Metro Iloilo urban overdraft (Q = 20,000 m3/day), Mandurriao commercial extraction yields ~48m drawdown
+  // Regional wellfield focal extraction scaling (illustrative assumption):
+  // Models localized wellfield clustering (e.g. Mandurriao commercial corridor) where multiple extraction
+  // boreholes converge within a 500-meter zone.
   const effectiveFocalQ = pumpingRate > 3500 ? (pumpingRate * 0.77) : (pumpingRate * 1.25);
 
   // Wells array (Primary + optional secondary cluster)
@@ -156,10 +223,10 @@ export function computeGroundwaterState(params) {
 
       // Terzaghi 1D consolidation with Plastic Hysteresis Buffer:
       // Track minimum historical head reached across extraction cycles
-      if (headClay < historicalMinHeadBuffer[idx]) {
-        historicalMinHeadBuffer[idx] = headClay;
+      if (headClay < minHeadBuffer[idx]) {
+        minHeadBuffer[idx] = headClay;
       }
-      const histMinHead = historicalMinHeadBuffer[idx];
+      const histMinHead = minHeadBuffer[idx];
 
       let deltaBElastic = 0;
       let deltaBInelastic = 0;

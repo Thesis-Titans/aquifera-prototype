@@ -36,6 +36,27 @@ Aquifera implements a **4-Tier Decoupled Architecture** designed to balance real
 └──────────────────────────────────────┘ └───────────────────────────────┘
 ```
 
+#### 1.1 Implementation Status and Research Delineation
+
+To maintain absolute academic and scientific integrity (Form `CICT-UGR-F001` and CICT Capstone Policy):
+
+* **Tier 1 (Client Presentation)** represents the **implemented working prototype** contained within this repository, demonstrating interactive 3D WebGL geotechnical cutaways, 2D MapLibre GIS mapping, analytical Darcy-Theis drawdown, and scenario controls.
+* **Tiers 2, 3, and 4 (API Gateway, PINO Inference Engine, and FloPy Verification Pipeline)** represent the **proposed system architecture and research target specification**. These tiers define the engineering roadmap to be executed during model training, surrogate benchmarking, and numerical validation phases.
+* **Demonstration Telemetry**: Metrics presented in the Tier 1 client (e.g., 2.3 ms latency, speedup factors, R^2, and Wilcoxon signed-rank comparisons) are illustrative design targets and demonstration placeholders calibrated for user interface walkthroughs. They must not be cited as measured empirical findings of a trained neural operator.
+
+| Architectural Subsystem | Tier | Implementation Status | Technical Realization in Repository |
+| :--- | :--- | :--- | :--- |
+| **Interactive Dashboard & Shell** | Tier 1 | **Implemented** | React 19 SPA, Vite 8.3, Tailwind CSS v4 (`src/app/App.jsx`). |
+| **3D Subsurface Cutaway** | Tier 1 | **Implemented** | Three.js WebGL canvas with custom strata displacement (`src/features/aquifer-visualization/`). |
+| **2D GIS Basemap** | Tier 1 | **Implemented** | MapLibre GL JS with CARTO Dark raster tiles and synthetic GeoJSON grid (`src/features/map/`). |
+| **Client-Side Physics Engine** | Tier 1 | **Implemented (Illustrative)** | Analytical Darcy-Theis multi-well drawdown and 1D Terzaghi skeletal compaction (`src/physics/groundwaterPhysics.js`). |
+| **Scenario State Management** | Tier 1 | **Implemented** | React state with isolated preset resets (`src/features/scenarios/hooks/useScenarioState.js`). |
+| **Dual-Engine HUD Telemetry** | Tier 1 | **Illustrative Demo Telemetry** | UI monitors displaying target engineering benchmarks and latency comparisons (`src/features/simulation/`). |
+| **Verification Modal** | Tier 1 | **Illustrative Demo Interface** | Interactive dialog demonstrating proposed reference solver cross-checks and cross-section graphs (`src/features/verification/`). |
+| **FastAPI Gateway & Orchestration**| Tier 2 | **Proposed Architecture** | Dockerized asynchronous Python service specification documented in Section 2. |
+| **3D PINO Surrogate Inference** | Tier 3 | **Proposed Research Goal** | Pre-trained PyTorch CUDA neural operator model to be trained on synthetic LHS datasets. |
+| **Automated FloPy / MODFLOW 6** | Tier 4 | **Proposed Benchmark Pipeline** | Headless USGS MODFLOW 6 CSUB numerical solver verification pipeline. |
+
 ---
 
 ### 2. Tier-by-Tier Component Specifications
