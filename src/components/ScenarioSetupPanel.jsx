@@ -7,7 +7,6 @@ import {
   ChevronDown, 
   ChevronRight,
   Activity,
-  CheckCircle2,
   Bookmark
 } from 'lucide-react';
 
@@ -15,12 +14,15 @@ export default function ScenarioSetupPanel({
   params,
   setParams,
   onRunSimulation,
-  isSimulating
+  isSimulating,
+  activePreset: controlledPreset,
+  onSelectPreset
 }) {
   const [selectedLocation, setSelectedLocation] = useState('Metro Iloilo (City)');
   const [simulationPeriod, setSimulationPeriod] = useState('2025 to 2050');
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
-  const [activePreset, setActivePreset] = useState('baseline');
+  const [internalPreset, setInternalPreset] = useState('baseline');
+  const activePreset = controlledPreset !== undefined ? controlledPreset : internalPreset;
 
   // Advanced geotechnical parameters
   const [clayThickness, setClayThickness] = useState(35);
@@ -28,7 +30,11 @@ export default function ScenarioSetupPanel({
   const [compressionIndex, setCompressionIndex] = useState(0.45);
 
   const applyPreset = (presetKey) => {
-    setActivePreset(presetKey);
+    setInternalPreset(presetKey);
+    if (onSelectPreset) {
+      onSelectPreset(presetKey);
+      return;
+    }
     if (presetKey === 'baseline') {
       setParams(prev => ({
         ...prev,
@@ -62,6 +68,12 @@ export default function ScenarioSetupPanel({
         rechargeRateMmYear: 30
       }));
     }
+  };
+
+  const handleSliderChange = (updater) => {
+    setInternalPreset('custom');
+    if (onSelectPreset) onSelectPreset('custom');
+    setParams(updater);
   };
 
   return (
@@ -198,8 +210,7 @@ export default function ScenarioSetupPanel({
               step="500"
               value={params.pumpingRate}
               onChange={(e) => {
-                setActivePreset('custom');
-                setParams(prev => ({ ...prev, pumpingRate: Number(e.target.value) }));
+                handleSliderChange(prev => ({ ...prev, pumpingRate: Number(e.target.value) }));
               }}
               className="w-full h-1.5 bg-[#0d243b] rounded-lg appearance-none cursor-pointer accent-cyan-400"
             />
@@ -218,8 +229,7 @@ export default function ScenarioSetupPanel({
               step="1"
               value={params.hydraulicConductivity || 15}
               onChange={(e) => {
-                setActivePreset('custom');
-                setParams(prev => ({ ...prev, hydraulicConductivity: Number(e.target.value) }));
+                handleSliderChange(prev => ({ ...prev, hydraulicConductivity: Number(e.target.value) }));
               }}
               className="w-full h-1.5 bg-[#0d243b] rounded-lg appearance-none cursor-pointer accent-cyan-400"
             />
@@ -238,8 +248,7 @@ export default function ScenarioSetupPanel({
               step="0.00001"
               value={params.specificStorage || 0.0001}
               onChange={(e) => {
-                setActivePreset('custom');
-                setParams(prev => ({ ...prev, specificStorage: Number(e.target.value) }));
+                handleSliderChange(prev => ({ ...prev, specificStorage: Number(e.target.value) }));
               }}
               className="w-full h-1.5 bg-[#0d243b] rounded-lg appearance-none cursor-pointer accent-cyan-400"
             />
@@ -258,8 +267,7 @@ export default function ScenarioSetupPanel({
               step="10"
               value={params.rechargeRateMmYear || 150}
               onChange={(e) => {
-                setActivePreset('custom');
-                setParams(prev => ({ ...prev, rechargeRateMmYear: Number(e.target.value) }));
+                handleSliderChange(prev => ({ ...prev, rechargeRateMmYear: Number(e.target.value) }));
               }}
               className="w-full h-1.5 bg-[#0d243b] rounded-lg appearance-none cursor-pointer accent-cyan-400"
             />

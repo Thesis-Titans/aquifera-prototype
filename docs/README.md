@@ -3,7 +3,7 @@
 
 **West Visayas State University | College of Information and Communications Technology (CICT)**  
 *Bachelor of Science in Information Technology (BSIT) | Course: CC 208 (Methods of Research in Computing)*  
-*Academic Year 2026–2027 | Research Group 2*
+*Academic Year 2026-2027 | Research Group 2*
 
 ---
 
@@ -24,9 +24,14 @@ docs/
 ├── README.md                      # This master index and overview
 ├── SPECIFICATIONS.md              # Software Requirements Specification (SRS), ISO/IEC 25010 & integrity rules
 ├── ARCHITECTURE.md                # 4-Tier system architecture, Three.js 3D cutaway & FloPy verification
+├── DATA-PROVENANCE.md             # Cartographic basemap sources, WGS84/PRS92, grid specs & geotechnical strata
+├── SCIENTIFIC-VALIDATION.md       # 4-Tier validation hierarchy, Theis/Cooper-Jacob, Terzaghi hysteresis & oral defense FAQ
 ├── UI-UX-GUIDE.md                 # Design system, HSL tokens, Three.js viewport & HUD layout
 ├── plans/                         # Project implementation plans and historical revisions
+│   ├── AQUIFERA-Modular-Refactoring-and-Integrity-Plan.md  # Comprehensive 5-phase modular refactoring plan
 │   └── prototype-plan-v2.md       # Implementation roadmap and demonstration state design
+├── archive/                       # Deprecated and retired code artifacts
+│   └── legacy-components/         # Retired 2D canvas and overlay components preserved for audit
 ├── scripts/                       # Asset preprocessing and viewport cropping utilities
 │   └── crop_maps.ps1              # Map viewport extraction script
 └── screenshots/                   # High-resolution dashboard captures and UI references

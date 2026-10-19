@@ -1,29 +1,28 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import TopNavigation from './components/TopNavigation';
 import ScenarioSetupPanel from './components/ScenarioSetupPanel';
 import CentralViewport from './components/CentralViewport';
 import BottomAnalyticsSuite from './components/BottomAnalyticsSuite';
 import VerificationModal from './components/VerificationModal';
 import GuideModal from './components/GuideModal';
-import { computeGroundwaterState, resetHysteresisState } from './physics/groundwaterPhysics';
+import { useScenarioState } from './hooks/useScenarioState';
 
 export default function App() {
-  // Primary Hydrogeological Simulation Parameters
-  const [params, setParams] = useState({
-    pumpingRate: 12000,          // Q = 12,000 m3/day (baseline)
-    hydraulicConductivity: 15,   // K = 15 m/day
-    specificStorage: 0.0001,     // Ss = 0.0001 1/m
-    rechargeRateMmYear: 200,     // R = 200 mm/year
-    pumpingDays: 180,
-    wellCount: 1,
-    wellX: 0,
-    wellY: 0
-  });
+  // Hydrogeological Scenario and Physics Engine State
+  const {
+    params,
+    setParams,
+    physicalState,
+    isSimulating,
+    activePreset,
+    applyPreset,
+    runDemonstration,
+    resetToBaseline
+  } = useScenarioState();
 
   // UI Navigation & View State
   const [activeTab, setActiveTab] = useState('Home');
   const [viewMode, setViewMode] = useState('2D'); // '2D' (MapLibre) or '3D' (Three.js)
-  const [isSimulating, setIsSimulating] = useState(false);
 
   // Visualization Controls State
   const [visualizationConfig, setVisualizationConfig] = useState({
@@ -37,32 +36,9 @@ export default function App() {
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
-  // Reactive physical state from Darcy/Theis & Terzaghi skeletal compaction engine
-  const physicalState = useMemo(() => {
-    return computeGroundwaterState(params);
-  }, [params]);
-
-  // Run Demonstration trigger with smooth transition
-  const handleRunSimulation = () => {
-    setIsSimulating(true);
-    setTimeout(() => {
-      setIsSimulating(false);
-    }, 450);
-  };
-
   // Reset to default baseline
   const handleResetParams = () => {
-    resetHysteresisState();
-    setParams({
-      pumpingRate: 12000,
-      hydraulicConductivity: 15,
-      specificStorage: 0.0001,
-      rechargeRateMmYear: 200,
-      pumpingDays: 180,
-      wellCount: 1,
-      wellX: 0,
-      wellY: 0
-    });
+    resetToBaseline();
     setVisualizationConfig({
       dataType: 'subsidence',
       timeSlice: '2050',
@@ -119,8 +95,10 @@ export default function App() {
         <ScenarioSetupPanel
           params={params}
           setParams={setParams}
-          onRunSimulation={handleRunSimulation}
+          onRunSimulation={runDemonstration}
           isSimulating={isSimulating}
+          activePreset={activePreset}
+          onSelectPreset={applyPreset}
         />
 
         {/* Central: Dual-Mode Viewport (2D MapLibre GIS ⇄ 3D Three.js Subsurface) */}

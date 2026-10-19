@@ -41,12 +41,15 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
   const [probedData, setProbedData] = useState(null);
   const [isProbePinned, setIsProbePinned] = useState(false);
   const [isProbeActive, setIsProbeActive] = useState(true);
-  const isProbeActiveRef = useRef(true);
-  isProbeActiveRef.current = isProbeActive;
+  const isProbeActiveRef = useRef(isProbeActive);
   const onMoveWellRef = useRef(onMoveWell);
-  onMoveWellRef.current = onMoveWell;
   const physicalStateRef = useRef(physicalState);
-  physicalStateRef.current = physicalState;
+
+  useEffect(() => {
+    isProbeActiveRef.current = isProbeActive;
+    onMoveWellRef.current = onMoveWell;
+    physicalStateRef.current = physicalState;
+  }, [isProbeActive, onMoveWell, physicalState]);
 
   // Helper: Build stratified hydrogeology blocks
   const buildStratigraphy = (scene, cutawayPlane) => {
