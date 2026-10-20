@@ -18,11 +18,11 @@ export default function DualBenchmarkHUD({ physicalState }) {
       >
         <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_hsl(187,92%,48%)] animate-pulse" />
         <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-          <Zap size={13} className="text-cyan-400" /> Target PINO Latency: <strong className="font-mono tabular-nums text-cyan-300 font-bold">{targetPinoLatencyMs} ms</strong>
+          <Zap size={13} className="text-cyan-400" /> Target PINO Latency (Spec): <strong className="font-mono tabular-nums text-cyan-300 font-bold">{targetPinoLatencyMs} ms</strong>
         </span>
-        <span className="text-xs text-slate-400 font-medium">({targetSpeedup})</span>
+        <span className="text-xs text-slate-400 font-medium font-mono">(Target ~80,000×)</span>
         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-          Target Spec
+          TARGET SPEC
         </span>
         <ChevronDown size={14} className="text-slate-400" />
       </div>

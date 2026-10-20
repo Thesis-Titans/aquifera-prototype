@@ -12,10 +12,11 @@ export default function App() {
     params,
     setParams,
     physicalState,
-    isSimulating,
+    capturedScenario,
+    hasUncapturedChanges,
+    captureScenarioForComparison,
     activePreset,
     applyPreset,
-    runDemonstration,
     resetToBaseline
   } = useScenarioState();
 
@@ -102,14 +103,15 @@ export default function App() {
       />
 
       {/* 2. Middle Interactive Stage (Left Sidebar + Central Dual Viewport) */}
-      <main className="flex-1 flex flex-col md:flex-row gap-4 px-4 pt-3 pb-2 min-h-130 max-w-[1920px] w-full mx-auto">
+      <main className="flex-1 flex flex-col md:flex-row gap-4 px-4 pt-3 pb-2 min-h-[460px] max-w-[1920px] w-full mx-auto">
         
         {/* Left: Scenario Setup Panel Sidebar */}
         <ScenarioSetupPanel
           params={params}
           setParams={setParams}
-          onRunSimulation={runDemonstration}
-          isSimulating={isSimulating}
+          onCaptureScenario={captureScenarioForComparison}
+          hasUncapturedChanges={hasUncapturedChanges}
+          capturedScenario={capturedScenario}
           activePreset={activePreset}
           onSelectPreset={applyPreset}
         />
@@ -130,6 +132,8 @@ export default function App() {
         <BottomAnalyticsSuite
           physicalState={physicalState}
           params={params}
+          capturedScenario={capturedScenario}
+          hasUncapturedChanges={hasUncapturedChanges}
           onOpenVerification={() => setIsVerificationOpen(true)}
           onResetView={handleResetParams}
           visualizationConfig={visualizationConfig}
@@ -157,6 +161,8 @@ export default function App() {
         isOpen={isVerificationOpen}
         onClose={() => setIsVerificationOpen(false)}
         physicalState={physicalState}
+        params={params}
+        capturedScenario={capturedScenario}
       />
 
       <GuideModal

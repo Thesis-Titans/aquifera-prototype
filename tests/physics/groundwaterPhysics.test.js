@@ -105,12 +105,50 @@ describe('AQUIFERA Physics Engine: Simulation Determinism and State Isolation', 
     assert.ok(bufA[centerIdx] < HYDRO_PARAMS.initialHead, 'Buffer A must record drawdown');
   });
 
-  test('resetHysteresisState clears session tracking', () => {
-    computeGroundwaterState({ ...baseParams, pumpingRate: 30000 }, { trackHysteresis: true });
-    resetHysteresisState();
+  test('reverses completely when sliders return to baseline without plastic hysteresis leak', () => {
+    // Initial baseline state
+    const initialBaseline = computeGroundwaterState(baseParams);
 
-    // After reset, a sustainable run should not retain plastic compaction from previous run
-    const freshRun = computeGroundwaterState({ ...baseParams, pumpingRate: 5000 });
-    assert.equal(freshRun.isHysteresisRetained, false);
+    // Simulate user dragging slider to extreme overdraft shock
+    const shockRun = computeGroundwaterState({ ...baseParams, pumpingRate: 35000 });
+    assert.ok(shockRun.maxSubsidenceCm > initialBaseline.maxSubsidenceCm, 'Shock run must exhibit high subsidence');
+
+    // User drags slider back down to original baseline parameters
+    const returnedBaseline = computeGroundwaterState(baseParams);
+
+    // Must be bitwise and numerically identical to the initial baseline run
+    assert.equal(returnedBaseline.minHead, initialBaseline.minHead);
+    assert.equal(returnedBaseline.maxDrawdown, initialBaseline.maxDrawdown);
+    assert.equal(returnedBaseline.maxSubsidenceCm, initialBaseline.maxSubsidenceCm);
+    assert.equal(returnedBaseline.isHysteresisRetained, false);
+    assert.equal(returnedBaseline.isPreconsolidationBreached, initialBaseline.isPreconsolidationBreached);
+  });
+
+  test('preserves intentional path-dependent plastic compaction when historyBuffer is explicitly supplied', () => {
+    const multiYearBuffer = createHysteresisBuffer();
+
+    // Year 1: Severe extraction event breaching preconsolidation threshold
+    const year1 = computeGroundwaterState(
+      { ...baseParams, pumpingRate: 35000 },
+      { historyBuffer: multiYearBuffer }
+    );
+    assert.ok(year1.isPreconsolidationBreached, 'Year 1 must breach preconsolidation');
+    assert.ok(year1.maxSubsidenceCm > 30, 'Year 1 must trigger plastic compaction');
+
+    // Year 2: Managed recovery (pumping reduced to sustainable level) using the same history buffer
+    const year2 = computeGroundwaterState(
+      { ...baseParams, pumpingRate: 10000, rechargeRateMmYear: 300 },
+      { historyBuffer: multiYearBuffer }
+    );
+
+    // In Year 2, because matrix underwent plastic collapse in Year 1, hysteresis must be retained
+    assert.equal(year2.isHysteresisRetained, true, 'Intentional sequential run must retain plastic hysteresis');
+    assert.ok(year2.permanentInelasticCm > 0, 'Permanent inelastic compaction must persist');
+  });
+
+  test('resetHysteresisState remains callable as a safe no-op for backward compatibility', () => {
+    assert.doesNotThrow(() => {
+      resetHysteresisState();
+    });
   });
 });

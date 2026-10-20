@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { computeGroundwaterState, resetHysteresisState } from '../../../physics/groundwaterPhysics';
+import { computeGroundwaterState, resetHysteresisState } from '../../../physics/groundwaterPhysics.js';
 
 export const SCENARIO_PRESETS = {
   baseline: {
@@ -64,17 +64,45 @@ export const DEFAULT_PARAMS = SCENARIO_PRESETS.baseline.params;
 
 /**
  * Custom hook to isolate scenario parameters, physical simulation state,
- * preset switching, and simulation trigger actions.
+ * preset switching, live exploratory previews, and explicit comparison capture.
+ *
+ * Interaction Contract:
+ * 1. Live Exploratory Preview:
+ *    Editing parameters via sliders or presets immediately recalculates `physicalState`
+ *    reactively. The 2D map, 3D cutaway mesh, and key insight gauges display this live state.
+ * 2. Explicit Scenario Capture:
+ *    Clicking "Capture Scenario for Comparison" creates an explicit snapshot in `capturedScenario`.
+ *    Analytical comparison tables and benchmark deltas consume this captured state rather than
+ *    fluctuating during transient slider drags.
+ * 3. Change Detection:
+ *    `hasUncapturedChanges` flags when the live parameter preview has diverged from the captured scenario.
+ * 4. Zero Artificial Delays:
+ *    Because the deterministic physical model computes in under 4ms, scenario capture is instantaneous
+ *    with zero fake loading animations.
  */
 export function useScenarioState(initialParams = DEFAULT_PARAMS) {
   const [params, setParamsState] = useState(initialParams);
   const [activePreset, setActivePreset] = useState('baseline');
-  const [isSimulating, setIsSimulating] = useState(false);
 
-  // Compute reactive physical state via Darcy/Theis and Terzaghi skeletal compaction
+  // Compute live exploratory physical state via Darcy/Theis and 1D Terzaghi skeletal compaction
+  // Pure, side-effect free calculation with zero module-level buffer leaks
   const physicalState = useMemo(() => {
-    return computeGroundwaterState(params, { trackHysteresis: true });
+    return computeGroundwaterState(params);
   }, [params]);
+
+  // Captured scenario for formal comparative analysis
+  const [capturedScenario, setCapturedScenario] = useState(() => ({
+    params: { ...initialParams },
+    physicalState: computeGroundwaterState(initialParams),
+    preset: 'baseline',
+    capturedAt: 'Initial Baseline'
+  }));
+
+  // Detect whether live parameters have changed since last capture
+  const hasUncapturedChanges = useMemo(() => {
+    const capturedParams = capturedScenario.params;
+    return Object.keys(params).some(k => params[k] !== capturedParams[k]);
+  }, [params, capturedScenario.params]);
 
   // Update a single parameter and mark preset as custom
   const setParam = useCallback((key, value) => {
@@ -97,8 +125,6 @@ export function useScenarioState(initialParams = DEFAULT_PARAMS) {
   const applyPreset = useCallback((presetKey) => {
     const targetPreset = SCENARIO_PRESETS[presetKey];
     if (targetPreset) {
-      // Isolate scenario history: reset hysteresis buffer when switching scenarios
-      resetHysteresisState();
       setActivePreset(presetKey);
       setParamsState(prev => ({
         ...prev,
@@ -107,18 +133,19 @@ export function useScenarioState(initialParams = DEFAULT_PARAMS) {
     }
   }, []);
 
-  // Run demonstration simulation with subtle UI feedback
-  const runDemonstration = useCallback(() => {
-    setIsSimulating(true);
-    const timer = setTimeout(() => {
-      setIsSimulating(false);
-    }, 450);
-    return () => clearTimeout(timer);
-  }, []);
+  // Explicit action: Capture current live scenario into comparison state
+  const captureScenarioForComparison = useCallback(() => {
+    const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setCapturedScenario({
+      params: { ...params },
+      physicalState,
+      preset: activePreset,
+      capturedAt: timeLabel
+    });
+  }, [params, physicalState, activePreset]);
 
   // Reset to default baseline state
   const resetToBaseline = useCallback(() => {
-    resetHysteresisState();
     setActivePreset('baseline');
     setParamsState(DEFAULT_PARAMS);
   }, []);
@@ -128,11 +155,15 @@ export function useScenarioState(initialParams = DEFAULT_PARAMS) {
     setParam,
     setParams,
     physicalState,
-    isSimulating,
+    capturedScenario,
+    hasUncapturedChanges,
+    captureScenarioForComparison,
+    // Aliased for backward compatibility with existing component signatures
+    runDemonstration: captureScenarioForComparison,
+    isSimulating: false,
     activePreset,
     setActivePreset,
     applyPreset,
-    runDemonstration,
     resetToBaseline
   };
 }

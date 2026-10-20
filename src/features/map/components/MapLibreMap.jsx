@@ -1,7 +1,16 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import * as maplibregl from 'maplibre-gl';
+import { Map, Marker, Popup, setWorkerUrl } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { METRO_ILOILO_GIS } from '../../../data/geographic/metroIloiloGIS';
-import { Navigation, ZoomIn, ZoomOut, RotateCcw, Layers } from 'lucide-react';
+import { Navigation, ZoomIn, ZoomOut, RotateCcw, Layers, Loader2 } from 'lucide-react';
+
+// Configure MapLibre background worker for Vite environment
+if (typeof window !== 'undefined' && setWorkerUrl) {
+  const base = import.meta.env.BASE_URL || '/';
+  const workerPath = `${base.endsWith('/') ? base : base + '/'}maplibre-gl-worker.mjs`;
+  const fullUrl = new URL(workerPath, window.location.origin).href;
+  setWorkerUrl(fullUrl);
+}
 
 // Free, fast, reliable Dark Matter basemap (OpenStreetMap & CARTO data, no API key required)
 const CARTO_DARK_STYLE = {
@@ -19,6 +28,13 @@ const CARTO_DARK_STYLE = {
     }
   },
   layers: [
+    {
+      id: 'carto-dark-background',
+      type: 'background',
+      paint: {
+        'background-color': '#060e18'
+      }
+    },
     {
       id: 'carto-dark-layer',
       type: 'raster',
@@ -142,7 +158,7 @@ export default function MapLibreMap({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const map = new maplibregl.Map({
+    const map = new Map({
       container: mapContainerRef.current,
       style: CARTO_DARK_STYLE,
       center: [centerLng, centerLat],
@@ -155,9 +171,39 @@ export default function MapLibreMap({
     });
 
     mapRef.current = map;
+    window.__map = map;
+
+    // ResizeObserver ensures canvas dimensions adapt dynamically
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.resize();
+      }
+    });
+
+    if (mapContainerRef.current) {
+      resizeObserver.observe(mapContainerRef.current);
+    }
+
+    map.on('error', (e) => {
+      console.error('MapLibre error event:', e);
+      window.__maplibreError = {
+        message: e?.error?.message || e?.message || String(e),
+        status: e?.status,
+        error: String(e?.error)
+      };
+    });
+
+    map.on('style.load', () => {
+      console.log('[DEBUG] MapLibre style loaded');
+      window.__maplibreStyleLoaded = true;
+      map.resize();
+    });
 
     map.on('load', () => {
+      console.log('[DEBUG] MapLibre map loaded');
+      window.__maplibreLoaded = true;
       setMapLoaded(true);
+      map.resize();
 
       // 1. Add GeoJSON Synthetic Subsidence Grid Source
       map.addSource('subsidence-grid', {
@@ -229,7 +275,7 @@ export default function MapLibreMap({
           });
         });
 
-        new maplibregl.Marker({ element: el })
+        new Marker({ element: el })
           .setLngLat([district.lng, district.lat])
           .addTo(map);
       });
@@ -281,7 +327,7 @@ export default function MapLibreMap({
 
           if (popupRef.current) popupRef.current.remove();
 
-          popupRef.current = new maplibregl.Popup({ closeButton: true, offset: 12 })
+          popupRef.current = new Popup({ closeButton: true, offset: 12 })
             .setLngLat(e.lngLat)
             .setHTML(popupContent)
             .addTo(map);
@@ -289,7 +335,17 @@ export default function MapLibreMap({
       });
     });
 
+    const timer1 = setTimeout(() => {
+      if (mapRef.current) mapRef.current.resize();
+    }, 150);
+    const timer2 = setTimeout(() => {
+      if (mapRef.current) mapRef.current.resize();
+    }, 600);
+
     return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      resizeObserver.disconnect();
       map.remove();
     };
   }, []);
@@ -328,12 +384,24 @@ export default function MapLibreMap({
 
   return (
     <div className="relative w-full h-full min-h-115 bg-[#050e18] overflow-hidden select-none">
-      {/* 1. MapLibre GL Canvas Container */}
-      <div ref={mapContainerRef} className="w-full h-full" />
+      {/* 1. MapLibre GL Canvas Container (Absolute inset-0 ensures full canvas geometry) */}
+      <div
+        ref={mapContainerRef}
+        className="absolute inset-0 w-full h-full"
+        style={{ width: '100%', height: '100%' }}
+      />
+
+      {/* Loading Overlay */}
+      {!mapLoaded && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#050e18] z-10 gap-2.5 text-slate-400">
+          <Loader2 size={24} className="animate-spin text-cyan-400" />
+          <span className="text-xs font-mono text-slate-300">Loading Metro Iloilo GIS Basemap...</span>
+        </div>
+      )}
 
       {/* 2. Top-Left Extent & Spatial Context Badge */}
-      <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5 pointer-events-none">
-        <div className="bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 shadow-lg pointer-events-auto flex items-center gap-2">
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5 pointer-events-none">
+        <div className="bg-slate-950/85 backdrop-blur-md px-3.5 py-2 rounded-lg border border-white/10 shadow-lg pointer-events-auto flex items-center gap-2">
           <Navigation size={13} className="text-cyan-400 rotate-45" />
           <span className="text-xs font-semibold text-slate-100">Metro Iloilo Basin (PRS92 / WGS84)</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 font-mono">
@@ -343,7 +411,7 @@ export default function MapLibreMap({
       </div>
 
       {/* 3. Map Navigation Controls (Top-Right) */}
-      <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5">
+      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         <button
           onClick={handleZoomIn}
           className="w-8 h-8 rounded-lg bg-slate-950/85 backdrop-blur-md border border-white/10 hover:border-cyan-400/50 text-slate-200 hover:text-white flex items-center justify-center transition-all shadow-md cursor-pointer"
@@ -368,16 +436,18 @@ export default function MapLibreMap({
       </div>
 
       {/* 4. Bottom-Left Map Legend */}
-      <div className="absolute bottom-4 left-3 z-10 bg-slate-950/90 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-xl max-w-xs">
+      <div className="absolute bottom-4 left-4 z-10 bg-slate-950/90 backdrop-blur-md p-3.5 rounded-xl border border-white/10 shadow-xl max-w-xs">
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-1.5">
             <Layers size={13} className="text-cyan-400" />
             <span className="text-xs font-bold text-slate-100">Cumulative Subsidence (2025-2050)</span>
           </div>
-          <span className="text-[9px] font-mono text-cyan-400 font-semibold">SYNTHETIC</span>
+          <span className="text-[9px] font-mono text-cyan-400 font-semibold px-1.5 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30">
+            SYNTHETIC
+          </span>
         </div>
         <div
-          className="w-full h-2 rounded mb-1 border border-white/10"
+          className="w-full h-2 rounded mb-1.5 border border-white/10"
           style={{ background: 'linear-gradient(to right, #22d3ee, #34d399, #fbbf24, #e11d48)' }}
         />
         <div className="flex justify-between text-[10px] font-mono text-slate-300">
@@ -393,7 +463,7 @@ export default function MapLibreMap({
 
       {/* 5. Floating Selected Cell Inspector Card */}
       {selectedCell && (
-        <div className="absolute bottom-4 right-14 z-10 bg-slate-950/92 backdrop-blur-md p-3 rounded-xl border border-cyan-400/40 shadow-2xl w-64 text-xs">
+        <div className="absolute bottom-4 right-16 z-10 bg-slate-950/92 backdrop-blur-md p-3.5 rounded-xl border border-cyan-400/40 shadow-2xl w-64 text-xs">
           <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2">
             <span className="font-bold text-cyan-300">{selectedCell.district}</span>
             <button
@@ -403,7 +473,7 @@ export default function MapLibreMap({
               Close
             </button>
           </div>
-          <div className="space-y-1 text-[11px]">
+          <div className="space-y-1.5 text-[11px]">
             <div className="flex justify-between">
               <span className="text-slate-400">Cell Identifier:</span>
               <span className="font-mono text-slate-200">{selectedCell.cellId}</span>

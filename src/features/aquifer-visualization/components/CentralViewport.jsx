@@ -73,7 +73,7 @@ export default function CentralViewport({
       </div>
 
       {/* 2. Interactive Viewport Stage (2D MapLibre or 3D Three.js) */}
-      <div className="relative flex-1 w-full h-[calc(100%-48px)] overflow-hidden">
+      <div className="relative flex-1 min-h-0 w-full overflow-hidden">
         {!is3D ? (
           <MapLibreMap
             physicalState={physicalState}

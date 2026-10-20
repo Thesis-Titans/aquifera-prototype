@@ -13,7 +13,10 @@ import {
 } from 'lucide-react';
 
 export default function BottomAnalyticsSuite({
+  physicalState,
   params,
+  capturedScenario,
+  hasUncapturedChanges = false,
   onOpenVerification,
   onResetView,
   visualizationConfig,
@@ -23,11 +26,28 @@ export default function BottomAnalyticsSuite({
   const [activeResultsTab, setActiveResultsTab] = useState('subsidence');
   const canvasRef = useRef(null);
 
-  // Calibrated values matching the target prototype
-  // If user adjusts pumping rate, scale slightly from baseline 0.28m / -48m
+  // Live preview values calculated from active physicalState or parameters
+  const liveSubsidenceM = physicalState?.maxSubsidenceCm != null
+    ? (physicalState.maxSubsidenceCm / 100).toFixed(2)
+    : (0.28 * Math.pow((params.pumpingRate || 20000) / 20000, 0.4)).toFixed(2);
+  const liveHeadM = physicalState?.minHead != null
+    ? physicalState.minHead
+    : -Math.round(48 * Math.pow((params.pumpingRate || 20000) / 20000, 0.3));
+
+  // Captured scenario values for formal comparative table
+  const capturedPhysical = capturedScenario?.physicalState || physicalState;
+  const capturedSubsidenceM = capturedPhysical?.maxSubsidenceCm != null
+    ? (capturedPhysical.maxSubsidenceCm / 100).toFixed(2)
+    : liveSubsidenceM;
+  const capturedPumping = capturedScenario?.params?.pumpingRate || params.pumpingRate || 12000;
+  
+  const baselineSubsidenceM = 0.30;
+  const subNum = parseFloat(capturedSubsidenceM);
+  const deltaPct = (((subNum - baselineSubsidenceM) / baselineSubsidenceM) * 100).toFixed(1);
+  const deltaLabel = Number(deltaPct) > 0 ? `+${deltaPct}%` : `${deltaPct}%`;
+  const isSubsidenceReduced = Number(deltaPct) <= 0;
+
   const pRatio = (params.pumpingRate || 20000) / 20000;
-  const maxSubsidenceVal = (0.28 * Math.pow(pRatio, 0.4)).toFixed(2);
-  const minHeadVal = -Math.round(48 * Math.pow(pRatio, 0.3));
 
   // Render 2D Vertical Subsurface Cross-Section Heatmap matching card1_ref.png
   useEffect(() => {
@@ -118,21 +138,27 @@ export default function BottomAnalyticsSuite({
   }, [activeResultsTab, params.pumpingRate, pRatio]);
 
   return (
-    <section id="bottom-analytics-suite" className="min-h-68 bg-[#06111e] border-t border-[#122336] px-5 py-3 shrink-0 z-20">
+    <section id="bottom-analytics-suite" className="min-h-72 bg-[#06111e] border-t border-[#122336] px-4 lg:px-6 py-4 shrink-0 z-20">
       <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-[1920px] mx-auto">
         
         {/* CARD 1: Simulation Results */}
-        <div className="bg-[#071524] rounded-xl border border-[#13263b] p-3.5 flex flex-col justify-between shadow-lg">
+        <div className="bg-[#071524] rounded-xl border border-[#13263b] p-4 flex flex-col justify-between shadow-xl">
           {/* Header */}
-          <div className="flex items-center gap-2">
-            <TrendingUp size={16} className="text-[#0ea5e9]" />
-            <h3 className="text-xs font-bold text-white tracking-wide">
-              Simulation Results
-            </h3>
+          <div className="flex items-center justify-between border-b border-white/5 pb-2">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={16} className="text-[#0ea5e9]" />
+              <h3 className="text-xs font-bold text-white tracking-wide">
+                Simulation Results
+              </h3>
+            </div>
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono text-cyan-300 font-semibold bg-cyan-950/60 border border-cyan-500/30 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              LIVE PREVIEW
+            </span>
           </div>
 
           {/* Sub-Tabs */}
-          <div className="flex items-center gap-4 text-xs font-medium border-b border-[#13263b] pt-1">
+          <div className="flex items-center gap-3.5 text-xs font-medium border-b border-[#13263b] pt-1.5">
             <button
               onClick={() => setActiveResultsTab('subsidence')}
               className={`pb-1.5 transition-colors cursor-pointer ${
@@ -166,12 +192,12 @@ export default function BottomAnalyticsSuite({
           </div>
 
           {/* Subtitle */}
-          <div className="text-[11px] font-medium text-slate-300 pt-0.5">
-            Land Subsidence (m) – Cross Section
+          <div className="text-[11px] font-medium text-slate-300 pt-1">
+            Land Subsidence (m) (Cross Section)
           </div>
 
           {/* Canvas Plot Frame with Axis & Vertical Colorbar */}
-          <div className="relative flex items-center justify-between gap-1 flex-1 my-1">
+          <div className="relative flex items-center justify-between gap-1 flex-1 my-1.5">
             {/* Y-Axis (Depth) */}
             <div className="flex items-center gap-1 shrink-0 h-full">
               <span className="text-[9px] text-slate-400 font-medium -rotate-90 origin-center select-none w-3">
@@ -187,7 +213,7 @@ export default function BottomAnalyticsSuite({
             </div>
 
             {/* Plot Canvas */}
-            <div className="relative flex-1 h-full rounded border border-[#224466] bg-black overflow-hidden">
+            <div className="relative flex-1 h-full min-h-24 rounded border border-[#224466] bg-black overflow-hidden">
               <canvas
                 ref={canvasRef}
                 width={220}
@@ -218,7 +244,7 @@ export default function BottomAnalyticsSuite({
           </div>
 
           {/* X-Axis (Distance) */}
-          <div className="flex flex-col items-center pl-10 pr-12">
+          <div className="flex flex-col items-center pl-10 pr-12 pt-0.5">
             <div className="flex justify-between w-full text-[9px] font-mono text-slate-400 px-1">
               <span>0</span>
               <span>2</span>
@@ -231,16 +257,21 @@ export default function BottomAnalyticsSuite({
           </div>
         </div>
 
-        {/* CARD 2: Key Insights */}
-        <div className="bg-[#071524] rounded-xl border border-[#13263b] p-3.5 flex flex-col justify-between shadow-lg">
-          <div className="flex items-center gap-2">
-            <ShieldAlert size={16} className="text-[#0ea5e9]" />
-            <h3 className="text-xs font-bold text-white tracking-wide">
-              Key Insights
-            </h3>
+        {/* CARD 2: Key Insights (Target Design Specifications) */}
+        <div className="bg-[#071524] rounded-xl border border-[#13263b] p-4 flex flex-col justify-between shadow-xl">
+          <div className="flex items-center justify-between border-b border-white/5 pb-2">
+            <div className="flex items-center gap-2">
+              <ShieldAlert size={16} className="text-[#0ea5e9]" />
+              <h3 className="text-xs font-bold text-white tracking-wide">
+                Key Insights
+              </h3>
+            </div>
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              TARGET SPEC
+            </span>
           </div>
 
-          <div className="flex flex-col gap-2.5 my-auto">
+          <div className="flex flex-col gap-2.5 my-auto py-1">
             {/* Row 1: Maximum Land Subsidence */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -249,13 +280,13 @@ export default function BottomAnalyticsSuite({
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10.5px] font-medium text-slate-300">Maximum Land Subsidence</span>
-                  <span className="text-base font-bold text-white tracking-tight leading-none mt-0.5">
-                    {maxSubsidenceVal} m
+                  <span className="text-base font-bold text-white tracking-tight leading-none mt-0.5 font-mono">
+                    {liveSubsidenceM} m
                   </span>
                 </div>
               </div>
-              <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5">
-                (by 2050)
+              <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5 font-mono">
+                (Live Preview)
               </span>
             </div>
 
@@ -267,123 +298,161 @@ export default function BottomAnalyticsSuite({
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10.5px] font-medium text-slate-300">Lowest Groundwater Level</span>
-                  <span className="text-base font-bold text-white tracking-tight leading-none mt-0.5">
-                    {minHeadVal} m
+                  <span className="text-base font-bold text-white tracking-tight leading-none mt-0.5 font-mono">
+                    {liveHeadM} m
                   </span>
                 </div>
               </div>
-              <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5">
-                (by 2050)
+              <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5 font-mono">
+                (Live Preview)
               </span>
             </div>
 
-            {/* Row 3: Estimated Runtime */}
+            {/* Row 3: Target Runtime (PINO Spec) */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-[#0a1e35] border border-[#164373] flex items-center justify-center text-[#38bdf8] shrink-0">
                   <Clock size={15} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10.5px] font-medium text-slate-300">Estimated Runtime (AI Model)</span>
-                  <span className="text-base font-bold text-white tracking-tight leading-none mt-0.5">
-                    ~ 12 sec
+                  <span className="text-[10.5px] font-medium text-slate-300">Target PINO Latency (Spec)</span>
+                  <span className="text-base font-bold text-cyan-300 tracking-tight leading-none mt-0.5 font-mono">
+                    &lt; 250 ms
                   </span>
                 </div>
               </div>
-              <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5">
-                (vs. ~ 45 min with MODFLOW 6)
+              <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5 font-mono">
+                (vs. 3-5 min baseline target)
               </span>
             </div>
 
-            {/* Row 4: Estimated Accuracy */}
+            {/* Row 4: Target Accuracy (Spec) */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-[#0a1e35] border border-[#164373] flex items-center justify-center text-[#38bdf8] shrink-0">
                   <Target size={15} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10.5px] font-medium text-slate-300">Estimated Accuracy (vs. MODFLOW 6)</span>
-                  <span className="text-base font-bold text-white tracking-tight leading-none mt-0.5">
-                    ~ 92%
+                  <span className="text-[10.5px] font-medium text-slate-300">Target Accuracy (L2 Relative Error)</span>
+                  <span className="text-base font-bold text-emerald-400 tracking-tight leading-none mt-0.5 font-mono">
+                    &le; 5.0%
                   </span>
                 </div>
               </div>
-              <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5">
-                (relative L2 error)
+              <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5 font-mono">
+                (R² &gt; 0.90 Target)
               </span>
             </div>
           </div>
+
+          <div className="text-[9px] text-slate-400 italic border-t border-white/5 pt-1.5 leading-tight">
+            *Illustrative design targets from proposal specification; not measured empirical findings.
+          </div>
         </div>
 
-        {/* CARD 3: Scenario Comparison */}
-        <div className="bg-[#071524] rounded-xl border border-[#13263b] p-3.5 flex flex-col justify-between shadow-lg">
-          <div className="flex items-center gap-2">
-            <FileText size={16} className="text-[#0ea5e9]" />
-            <h3 className="text-xs font-bold text-white tracking-wide">
-              Scenario Comparison
-            </h3>
+        {/* CARD 3: Scenario Comparison (Captured Scenario vs Baseline) */}
+        <div className="bg-[#071524] rounded-xl border border-[#13263b] p-4 flex flex-col justify-between shadow-xl">
+          <div className="flex items-center justify-between border-b border-white/5 pb-2">
+            <div className="flex items-center gap-2">
+              <FileText size={16} className="text-[#0ea5e9]" />
+              <h3 className="text-xs font-bold text-white tracking-wide">
+                Scenario Comparison
+              </h3>
+            </div>
+            <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${
+              hasUncapturedChanges 
+                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+            }`}>
+              {hasUncapturedChanges ? 'CAPTURED (UNSYNCED)' : 'CAPTURED SCENARIO'}
+            </span>
+          </div>
+
+          {/* Captured Scenario Metadata Pill */}
+          <div className="pt-1.5 pb-0.5">
+            <div className="flex items-center justify-between text-[10px] font-mono text-slate-300">
+              <span>Evaluating: <strong className="text-cyan-300">{capturedScenario?.preset || 'Baseline'}</strong></span>
+              <span className="text-slate-400">{capturedScenario?.capturedAt || 'Initial'}</span>
+            </div>
+            {hasUncapturedChanges && (
+              <div className="text-[9px] text-amber-300/90 font-sans bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/25 mt-1">
+                Sliders modified. Click "Capture Scenario" in setup to sync.
+              </div>
+            )}
           </div>
 
           {/* Table */}
-          <div className="my-auto overflow-hidden">
+          <div className="my-auto overflow-hidden py-1">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-[#18344e] text-[10.5px] font-medium text-slate-300">
-                  <th className="pb-2 font-normal">Metric</th>
-                  <th className="pb-2 font-normal">AQUIFERA<br/>(PINO)</th>
-                  <th className="pb-2 font-normal">MODFLOW 6</th>
-                  <th className="pb-2 font-normal text-right">Difference</th>
+                <tr className="border-b border-[#18344e] text-[10px] font-medium text-slate-300">
+                  <th className="pb-1 font-normal">Metric</th>
+                  <th className="pb-1 font-normal">Captured</th>
+                  <th className="pb-1 font-normal">Baseline</th>
+                  <th className="pb-1 font-normal text-right">Delta</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#13263b] text-[11px] font-mono">
                 <tr>
-                  <td className="py-1.5 text-slate-300 font-sans font-medium">Max Subsidence (m)</td>
-                  <td className="py-1.5 text-white">{maxSubsidenceVal}</td>
-                  <td className="py-1.5 text-slate-400">0.30</td>
-                  <td className="py-1.5 text-right text-[#10b981] font-semibold">-6.7%</td>
+                  <td className="py-1 text-slate-300 font-sans font-medium">Max Subsidence</td>
+                  <td className="py-1 text-white font-bold">{capturedSubsidenceM} m</td>
+                  <td className="py-1 text-slate-400">0.30 m</td>
+                  <td className={`py-1 text-right font-semibold ${isSubsidenceReduced ? 'text-[#10b981]' : 'text-rose-400'}`}>
+                    {deltaLabel}
+                  </td>
                 </tr>
                 <tr>
-                  <td className="py-1.5 text-slate-300 font-sans font-medium">Avg. Subsidence (m)</td>
-                  <td className="py-1.5 text-white">0.12</td>
-                  <td className="py-1.5 text-slate-400">0.14</td>
-                  <td className="py-1.5 text-right text-[#10b981] font-semibold">-14.3%</td>
+                  <td className="py-1 text-slate-300 font-sans font-medium">Pumping Rate</td>
+                  <td className="py-1 text-white">{Number(capturedPumping).toLocaleString()}</td>
+                  <td className="py-1 text-slate-400">12,000</td>
+                  <td className="py-1 text-right text-slate-300">
+                    {capturedPumping === 12000 ? '0%' : (capturedPumping > 12000 ? `+${Math.round(((capturedPumping - 12000)/12000)*100)}%` : `${Math.round(((capturedPumping - 12000)/12000)*100)}%`)}
+                  </td>
                 </tr>
                 <tr>
-                  <td className="py-1.5 text-slate-300 font-sans font-medium">RMSE (m)</td>
-                  <td className="py-1.5 text-white">0.015</td>
-                  <td className="py-1.5 text-slate-400">N/A</td>
-                  <td className="py-1.5 text-right text-slate-500">N/A</td>
+                  <td className="py-1 text-slate-300 font-sans font-medium">Target RMSE</td>
+                  <td className="py-1 text-white">&lt; 0.005 m</td>
+                  <td className="py-1 text-slate-400">Baseline</td>
+                  <td className="py-1 text-right text-cyan-400">Spec Goal</td>
                 </tr>
                 <tr>
-                  <td className="py-1.5 text-slate-300 font-sans font-medium">Inference Time (s)</td>
-                  <td className="py-1.5 text-white">12</td>
-                  <td className="py-1.5 text-slate-400">2,640</td>
-                  <td className="py-1.5 text-right text-[#10b981] font-semibold">-99.5%</td>
+                  <td className="py-1 text-slate-300 font-sans font-medium">Inference Latency</td>
+                  <td className="py-1 text-white">&lt; 250 ms</td>
+                  <td className="py-1 text-slate-400">180-300 s</td>
+                  <td className="py-1 text-right text-[#10b981] font-semibold">~80,000×</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          {/* Full Report Action Button */}
-          <button
-            onClick={onOpenVerification}
-            className="w-full py-2 px-3 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#164373] transition-all flex items-center justify-center gap-2 cursor-pointer mt-1"
-          >
-            <FileText size={14} className="text-white" />
-            <span>View Full Report</span>
-          </button>
+          <div className="flex flex-col gap-2 border-t border-white/5 pt-1.5">
+            <div className="text-[9px] text-slate-400 italic leading-tight">
+              *Candidate benchmark targets for proposal defense demonstration; not measured experimental findings.
+            </div>
+
+            {/* Verification Protocol Action Button */}
+            <button
+              onClick={onOpenVerification}
+              className="w-full h-9 px-3 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#164373] hover:border-cyan-500/50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            >
+              <FileText size={14} className="text-cyan-400" />
+            </button>
+          </div>
         </div>
 
-        {/* CARD 4: Visualization Controls / 3D Visualization Controls */}
-        <div className="bg-[#071524] rounded-xl border border-[#13263b] p-3.5 flex flex-col justify-between shadow-lg">
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal size={16} className="text-[#0ea5e9]" />
-            <h3 className="text-xs font-bold text-white tracking-wide">
-              {is3D ? '3D Visualization Controls' : 'Visualization Controls'}
-            </h3>
+        {/* CARD 4: Visualization Controls */}
+        <div className="bg-[#071524] rounded-xl border border-[#13263b] p-4 flex flex-col justify-between shadow-xl">
+          <div className="flex items-center justify-between border-b border-white/5 pb-2">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal size={16} className="text-[#0ea5e9]" />
+              <h3 className="text-xs font-bold text-white tracking-wide">
+                {is3D ? '3D Viewport Controls' : 'Visualization Controls'}
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-slate-400 font-medium">Renderer</span>
           </div>
 
-          <div className="flex flex-col gap-2.5 my-auto text-xs">
+          <div className="flex flex-col gap-2.5 my-auto text-xs py-1">
             {/* Data Type */}
             <div className="flex flex-col gap-1">
               <span className="text-slate-300 font-medium">Data Type</span>
@@ -410,9 +479,9 @@ export default function BottomAnalyticsSuite({
                   onChange={(e) => setVisualizationConfig(prev => ({ ...prev, timeSlice: e.target.value }))}
                   className="w-full bg-[#0a1c2e] text-slate-100 rounded-lg border border-[#18344e] px-3 py-1.5 appearance-none focus:outline-none focus:border-[#0ea5e9] cursor-pointer"
                 >
-                  <option value="2050">2050</option>
-                  <option value="2040">2040</option>
-                  <option value="2030">2030</option>
+                  <option value="2050">2050 (Projection Horizon)</option>
+                  <option value="2040">2040 (Midterm Phase)</option>
+                  <option value="2030">2030 (Early Milestone)</option>
                 </select>
                 <ChevronDown size={14} className="absolute right-2.5 top-2.5 text-slate-400 pointer-events-none" />
               </div>
@@ -443,7 +512,7 @@ export default function BottomAnalyticsSuite({
                   onChange={(e) => setVisualizationConfig(prev => ({ ...prev, colorScale: e.target.value }))}
                   className="w-full bg-[#0a1c2e] text-slate-100 rounded-lg border border-[#18344e] px-3 py-1.5 appearance-none focus:outline-none focus:border-[#0ea5e9] cursor-pointer"
                 >
-                  <option value="Standard">Standard</option>
+                  <option value="Standard">Standard (Cyan to Crimson)</option>
                   <option value="Jet">Jet / Turbo</option>
                   <option value="Viridis">Viridis</option>
                 </select>
@@ -455,9 +524,9 @@ export default function BottomAnalyticsSuite({
           {/* Reset View Button */}
           <button
             onClick={onResetView}
-            className="w-full py-2 px-3 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#18344e] transition-all flex items-center justify-center gap-2 cursor-pointer mt-1"
+            className="w-full h-9 px-3 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#18344e] hover:border-cyan-500/50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs mt-1"
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={14} className="text-cyan-400" />
             <span>Reset View</span>
           </button>
         </div>

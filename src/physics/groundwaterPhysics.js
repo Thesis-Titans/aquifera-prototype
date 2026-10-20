@@ -87,11 +87,11 @@ export function wellFunctionW(u) {
   return (Math.exp(-u) / u) * (num / den);
 }
 
-// Session-level hysteresis buffer used ONLY when stateful tracking is explicitly enabled
-let sessionHysteresisBuffer = null;
-
 /**
- * Creates an isolated, clean hysteresis state buffer initialized to initial hydraulic head.
+ * Creates an isolated hysteresis state buffer initialized to initial hydraulic head (h0).
+ * Callers may pass this buffer via options.historyBuffer across sequential stress periods
+ * to model intentional path-dependent irreversible compaction.
+ *
  * @param {number} resolution Grid resolution (default 64)
  * @param {number} initialHead Initial head in meters (default 95.0)
  * @returns {Float32Array} Initialized head buffer
@@ -101,26 +101,39 @@ export function createHysteresisBuffer(resolution = DOMAIN.gridResolution, initi
 }
 
 /**
- * Resets the session hysteresis memory buffer to break state dependencies between scenarios.
+ * Legacy reset utility retained for backward compatibility.
+ * All computations are pure and stateless by default; module-level mutable tracking has been removed.
  */
 export function resetHysteresisState() {
-  sessionHysteresisBuffer = null;
+  // Pure functional architecture: no-op since module-level mutable buffer has been eliminated.
 }
 
 /**
  * Calculates 3D hydraulic head and 2D surface compaction field.
- * By default (options.trackHysteresis = false), this computation is purely deterministic and stateless.
+ *
+ * State and Hysteresis Semantics:
+ * 1. Pure Stateless Default:
+ *    When options.historyBuffer is omitted or null, this calculation allocates an isolated
+ *    head buffer initialized to initialHead (h0). Identical parameter inputs produce
+ *    identical outputs with zero side effects. This ensures safe execution inside React
+ *    render cycles (useMemo) and during exploratory slider adjustments.
+ * 2. Intentional Sequential History:
+ *    When modeling consecutive stress periods (e.g. Year 1 drought followed by Year 2 recovery),
+ *    the caller explicitly supplies a Float32Array via options.historyBuffer. The buffer is
+ *    updated in-place and returned on result.historyBuffer, allowing reproducible state chaining.
+ * 3. Terzaghi 1D Consolidation:
+ *    Drawdown below preconsolidation head (hPre = 88.0 m) triggers virgin plastic compaction
+ *    governed by claySkv (inelastic skeletal storage). Within the preconsolidation envelope,
+ *    compaction remains purely elastic and reversible governed by claySke.
  *
  * @param {Object} params Pumping and environmental parameters
  * @param {Object} [options={}] Optional execution settings
  * @param {Float32Array} [options.historyBuffer=null] Explicit caller-managed hysteresis buffer
- * @param {boolean} [options.trackHysteresis=false] Whether to persist hysteresis in the session buffer
  * @returns {Object} Full physical state for 3D renderer, map, and telemetry HUD
  */
 export function computeGroundwaterState(params, options = {}) {
   const {
-    historyBuffer = null,
-    trackHysteresis = false
+    historyBuffer = null
   } = options;
 
   const {
@@ -147,19 +160,10 @@ export function computeGroundwaterState(params, options = {}) {
   const hPre = HYDRO_PARAMS.preconsolidationHead;
   const bClay = HYDRO_PARAMS.clayThickness;
 
-  // Resolve hysteresis buffer: explicit caller buffer > session buffer > isolated buffer
-  let minHeadBuffer;
-  if (historyBuffer && historyBuffer.length === res * res) {
-    minHeadBuffer = historyBuffer;
-  } else if (trackHysteresis) {
-    if (!sessionHysteresisBuffer || sessionHysteresisBuffer.length !== res * res) {
-      sessionHysteresisBuffer = createHysteresisBuffer(res, h0);
-    }
-    minHeadBuffer = sessionHysteresisBuffer;
-  } else {
-    // Isolated stateless buffer: identical inputs produce identical outputs with zero state bleed
-    minHeadBuffer = createHysteresisBuffer(res, h0);
-  }
+  // Resolve hysteresis buffer: explicit caller buffer > fresh isolated buffer
+  const minHeadBuffer = (historyBuffer && historyBuffer.length === res * res)
+    ? historyBuffer
+    : createHysteresisBuffer(res, h0);
 
   // Effective daily recharge
   const effRechargeMmDay = rechargeRateMmDay !== undefined ? rechargeRateMmDay : (rechargeRateMmYear / 365.0);
@@ -289,7 +293,8 @@ export function computeGroundwaterState(params, options = {}) {
     pumpingRate,
     pumpingDays,
     rechargeRateMmDay,
-    wells
+    wells,
+    historyBuffer: minHeadBuffer
   };
 }
 

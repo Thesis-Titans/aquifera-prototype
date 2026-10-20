@@ -3,18 +3,20 @@ import {
   Sliders, 
   MapPin, 
   Calendar, 
-  Play, 
   ChevronDown, 
   ChevronRight,
-  Activity,
-  Bookmark
+  Bookmark,
+  CheckCircle2,
+  Camera
 } from 'lucide-react';
 
 export default function ScenarioSetupPanel({
   params,
   setParams,
   onRunSimulation,
-  isSimulating,
+  onCaptureScenario,
+  hasUncapturedChanges = false,
+  capturedScenario = null,
   activePreset: controlledPreset,
   onSelectPreset
 }) {
@@ -77,38 +79,47 @@ export default function ScenarioSetupPanel({
   };
 
   return (
-    <aside id="scenario-setup-panel" className="w-80 bg-[#071524] border-r border-[#122336] p-5 flex flex-col justify-between overflow-y-auto shrink-0 custom-scrollbar">
+    <aside 
+      id="scenario-setup-panel" 
+      className="w-84 lg:w-88 bg-[#071524] border-r border-[#122336] p-4 lg:p-5 flex flex-col justify-between overflow-y-auto shrink-0 custom-scrollbar shadow-xl"
+    >
       <div className="flex flex-col gap-4">
         
-        {/* Header */}
-        <div className="flex flex-col gap-2">
+        {/* Header Block */}
+        <div className="flex flex-col gap-1.5 pb-1">
           <div className="flex items-center gap-2.5">
-            <div className="text-cyan-400">
+            <div className="text-cyan-400 p-1.5 rounded-lg bg-cyan-950/60 border border-cyan-500/30">
               <Sliders size={18} />
             </div>
-            <h2 className="text-base font-bold text-white tracking-wide">
-              Scenario Setup
-            </h2>
+            <div>
+              <h2 className="text-base font-bold text-white tracking-wide">
+                Scenario Setup
+              </h2>
+              <span className="text-[10px] font-mono text-cyan-400 font-medium">Metro Iloilo Basin Model</span>
+            </div>
           </div>
-          <p className="text-xs text-slate-300 leading-relaxed font-normal">
+          <p className="text-xs text-slate-300 leading-relaxed font-normal pt-1">
             Adjust illustrative extraction parameters to observe simulated groundwater head drawdown and skeletal compaction across Metro Iloilo.
           </p>
         </div>
 
-        {/* Preset Selector */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-            <Bookmark size={13} className="text-cyan-400" />
-            <span>Demonstration Presets</span>
+        {/* Group 1: Demonstration Presets Card */}
+        <div className="bg-slate-900/60 rounded-xl border border-white/8 p-3.5 flex flex-col gap-2.5 shadow-xs">
+          <label className="text-xs font-semibold text-slate-200 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Bookmark size={13} className="text-cyan-400" />
+              <span>Demonstration Presets</span>
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono font-normal">Deterministic</span>
           </label>
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => applyPreset('baseline')}
-              className={`py-1.5 px-2 rounded text-[11px] font-medium border text-left transition-all cursor-pointer ${
+              className={`py-2 px-2.5 rounded-lg text-[11px] font-medium border text-left transition-all cursor-pointer ${
                 activePreset === 'baseline'
-                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
-                  : 'bg-slate-900/60 text-slate-400 border-white/5 hover:bg-white/5 hover:text-slate-200'
+                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-xs'
+                  : 'bg-slate-950/50 text-slate-400 border-white/5 hover:bg-white/5 hover:text-slate-200'
               }`}
             >
               1. Baseline (12k m³/d)
@@ -116,10 +127,10 @@ export default function ScenarioSetupPanel({
             <button
               type="button"
               onClick={() => applyPreset('overdraft')}
-              className={`py-1.5 px-2 rounded text-[11px] font-medium border text-left transition-all cursor-pointer ${
+              className={`py-2 px-2.5 rounded-lg text-[11px] font-medium border text-left transition-all cursor-pointer ${
                 activePreset === 'overdraft'
-                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/50'
-                  : 'bg-slate-900/60 text-slate-400 border-white/5 hover:bg-white/5 hover:text-slate-200'
+                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-xs'
+                  : 'bg-slate-950/50 text-slate-400 border-white/5 hover:bg-white/5 hover:text-slate-200'
               }`}
             >
               2. Overdraft (26k m³/d)
@@ -127,10 +138,10 @@ export default function ScenarioSetupPanel({
             <button
               type="button"
               onClick={() => applyPreset('mar')}
-              className={`py-1.5 px-2 rounded text-[11px] font-medium border text-left transition-all cursor-pointer ${
+              className={`py-2 px-2.5 rounded-lg text-[11px] font-medium border text-left transition-all cursor-pointer ${
                 activePreset === 'mar'
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                  : 'bg-slate-900/60 text-slate-400 border-white/5 hover:bg-white/5 hover:text-slate-200'
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-xs'
+                  : 'bg-slate-950/50 text-slate-400 border-white/5 hover:bg-white/5 hover:text-slate-200'
               }`}
             >
               3. Managed Recharge
@@ -138,10 +149,10 @@ export default function ScenarioSetupPanel({
             <button
               type="button"
               onClick={() => applyPreset('drought')}
-              className={`py-1.5 px-2 rounded text-[11px] font-medium border text-left transition-all cursor-pointer ${
+              className={`py-2 px-2.5 rounded-lg text-[11px] font-medium border text-left transition-all cursor-pointer ${
                 activePreset === 'drought'
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                  : 'bg-slate-900/60 text-slate-400 border-white/5 hover:bg-white/5 hover:text-slate-200'
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-xs'
+                  : 'bg-slate-950/50 text-slate-400 border-white/5 hover:bg-white/5 hover:text-slate-200'
               }`}
             >
               4. Drought Shock
@@ -149,59 +160,69 @@ export default function ScenarioSetupPanel({
           </div>
         </div>
 
-        {/* Location Dropdown */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-slate-200">
-            Target Focus Area
-          </label>
-          <div className="relative">
-            <select
-              value={selectedLocation}
-              onChange={(e) => setSelectedLocation(e.target.value)}
-              className="w-full bg-[#0a1c2e] text-slate-100 text-xs rounded-lg border border-[#18344e] pl-8.5 pr-8 py-2.5 appearance-none focus:outline-none focus:border-cyan-400 cursor-pointer font-medium"
-            >
-              <option value="Metro Iloilo (City)">Metro Iloilo Basin (All Sectors)</option>
-              <option value="Mandurriao Hub">Mandurriao Commercial Epicenter</option>
-              <option value="Iloilo City Proper">Iloilo City Proper & Port</option>
-              <option value="Jaro Basin">Jaro Floodplain & Estuary</option>
-              <option value="Leganes Coastal">Leganes Coastal Lowlands</option>
-            </select>
-            <MapPin size={14} className="absolute left-2.5 top-3 text-slate-400 pointer-events-none" />
-            <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+        {/* Group 2: Scope & Time Horizon Card */}
+        <div className="bg-slate-900/60 rounded-xl border border-white/8 p-3.5 flex flex-col gap-3 shadow-xs">
+          {/* Location Dropdown */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+              <MapPin size={13} className="text-cyan-400" />
+              <span>Target Focus Area</span>
+            </label>
+            <div className="relative">
+              <select
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="w-full bg-[#0a1c2e] text-slate-100 text-xs rounded-lg border border-[#18344e] pr-8 py-2.5 appearance-none focus:outline-none focus:border-cyan-400 cursor-pointer font-medium"
+                style={{ paddingLeft: '34px' }}
+              >
+                <option value="Metro Iloilo (City)">Metro Iloilo Basin (All Sectors)</option>
+                <option value="Mandurriao Hub">Mandurriao Commercial Epicenter</option>
+                <option value="Iloilo City Proper">Iloilo City Proper & Port</option>
+                <option value="Jaro Basin">Jaro Floodplain & Estuary</option>
+                <option value="Leganes Coastal">Leganes Coastal Lowlands</option>
+              </select>
+              <MapPin size={14} className="absolute left-2.5 top-3 text-slate-400 pointer-events-none" />
+              <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Simulation Period Dropdown */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+              <Calendar size={13} className="text-cyan-400" />
+              <span>Scenario Time Horizon</span>
+            </label>
+            <div className="relative">
+              <select
+                value={simulationPeriod}
+                onChange={(e) => setSimulationPeriod(e.target.value)}
+                className="w-full bg-[#0a1c2e] text-slate-100 text-xs rounded-lg border border-[#18344e] pr-8 py-2.5 appearance-none focus:outline-none focus:border-cyan-400 cursor-pointer font-medium"
+                style={{ paddingLeft: '34px' }}
+              >
+                <option value="2025 to 2050">2025 to 2050 (25-Year Projection)</option>
+                <option value="2025 to 2035">2025 to 2035 (10-Year Midterm)</option>
+                <option value="2025 to 2060">2025 to 2060 (35-Year Long-Term)</option>
+              </select>
+              <Calendar size={14} className="absolute left-2.5 top-3 text-slate-400 pointer-events-none" />
+              <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+            </div>
           </div>
         </div>
 
-        {/* Simulation Period Dropdown */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-slate-200">
-            Scenario Time Horizon
-          </label>
-          <div className="relative">
-            <select
-              value={simulationPeriod}
-              onChange={(e) => setSimulationPeriod(e.target.value)}
-              className="w-full bg-[#0a1c2e] text-slate-100 text-xs rounded-lg border border-[#18344e] pl-8.5 pr-8 py-2.5 appearance-none focus:outline-none focus:border-cyan-400 cursor-pointer font-medium"
-            >
-              <option value="2025 to 2050">2025 to 2050 (25-Year Projection)</option>
-              <option value="2025 to 2035">2025 to 2035 (10-Year Midterm)</option>
-              <option value="2025 to 2060">2025 to 2060 (35-Year Long-Term)</option>
-            </select>
-            <Calendar size={14} className="absolute left-2.5 top-3 text-slate-400 pointer-events-none" />
-            <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+        {/* Group 3: Hydrological Input Variables Card */}
+        <div className="bg-slate-900/60 rounded-xl border border-white/8 p-3.5 flex flex-col gap-3.5 shadow-xs">
+          <div className="flex items-center justify-between border-b border-white/5 pb-2">
+            <h3 className="text-xs font-bold text-white tracking-wide">
+              Hydrological Input Variables
+            </h3>
+            <span className="text-[10px] font-mono text-cyan-400 font-medium">Theis + Terzaghi</span>
           </div>
-        </div>
-
-        {/* Key Parameters Group */}
-        <div className="flex flex-col gap-3.5 pt-1">
-          <h3 className="text-xs font-bold text-white tracking-wide border-b border-white/5 pb-1">
-            Hydrological Input Variables
-          </h3>
 
           {/* 1. Pumping Rate */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="font-semibold text-slate-200">Total Extraction Rate</span>
-              <span className="font-mono text-cyan-300">{params.pumpingRate.toLocaleString()} m³/d</span>
+              <span className="font-mono text-cyan-300 font-bold">{params.pumpingRate.toLocaleString()} m³/d</span>
             </div>
             <input
               type="range"
@@ -217,10 +238,10 @@ export default function ScenarioSetupPanel({
           </div>
 
           {/* 2. Hydraulic Conductivity */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="font-semibold text-slate-200">Hydraulic Conductivity (K)</span>
-              <span className="font-mono text-cyan-300">{params.hydraulicConductivity || 15} m/d</span>
+              <span className="font-mono text-cyan-300 font-bold">{params.hydraulicConductivity || 15} m/d</span>
             </div>
             <input
               type="range"
@@ -236,10 +257,10 @@ export default function ScenarioSetupPanel({
           </div>
 
           {/* 3. Specific Storage */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="font-semibold text-slate-200">Elastic Specific Storage (Ss)</span>
-              <span className="font-mono text-cyan-300">{(params.specificStorage || 0.0001).toFixed(5)} 1/m</span>
+              <span className="font-mono text-cyan-300 font-bold">{(params.specificStorage || 0.0001).toFixed(5)} 1/m</span>
             </div>
             <input
               type="range"
@@ -255,10 +276,10 @@ export default function ScenarioSetupPanel({
           </div>
 
           {/* 4. Recharge Rate */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="font-semibold text-slate-200">Natural Recharge Rate</span>
-              <span className="font-mono text-cyan-300">{params.rechargeRateMmYear || 150} mm/yr</span>
+              <span className="font-mono text-cyan-300 font-bold">{params.rechargeRateMmYear || 150} mm/yr</span>
             </div>
             <input
               type="range"
@@ -274,25 +295,25 @@ export default function ScenarioSetupPanel({
           </div>
         </div>
 
-        {/* Collapsible Advanced Geotechnical Options */}
-        <div className="pt-1">
+        {/* Group 4: Collapsible Advanced Geotechnical Options Card */}
+        <div className="bg-slate-900/60 rounded-xl border border-white/8 p-3.5 shadow-xs">
           <button
             type="button"
             onClick={() => setIsAdvancedOpen(prev => !prev)}
-            className="flex items-center justify-between w-full text-xs font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer py-1"
+            className="flex items-center justify-between w-full text-xs font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer"
           >
-            <div className="flex items-center gap-1.5">
-              {isAdvancedOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <div className="flex items-center gap-2">
+              {isAdvancedOpen ? <ChevronDown size={14} className="text-cyan-400" /> : <ChevronRight size={14} className="text-cyan-400" />}
               <span>Geotechnical Strata Options</span>
             </div>
-            <ChevronDown size={14} className={isAdvancedOpen ? 'rotate-180 transition-transform' : ''} />
+            <span className="text-[10px] text-slate-500 font-mono">1D Consolidation</span>
           </button>
 
           {isAdvancedOpen && (
-            <div className="p-3 bg-[#0a1c2e] rounded-lg border border-[#18344e] flex flex-col gap-2.5 mt-2 text-xs">
+            <div className="p-3 bg-[#0a1c2e] rounded-lg border border-[#18344e] flex flex-col gap-3 mt-3 text-xs">
               <div className="flex justify-between items-center text-slate-300">
-                <span>Clay Layer Thickness</span>
-                <span className="font-mono text-cyan-300">{clayThickness} m</span>
+                <span className="font-medium">Clay Layer Thickness</span>
+                <span className="font-mono text-cyan-300 font-bold">{clayThickness} m</span>
               </div>
               <input
                 type="range"
@@ -300,12 +321,12 @@ export default function ScenarioSetupPanel({
                 max="60"
                 value={clayThickness}
                 onChange={(e) => setClayThickness(Number(e.target.value))}
-                className="w-full h-1 bg-[#0d243b] rounded accent-cyan-400"
+                className="w-full h-1.5 bg-[#0d243b] rounded accent-cyan-400 cursor-pointer"
               />
 
               <div className="flex justify-between items-center text-slate-300">
-                <span>Preconsolidation Head (h_pre)</span>
-                <span className="font-mono text-cyan-300">-{preconsolidationThreshold} m</span>
+                <span className="font-medium">Preconsolidation Head (h_pre)</span>
+                <span className="font-mono text-cyan-300 font-bold">-{preconsolidationThreshold} m</span>
               </div>
               <input
                 type="range"
@@ -313,12 +334,12 @@ export default function ScenarioSetupPanel({
                 max="30"
                 value={preconsolidationThreshold}
                 onChange={(e) => setPreconsolidationThreshold(Number(e.target.value))}
-                className="w-full h-1 bg-[#0d243b] rounded accent-cyan-400"
+                className="w-full h-1.5 bg-[#0d243b] rounded accent-cyan-400 cursor-pointer"
               />
 
               <div className="flex justify-between items-center text-slate-300">
-                <span>Virgin Compression (Cc)</span>
-                <span className="font-mono text-cyan-300">{compressionIndex}</span>
+                <span className="font-medium">Virgin Compression (Cc)</span>
+                <span className="font-mono text-cyan-300 font-bold">{compressionIndex}</span>
               </div>
               <input
                 type="range"
@@ -327,39 +348,49 @@ export default function ScenarioSetupPanel({
                 step="0.05"
                 value={compressionIndex}
                 onChange={(e) => setCompressionIndex(Number(e.target.value))}
-                className="w-full h-1 bg-[#0d243b] rounded accent-cyan-400"
+                className="w-full h-1.5 bg-[#0d243b] rounded accent-cyan-400 cursor-pointer"
               />
             </div>
           )}
         </div>
 
-        {/* Primary Action Button: Run Demonstration */}
+        {/* Primary Action Button: Capture Scenario for Comparison (Height 44px) */}
         <button
-          onClick={onRunSimulation}
-          disabled={isSimulating}
-          className="w-full py-2.5 px-4 rounded-lg font-bold text-xs text-white bg-cyan-600 hover:bg-cyan-500 shadow-[0_0_16px_rgba(6,182,212,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-75 mt-2"
+          onClick={onCaptureScenario || onRunSimulation}
+          className={`w-full h-11 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 mt-1 ${
+            hasUncapturedChanges
+              ? 'text-white bg-linear-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_24px_rgba(6,182,212,0.6)]'
+              : 'text-emerald-300 bg-slate-900/90 border border-emerald-500/40 hover:bg-slate-900 shadow-xs'
+          }`}
         >
-          {isSimulating ? (
+          {hasUncapturedChanges ? (
             <>
-              <Activity size={15} className="animate-spin text-white" />
-              <span>Updating Demonstration Outputs...</span>
+              <Camera size={15} className="text-white" />
+              <span>Capture Scenario for Comparison</span>
             </>
           ) : (
             <>
-              <Play size={14} className="fill-white" />
-              <span>Run Demonstration</span>
+              <CheckCircle2 size={15} className="text-emerald-400" />
+              <span>Scenario Captured for Comparison</span>
             </>
           )}
         </button>
 
-        {/* Model Readiness Indicator */}
-        <div className="flex flex-col gap-0.5 pt-1">
-          <div className="flex items-center gap-2 text-xs font-semibold text-white">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span>Demonstration Engine Ready</span>
+        {/* Live Preview vs Captured Status */}
+        <div className="flex flex-col gap-1 pt-1 pb-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-white">
+            <div className="flex items-center gap-2">
+              <span className={`w-2.5 h-2.5 rounded-full ${hasUncapturedChanges ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
+              <span>{hasUncapturedChanges ? 'Uncaptured Preview Parameters' : 'Scenario Synced to Analytics'}</span>
+            </div>
+            <span className="text-[10px] font-mono text-cyan-300">
+              {capturedScenario?.capturedAt || 'Initial'}
+            </span>
           </div>
-          <span className="text-[11px] text-slate-400 pl-4 font-normal">
-            Deterministic Scenario Model (Metro Iloilo)
+          <span className="text-[11px] text-slate-400 pl-4.5 font-normal">
+            {hasUncapturedChanges 
+              ? 'Sliders show live preview. Click above to commit to comparison tables.'
+              : `Captured preset: ${capturedScenario?.preset || 'Baseline'}`}
           </span>
         </div>
 

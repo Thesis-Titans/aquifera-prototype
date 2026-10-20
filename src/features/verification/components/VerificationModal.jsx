@@ -1,90 +1,67 @@
-import React, { useState, useEffect } from 'react';
-import { X, Cpu, Download, ShieldCheck, CheckCircle2, Loader2, Terminal } from 'lucide-react';
+import React, { useMemo, useCallback } from 'react';
+import { X, Cpu, Download, AlertTriangle, Layers, Target, Clock, ShieldCheck } from 'lucide-react';
 
-export default function VerificationModal({ isOpen, onClose, physicalState }) {
-  const [stage, setStage] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [isDone, setIsDone] = useState(false);
+export default function VerificationModal({ isOpen, onClose, physicalState, params, capturedScenario }) {
+  const activePumping = params?.pumpingRate || 12000;
+  const maxS = physicalState?.maxSubsidenceCm || 28;
+  const scenarioName = capturedScenario?.preset || 'baseline';
 
-  useEffect(() => {
-    if (!isOpen) return;
+  // Generate illustrative 2D profile points comparing prototype preview vs hypothetical numerical target
+  const profilePoints = useMemo(() => {
+    const pts = [];
+    for (let i = 0; i <= 20; i++) {
+      const xDist = (i - 10) * 160; // -1600m to +1600m
+      const r = Math.abs(xDist) + 10;
+      const protoVal = maxS * Math.exp(-(r * r) / (600 * 600));
+      // Simulated illustrative variation for visualization demonstration only
+      const syntheticVariation = (Math.sin(i * 1.5) * 0.02) * protoVal;
+      const refVal = Math.max(0, protoVal + syntheticVariation);
 
-    setStage(0);
-    setProgress(0);
-    setIsDone(false);
-
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsDone(true);
-          return 100;
-        }
-        const next = prev + 5;
-        if (next > 75) setStage(3);
-        else if (next > 45) setStage(2);
-        else if (next > 15) setStage(1);
-        return next;
+      pts.push({
+        xDist,
+        prototype: parseFloat(protoVal.toFixed(2)),
+        reference: parseFloat(refVal.toFixed(2)),
+        residual: parseFloat(Math.abs(protoVal - refVal).toFixed(3))
       });
-    }, 90);
+    }
+    return pts;
+  }, [maxS]);
 
-    return () => clearInterval(interval);
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  const stageLabels = [
-    'Exporting FloPy Discretization Packages (.dis, .npf, .wel, .csub)...',
-    'Executing USGS MODFLOW 6 PCG Sparse Matrix Solver...',
-    'Computing 1D Terzaghi Interbed Skeletal Compaction (SUB)...',
-    'Calculating Spatial Residual Norms and Wilcoxon p-value...'
-  ];
-
-  // Generate 2D profile points comparing PINO vs MODFLOW 6
-  const profilePoints = [];
-  const maxS = physicalState.maxSubsidenceCm;
-  for (let i = 0; i <= 20; i++) {
-    const xDist = (i - 10) * 160; // -1600m to +1600m
-    const r = Math.abs(xDist) + 10;
-    const pinoVal = maxS * Math.exp(-(r * r) / (600 * 600));
-    const noise = (Math.sin(i * 1.5) * 0.02) * pinoVal;
-    const modflowVal = Math.max(0, pinoVal + noise);
-
-    profilePoints.push({
-      xDist,
-      pino: parseFloat(pinoVal.toFixed(2)),
-      modflow: parseFloat(modflowVal.toFixed(2)),
-      residual: parseFloat(Math.abs(pinoVal - modflowVal).toFixed(3))
-    });
-  }
-
-  // Export CSV Data
-  const handleExportCSV = () => {
-    let csv = 'Distance_m,PINO_Settlement_cm,MODFLOW6_Settlement_cm,Residual_cm\n';
+  // Truthful CSV Export with provenance metadata
+  const handleExportCSV = useCallback(() => {
+    let csv = '# AQUIFERA Research Demonstration Prototype\n';
+    csv += '# Content: Illustrative Cross-Section Verification Profile Data\n';
+    csv += '# Status: Synthetic demonstration data for concept defense (Not measured MODFLOW 6 solver output)\n';
+    csv += `# Scenario: ${scenarioName} (Pumping Rate: ${activePumping} m3/day)\n`;
+    csv += `# Generation Timestamp: ${new Date().toISOString()}\n`;
+    csv += 'Distance_m,Prototype_Settlement_cm,Illustrative_Reference_cm,Illustrative_Residual_cm\n';
     profilePoints.forEach(pt => {
-      csv += `${pt.xDist},${pt.pino},${pt.modflow},${pt.residual}\n`;
+      csv += `${pt.xDist},${pt.prototype},${pt.reference},${pt.residual}\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `aquifera_verification_profile_${Date.now()}.csv`;
+    link.download = `aquifera_illustrative_profile_${Date.now()}.csv`;
     link.click();
-  };
+  }, [scenarioName, activePumping, profilePoints]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="w-175 max-w-[calc(100vw-32px)] h-145 max-h-[92vh] rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-white/15 shadow-[0_24px_70px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
+      <div className="w-185 max-w-[calc(100vw-32px)] h-150 max-h-[92vh] rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-white/15 shadow-[0_24px_70px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+        
+        {/* 1. Modal Header */}
         <div className="p-4 px-6 border-b border-white/10 flex items-center justify-between bg-slate-950/90 shrink-0">
           <div className="flex items-center gap-3">
-            <Cpu size={20} className="text-primary" />
+            <Cpu size={20} className="text-cyan-400" />
             <div>
               <h3 className="text-sm font-bold text-white tracking-tight">
-                Tier 4 Verification Pipeline (Architecture Demonstration)
+                Proposed Numerical Verification Workflow
               </h3>
               <span className="text-xs text-slate-400">
-                Simulated USGS MODFLOW 6 CSUB Numerical Cross-Validation Run
+                Research Protocol: USGS MODFLOW 6 / CSUB Independent Cross-Validation
               </span>
             </div>
           </div>
@@ -97,224 +74,162 @@ export default function VerificationModal({ isOpen, onClose, physicalState }) {
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 flex flex-col gap-4 overflow-y-auto flex-1 justify-between">
+        {/* 2. Modal Body */}
+        <div className="p-6 flex flex-col gap-4 overflow-y-auto flex-1 custom-scrollbar">
           
-          {/* Progress Bar Track */}
-          <div className="flex flex-col gap-2 shrink-0">
-            <div className="flex justify-between items-center text-xs">
-              <span className={`font-semibold flex items-center gap-2 ${isDone ? 'text-emerald-400' : 'text-primary'}`}>
-                {!isDone && <Loader2 size={13} className="animate-spin text-primary" />}
-                {isDone ? 'Verification Run Complete' : stageLabels[stage]}
+          {/* Research Integrity Notice */}
+          <div className="bg-amber-950/30 border border-amber-500/35 p-3.5 rounded-xl flex items-start gap-3 shadow-xs">
+            <AlertTriangle size={18} className="text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex flex-col gap-0.5 text-xs">
+              <span className="font-bold text-amber-200">
+                Research Integrity Notice: Proposed Verification Workflow (Solver Not Connected)
               </span>
-              <span className="font-mono tabular-nums text-slate-300 font-bold px-2 py-0.5 rounded bg-slate-900 border border-white/10 text-[11px]">
-                {progress}%
+              <span className="text-slate-300 leading-relaxed font-normal">
+                This modal presents the planned numerical verification architecture for our capstone research defense.
+                No live USGS MODFLOW 6 binary, headless worker, or automated FloPy solver is connected to this client-side prototype.
+                The curves, metrics, and workflow stages below represent proposed verification protocols rather than measured experimental findings.
               </span>
-            </div>
-
-            <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-white/8 shadow-inner">
-              <div 
-                className={`h-full transition-all duration-150 ${
-                  isDone 
-                    ? 'bg-linear-to-r from-emerald-500 to-teal-400 shadow-[0_0_12px_rgba(16,185,129,0.5)]'
-                    : 'bg-linear-to-r from-primary to-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.5)]'
-                }`}
-                style={{ width: `${progress}%` }}
-              />
             </div>
           </div>
 
-          {!isDone ? (
-            /* Active Computational Execution Telemetry View (No Layout Jump) */
-            <div className="flex-1 flex flex-col justify-between py-1 gap-3.5">
-              {/* Pipeline Stage Tracker */}
-              <div className="flex flex-col gap-2">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  Numerical Computation Pipeline
-                </span>
-                <div className="flex flex-col gap-1.5">
-                  {stageLabels.map((label, idx) => {
-                    const isCompleted = stage > idx;
-                    const isCurrent = stage === idx;
-                    return (
-                      <div 
-                        key={idx}
-                        className={`p-2.5 px-3 rounded-xl border flex items-center justify-between text-xs transition-all ${
-                          isCompleted 
-                            ? 'bg-emerald-950/25 border-emerald-500/30 text-emerald-300 shadow-xs' 
-                            : isCurrent 
-                            ? 'bg-cyan-950/35 border-cyan-500/40 text-cyan-200 shadow-[0_0_15px_rgba(6,182,212,0.12)]' 
-                            : 'bg-white/2 border-white/6 text-slate-500'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          {isCompleted ? (
-                            <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
-                          ) : isCurrent ? (
-                            <Loader2 size={15} className="text-primary animate-spin shrink-0" />
-                          ) : (
-                            <div className="w-4 h-4 rounded-full border border-white/20 flex items-center justify-center text-[9px] text-slate-500 shrink-0 font-mono">
-                              {idx + 1}
-                            </div>
-                          )}
-                          <span className="truncate font-medium">{label}</span>
-                        </div>
-                        <span className="font-mono text-[10px] uppercase font-bold shrink-0 ml-2">
-                          {isCompleted ? 'Done' : isCurrent ? 'Active' : 'Queued'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+          {/* Three-Pillar Planned Methodology Architecture */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            
+            {/* Pillar 1 */}
+            <div className="bg-slate-900/60 p-3.5 rounded-xl border border-white/10 flex flex-col justify-between gap-2 shadow-xs">
+              <div className="flex items-center gap-2 text-cyan-300">
+                <Layers size={15} />
+                <span className="text-xs font-bold uppercase tracking-wider">1. Spatial Discretization</span>
               </div>
-
-              {/* Streaming Solver Terminal Telemetry */}
-              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-white/10 font-mono text-xs text-slate-400 flex flex-col gap-1.5 shadow-inner">
-                <div className="flex items-center justify-between text-[10px] text-slate-500 border-b border-white/8 pb-1.5 uppercase tracking-wider">
-                  <span className="flex items-center gap-1.5">
-                    <Terminal size={12} className="text-primary" /> FloPy / USGS MODFLOW 6 Solver Telemetry
-                  </span>
-                  <span className="text-primary font-bold">PID: 4892 · Port 5173</span>
-                </div>
-                <div className="flex flex-col gap-1 text-[11px] pt-0.5">
-                  <p className="text-emerald-400">✓ Grid 20×20 Discretized (dx=160m, dy=160m, 3 Layers)</p>
-                  <p className={stage >= 1 ? 'text-cyan-300' : 'text-slate-600'}>
-                    {stage >= 1 ? '→ PCG Iteration 14: Max Head Residual = 0.0034m (Converged)' : '… Waiting for PCG sparse matrix allocation'}
-                  </p>
-                  <p className={stage >= 2 ? 'text-amber-300' : 'text-slate-600'}>
-                    {stage >= 2 ? '→ CSUB: Terzaghi 1D interbed compaction matrix resolved' : '… Waiting for CSUB inelastic compaction subroutine'}
-                  </p>
-                  <p className={stage >= 3 ? 'text-primary' : 'text-slate-600'}>
-                    {stage >= 3 ? '→ Wilcoxon signed-rank non-parametric test: p=0.824 (Pass)' : '… Calculating domain residual error norms'}
-                  </p>
-                </div>
-              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Planned 64×64 finite-difference mesh matching the 3 hydrostratigraphic units (Sand 1, Clay Aquitard, Confined Sand 2) with constant-head coastal boundary at the Iloilo Strait.
+              </p>
+              <span className="text-[10px] font-mono text-slate-400 bg-slate-950/60 px-2 py-1 rounded border border-white/5">
+                Target: dx=50m, dy=50m
+              </span>
             </div>
-          ) : (
-            /* Completed Statistical Suite & Cross-Section Plot */
-            <div className="flex-1 flex flex-col justify-between gap-3 animate-in fade-in duration-300">
-              {/* Statistical Verification Metrics */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-slate-900/60 p-3 rounded-xl border border-white/10 shadow-xs">
-                  <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">Correlation (R²):</span>
-                  <span className="font-mono tabular-nums text-xl font-bold text-emerald-400 block mt-1">
-                    0.942
-                  </span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">Passes threshold (≥0.90)</span>
-                </div>
 
-                <div className="bg-slate-900/60 p-3 rounded-xl border border-white/10 shadow-xs">
-                  <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">Wilcoxon Test:</span>
-                  <span className="font-mono tabular-nums text-xl font-bold text-primary block mt-1">
-                    p = 0.824
-                  </span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">No systematic bias (p &gt; 0.05)</span>
-                </div>
-
-                <div className="bg-slate-900/60 p-3 rounded-xl border border-white/10 shadow-xs">
-                  <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">Peak Residual Error:</span>
-                  <span className="font-mono tabular-nums text-xl font-bold text-emerald-400 block mt-1">
-                    3.4 mm
-                  </span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">Below 5.0 mm acceptance</span>
-                </div>
+            {/* Pillar 2 */}
+            <div className="bg-slate-900/60 p-3.5 rounded-xl border border-white/10 flex flex-col justify-between gap-2 shadow-xs">
+              <div className="flex items-center gap-2 text-amber-300">
+                <Target size={15} />
+                <span className="text-xs font-bold uppercase tracking-wider">2. Candidate Metrics</span>
               </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Candidate evaluation metrics under review: Spatial R² correlation, peak residual norm (|s_surrogate - s_modflow|), and non-parametric Wilcoxon test for spatial bias.
+              </p>
+              <span className="text-[10px] font-mono text-slate-400 bg-slate-950/60 px-2 py-1 rounded border border-white/5">
+                Status: Candidate research criteria
+              </span>
+            </div>
 
-              {/* 2D Cross-Section Settlement Comparison Chart */}
-              <div className="bg-slate-900/60 p-3.5 rounded-xl border border-white/10 shadow-xs">
-                <div className="flex justify-between items-center mb-2.5">
-                  <span className="text-xs font-semibold text-white">
-                    Radial Subsidence Profile (West to East Cross-Section)
-                  </span>
-                  <div className="flex gap-3 text-xs">
-                    <span className="flex items-center gap-1.5 text-primary font-medium">
-                      <div className="w-3 h-0.5 bg-primary" />
-                      PINO Surrogate
-                    </span>
-                    <span className="flex items-center gap-1.5 text-amber-400 font-medium">
-                      <div className="w-3 h-0.5 border-t border-dashed border-amber-400" />
-                      USGS MODFLOW 6
-                    </span>
-                  </div>
-                </div>
-
-                {/* SVG Visual Chart */}
-                <div className="w-full h-28 relative">
-                  <svg width="100%" height="100%" viewBox="0 0 600 130" preserveAspectRatio="none">
-                    <line x1="0" y1="20" x2="600" y2="20" stroke="rgba(255,255,255,0.08)" />
-                    <line x1="0" y1="65" x2="600" y2="65" stroke="rgba(255,255,255,0.08)" />
-                    <line x1="0" y1="110" x2="600" y2="110" stroke="rgba(255,255,255,0.08)" />
-                    <line x1="300" y1="0" x2="300" y2="130" stroke="rgba(56, 189, 248, 0.25)" strokeDasharray="3 3" />
-
-                    {/* PINO Curve */}
-                    <path
-                      d={profilePoints.reduce((acc, pt, i) => {
-                        const px = (i / 20) * 600;
-                        const py = 20 + (pt.pino / Math.max(0.1, maxS)) * 90;
-                        return i === 0 ? `M ${px} ${py}` : `${acc} L ${px} ${py}`;
-                      }, '')}
-                      fill="none"
-                      stroke="hsl(187, 92%, 48%)"
-                      strokeWidth="2.5"
-                    />
-
-                    {/* MODFLOW 6 Curve */}
-                    <path
-                      d={profilePoints.reduce((acc, pt, i) => {
-                        const px = (i / 20) * 600;
-                        const py = 20 + (pt.modflow / Math.max(0.1, maxS)) * 90;
-                        return i === 0 ? `M ${px} ${py}` : `${acc} L ${px} ${py}`;
-                      }, '')}
-                      fill="none"
-                      stroke="hsl(38, 92%, 50%)"
-                      strokeWidth="2"
-                      strokeDasharray="4 4"
-                    />
-                  </svg>
-                </div>
-                
-                <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono tabular-nums">
-                  <span>-1,600 m (West Boundary)</span>
-                  <span>Extraction Center (0 m)</span>
-                  <span>+1,600 m (East Boundary)</span>
-                </div>
+            {/* Pillar 3 */}
+            <div className="bg-slate-900/60 p-3.5 rounded-xl border border-white/10 flex flex-col justify-between gap-2 shadow-xs">
+              <div className="flex items-center gap-2 text-emerald-300">
+                <Clock size={15} />
+                <span className="text-xs font-bold uppercase tracking-wider">3. Latency Protocol</span>
               </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Proposed comparative runtime benchmark measuring surrogate inference on GPU workstation versus finite-difference iterative solver solution time on identical domains.
+              </p>
+              <span className="text-[10px] font-mono text-slate-400 bg-slate-950/60 px-2 py-1 rounded border border-white/5">
+                Target Spec: &lt; 250 ms vs 180-300 s
+              </span>
+            </div>
 
-              {/* Parity Status Badge */}
-              <div className="bg-emerald-950/30 border border-emerald-500/35 p-3 rounded-xl flex items-center gap-2.5">
-                <ShieldCheck size={18} className="text-emerald-400 shrink-0" />
-                <span className="text-xs text-emerald-300 font-medium leading-relaxed">
-                  <strong>Verification Protocol Parity:</strong> Demonstrates the ISO/IEC 25010 verification workflow. In full deployment, this compares live offline-trained PINO tensors against headless MODFLOW 6 CSUB runs within a 5% tolerance window.
+          </div>
+
+          {/* 2D Cross-Section Settlement Comparison Chart (Illustrative Concept) */}
+          <div className="bg-slate-900/60 p-4 rounded-xl border border-white/10 shadow-xs flex flex-col gap-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-white/5 pb-2">
+              <span className="text-xs font-bold text-white tracking-wide">
+                Radial Subsidence Profile (West to East Cross-Section)
+              </span>
+              <div className="flex items-center gap-4 text-xs font-medium">
+                <span className="flex items-center gap-1.5 text-cyan-300">
+                  <div className="w-3.5 h-0.5 bg-cyan-400" />
+                  Prototype Scenario (Live)
+                </span>
+                <span className="flex items-center gap-1.5 text-amber-300">
+                  <div className="w-3.5 h-0.5 border-t border-dashed border-amber-400" />
+                  Illustrative Reference Target
                 </span>
               </div>
             </div>
-          )}
+
+            {/* SVG Visual Chart */}
+            <div className="w-full h-32 relative bg-slate-950/60 rounded-lg p-2 border border-white/5">
+              <svg width="100%" height="100%" viewBox="0 0 600 130" preserveAspectRatio="none">
+                <line x1="0" y1="20" x2="600" y2="20" stroke="rgba(255,255,255,0.06)" />
+                <line x1="0" y1="65" x2="600" y2="65" stroke="rgba(255,255,255,0.06)" />
+                <line x1="0" y1="110" x2="600" y2="110" stroke="rgba(255,255,255,0.06)" />
+                <line x1="300" y1="0" x2="300" y2="130" stroke="rgba(56, 189, 248, 0.20)" strokeDasharray="3 3" />
+
+                {/* Prototype Scenario Curve */}
+                <path
+                  d={profilePoints.reduce((acc, pt, i) => {
+                    const px = (i / 20) * 600;
+                    const py = 20 + (pt.prototype / Math.max(0.1, maxS)) * 90;
+                    return i === 0 ? `M ${px} ${py}` : `${acc} L ${px} ${py}`;
+                  }, '')}
+                  fill="none"
+                  stroke="hsl(187, 92%, 48%)"
+                  strokeWidth="2.5"
+                />
+
+                {/* Illustrative Reference Curve */}
+                <path
+                  d={profilePoints.reduce((acc, pt, i) => {
+                    const px = (i / 20) * 600;
+                    const py = 20 + (pt.reference / Math.max(0.1, maxS)) * 90;
+                    return i === 0 ? `M ${px} ${py}` : `${acc} L ${px} ${py}`;
+                  }, '')}
+                  fill="none"
+                  stroke="hsl(38, 92%, 50%)"
+                  strokeWidth="2"
+                  strokeDasharray="4 4"
+                />
+              </svg>
+            </div>
+            
+            <div className="flex justify-between text-[10px] text-slate-400 font-mono tabular-nums px-1">
+              <span>-1,600 m (West Domain Boundary)</span>
+              <span>Extraction Center (0 m)</span>
+              <span>+1,600 m (East Domain Boundary)</span>
+            </div>
+
+            <div className="text-[10px] text-slate-400 italic pt-1 border-t border-white/5 leading-relaxed">
+              *Provenance Note: The dashed reference curve is an illustrative synthetic profile derived from theoretical Theis-Terzaghi equations with simulated discretization variation. It illustrates the planned cross-validation format and does not represent an executed MODFLOW 6 simulation run.
+            </div>
+          </div>
+
+          {/* Verification Protocol Governance Badge */}
+          <div className="bg-slate-900/60 border border-white/10 p-3.5 rounded-xl flex items-center gap-3">
+            <ShieldCheck size={18} className="text-cyan-400 shrink-0" />
+            <span className="text-xs text-slate-300 font-normal leading-relaxed">
+              <strong>Evaluation Framework Alignment:</strong> The proposed verification protocol will be calibrated against borehole lithological logs and evaluated under ISO/IEC 25010 functional accuracy metrics following CICT research guidelines upon solver integration.
+            </span>
+          </div>
 
         </div>
 
-        {/* Footer */}
+        {/* 3. Modal Footer */}
         <div className="p-4 px-6 border-t border-white/10 flex items-center justify-between gap-4 bg-slate-950/90 shrink-0">
-          {isDone ? (
-            <button 
-              className="aquifera-btn-secondary py-2! px-4! text-xs font-semibold"
-              onClick={handleExportCSV}
-            >
-              <Download size={14} className="text-primary" /> Export Profile (.CSV)
-            </button>
-          ) : (
-            <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
-              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span>Headless FloPy Worker Active...</span>
-            </div>
-          )}
+          <button 
+            className="aquifera-btn-secondary py-2 px-4 text-xs font-semibold"
+            onClick={handleExportCSV}
+          >
+            <Download size={14} className="text-cyan-400" /> Export Illustrative Profile (.CSV)
+          </button>
 
           <button 
-            className="aquifera-btn-primary py-2! px-5! text-xs font-bold"
+            className="aquifera-btn-primary py-2 px-5 text-xs font-bold"
             onClick={onClose}
           >
-            {isDone ? 'Close Report' : 'Abort Verification'}
+            Close Protocol
           </button>
         </div>
+
       </div>
     </div>
   );
