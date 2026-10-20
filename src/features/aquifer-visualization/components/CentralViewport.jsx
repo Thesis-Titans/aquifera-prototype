@@ -23,7 +23,7 @@ export default function CentralViewport({
   const is3D = viewMode === '3D';
 
   return (
-    <div className="relative flex-1 h-full w-full min-h-125 bg-[#050e18] rounded-xl border border-[#122336] overflow-hidden flex flex-col shadow-2xl">
+    <div className="relative flex-1 h-full w-full min-h-[460px] bg-[#050e18] rounded-xl border border-[#122336] overflow-hidden flex flex-col shadow-2xl">
       
       {/* 1. Viewport Top HUD Toolbar */}
       <div className="h-12 bg-slate-950/90 backdrop-blur-md border-b border-white/10 px-4 flex items-center justify-between gap-3 shrink-0 z-20">
@@ -73,7 +73,7 @@ export default function CentralViewport({
       </div>
 
       {/* 2. Interactive Viewport Stage (2D MapLibre or 3D Three.js) */}
-      <div className="relative flex-1 min-h-0 w-full overflow-hidden">
+      <div className="relative flex-1 min-h-0 w-full h-full overflow-hidden flex flex-col">
         {!is3D ? (
           <MapLibreMap
             physicalState={physicalState}

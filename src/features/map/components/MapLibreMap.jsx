@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Map, Marker, Popup, setWorkerUrl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { METRO_ILOILO_GIS } from '../../../data/geographic/metroIloiloGIS';
-import { Navigation, ZoomIn, ZoomOut, RotateCcw, Layers, Loader2 } from 'lucide-react';
+import { Navigation, ZoomIn, ZoomOut, RotateCcw, Layers, Loader2, AlertTriangle } from 'lucide-react';
 
 // Configure MapLibre background worker for Vite environment
 if (typeof window !== 'undefined' && setWorkerUrl) {
@@ -12,35 +12,40 @@ if (typeof window !== 'undefined' && setWorkerUrl) {
   setWorkerUrl(fullUrl);
 }
 
-// Free, fast, reliable Dark Matter basemap (OpenStreetMap & CARTO data, no API key required)
-const CARTO_DARK_STYLE = {
+// Robust, high-contrast dark GIS basemap (ESRI World Dark Gray Canvas, no API key required)
+const ESRI_DARK_STYLE = {
   version: 8,
   sources: {
-    'carto-dark': {
+    'esri-dark-base': {
       type: 'raster',
       tiles: [
-        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
       ],
       tileSize: 256,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>'
+      attribution: '&copy; <a href="https://www.esri.com" target="_blank" rel="noreferrer">Esri</a>, HERE, Garmin, FAO, NOAA, USGS, OpenStreetMap'
+    },
+    'esri-dark-reference': {
+      type: 'raster',
+      tiles: [
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'
+      ],
+      tileSize: 256
     }
   },
   layers: [
     {
-      id: 'carto-dark-background',
+      id: 'esri-dark-background',
       type: 'background',
       paint: {
         'background-color': '#060e18'
       }
     },
     {
-      id: 'carto-dark-layer',
+      id: 'esri-dark-base-layer',
       type: 'raster',
-      source: 'carto-dark',
+      source: 'esri-dark-base',
       minzoom: 0,
-      maxzoom: 19
+      maxzoom: 16
     }
   ]
 };
@@ -55,7 +60,24 @@ export default function MapLibreMap({
   const mapRef = useRef(null);
   const popupRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState(null);
+  const [isSlowLoading, setIsSlowLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [selectedCell, setSelectedCell] = useState(null);
+
+  // Slow-loading watchdog (flags if basemap takes longer than 7 seconds)
+  useEffect(() => {
+    if (mapLoaded || mapError) {
+      setIsSlowLoading(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (!mapLoaded && !mapError) {
+        setIsSlowLoading(true);
+      }
+    }, 7000);
+    return () => clearTimeout(timer);
+  }, [mapLoaded, mapError, retryCount]);
 
   // Metro Iloilo geographic extent
   const centerLng = METRO_ILOILO_GIS.center.lng; // 122.5621
@@ -158,9 +180,13 @@ export default function MapLibreMap({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
+    // Reset error and loaded states on (re)initialization
+    setMapError(null);
+    setMapLoaded(false);
+
     const map = new Map({
       container: mapContainerRef.current,
-      style: CARTO_DARK_STYLE,
+      style: ESRI_DARK_STYLE,
       center: [centerLng, centerLat],
       zoom: 12.1,
       minZoom: 10,
@@ -173,10 +199,13 @@ export default function MapLibreMap({
     mapRef.current = map;
     window.__map = map;
 
-    // ResizeObserver ensures canvas dimensions adapt dynamically
-    const resizeObserver = new ResizeObserver(() => {
-      if (mapRef.current) {
-        mapRef.current.resize();
+    // Dynamic, measurable container sizing via ResizeObserver with contentRect
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0 && mapRef.current) {
+          mapRef.current.resize();
+        }
       }
     });
 
@@ -184,78 +213,134 @@ export default function MapLibreMap({
       resizeObserver.observe(mapContainerRef.current);
     }
 
+    // Explicit initial resize once browser layout completes first paint
+    requestAnimationFrame(() => {
+      if (mapRef.current) {
+        mapRef.current.resize();
+      }
+    });
+
+    // Meaningful error handling: distinguish isolated tile failures from fatal errors
     map.on('error', (e) => {
-      console.error('MapLibre error event:', e);
-      window.__maplibreError = {
-        message: e?.error?.message || e?.message || String(e),
-        status: e?.status,
-        error: String(e?.error)
-      };
+      const errMsg = e?.error?.message || e?.message || String(e?.error || e || '');
+      const isTileError = e?.sourceId?.includes('esri') || e?.tile || e?.status === 404 || e?.status === 403;
+
+      if (isTileError) {
+        // Non-fatal individual tile error (e.g. transient network glitch) - do not crash map
+        console.warn('[MapLibre tile notice]:', errMsg, e?.status);
+        return;
+      }
+
+      console.error('[MapLibre fatal error]:', e);
+      window.__maplibreError = { message: errMsg, status: e?.status };
+
+      if (errMsg.toLowerCase().includes('worker') || errMsg.toLowerCase().includes('syntaxerror')) {
+        setMapError({
+          type: 'worker',
+          message: 'MapLibre Web Worker failed to initialize. Check browser worker support.'
+        });
+      } else if (errMsg.toLowerCase().includes('style') || errMsg.toLowerCase().includes('json')) {
+        setMapError({
+          type: 'style',
+          message: 'Basemap style definition or tile source could not be resolved.'
+        });
+      } else {
+        setMapError({
+          type: 'general',
+          message: errMsg || 'Map rendering encountered an unhandled graphics error.'
+        });
+      }
     });
 
-    map.on('style.load', () => {
-      console.log('[DEBUG] MapLibre style loaded');
-      window.__maplibreStyleLoaded = true;
-      map.resize();
+    map.on('webglcontextlost', () => {
+      console.error('[MapLibre]: WebGL context lost');
+      setMapError({
+        type: 'webgl',
+        message: 'WebGL context lost. Hardware graphics acceleration may be unavailable.'
+      });
     });
 
-    map.on('load', () => {
-      console.log('[DEBUG] MapLibre map loaded');
-      window.__maplibreLoaded = true;
+    let layersSetup = false;
+    const setupLayers = () => {
+      if (layersSetup || !mapRef.current) return;
+      layersSetup = true;
       setMapLoaded(true);
+      setMapError(null);
       map.resize();
 
       // 1. Add GeoJSON Synthetic Subsidence Grid Source
-      map.addSource('subsidence-grid', {
-        type: 'geojson',
-        data: geojsonGrid
-      });
+      if (!map.getSource('subsidence-grid')) {
+        map.addSource('subsidence-grid', {
+          type: 'geojson',
+          data: geojsonGrid
+        });
+      }
 
       // 2. Add Fill Layer with Color Ramps
-      map.addLayer({
-        id: 'subsidence-fill',
-        type: 'fill',
-        source: 'subsidence-grid',
-        paint: {
-          'fill-color': [
-            'interpolate',
-            ['linear'],
-            ['get', 'subsidence_cm'],
-            0, 'rgba(6, 182, 212, 0.08)',
-            4, 'rgba(16, 185, 129, 0.35)',
-            10, 'rgba(234, 179, 8, 0.55)',
-            18, 'rgba(249, 115, 22, 0.75)',
-            28, 'rgba(239, 68, 68, 0.90)'
-          ],
-          'fill-opacity': (visualizationConfig?.opacity || 70) / 100
-        }
-      });
+      if (!map.getLayer('subsidence-fill')) {
+        map.addLayer({
+          id: 'subsidence-fill',
+          type: 'fill',
+          source: 'subsidence-grid',
+          paint: {
+            'fill-color': [
+              'interpolate',
+              ['linear'],
+              ['get', 'subsidence_cm'],
+              0, 'rgba(6, 182, 212, 0.08)',
+              4, 'rgba(16, 185, 129, 0.35)',
+              10, 'rgba(234, 179, 8, 0.55)',
+              18, 'rgba(249, 115, 22, 0.75)',
+              28, 'rgba(239, 68, 68, 0.90)'
+            ],
+            'fill-opacity': (visualizationConfig?.opacity || 70) / 100
+          }
+        });
+      }
 
       // 3. Add Grid Outline Layer
-      map.addLayer({
-        id: 'subsidence-line',
-        type: 'line',
-        source: 'subsidence-grid',
-        paint: {
-          'line-color': 'rgba(34, 211, 238, 0.35)',
-          'line-width': 1,
-          'line-opacity': 0.8
-        }
-      });
+      if (!map.getLayer('subsidence-line')) {
+        map.addLayer({
+          id: 'subsidence-line',
+          type: 'line',
+          source: 'subsidence-grid',
+          paint: {
+            'line-color': 'rgba(34, 211, 238, 0.35)',
+            'line-width': 1,
+            'line-opacity': 0.8
+          }
+        });
+      }
 
       // 4. Highlight Layer for Hover/Click
-      map.addLayer({
-        id: 'subsidence-highlight',
-        type: 'line',
-        source: 'subsidence-grid',
-        paint: {
-          'line-color': '#00f2fe',
-          'line-width': 2.5
-        },
-        filter: ['==', 'cellId', '']
-      });
+      if (!map.getLayer('subsidence-highlight')) {
+        map.addLayer({
+          id: 'subsidence-highlight',
+          type: 'line',
+          source: 'subsidence-grid',
+          paint: {
+            'line-color': '#00f2fe',
+            'line-width': 2.5
+          },
+          filter: ['==', 'cellId', '']
+        });
+      }
 
-      // 5. Add Reference District Markers
+      // 5. Add Reference Roads and District Names Layer
+      if (!map.getLayer('esri-dark-reference-layer')) {
+        map.addLayer({
+          id: 'esri-dark-reference-layer',
+          type: 'raster',
+          source: 'esri-dark-reference',
+          minzoom: 0,
+          maxzoom: 16,
+          paint: {
+            'raster-opacity': 0.85
+          }
+        });
+      }
+
+      // 6. Add Reference District Markers
       METRO_ILOILO_GIS.districts.forEach(district => {
         const el = document.createElement('div');
         el.className = 'district-marker-pill';
@@ -280,7 +365,7 @@ export default function MapLibreMap({
           .addTo(map);
       });
 
-      // 6. Interactive Cell Hover
+      // 7. Interactive Cell Hover
       map.on('mousemove', 'subsidence-fill', (e) => {
         if (e.features && e.features.length > 0) {
           map.getCanvas().style.cursor = 'pointer';
@@ -294,7 +379,7 @@ export default function MapLibreMap({
         map.setFilter('subsidence-highlight', ['==', 'cellId', '']);
       });
 
-      // 7. Interactive Cell Click & Popup
+      // 8. Interactive Cell Click & Popup
       map.on('click', 'subsidence-fill', (e) => {
         if (e.features && e.features.length > 0) {
           const feature = e.features[0];
@@ -333,22 +418,38 @@ export default function MapLibreMap({
             .addTo(map);
         }
       });
+    };
+
+    map.on('style.load', () => {
+      console.log('[DEBUG] MapLibre style loaded');
+      window.__maplibreStyleLoaded = true;
+      setupLayers();
     });
 
-    const timer1 = setTimeout(() => {
-      if (mapRef.current) mapRef.current.resize();
-    }, 150);
-    const timer2 = setTimeout(() => {
-      if (mapRef.current) mapRef.current.resize();
-    }, 600);
+    map.on('load', () => {
+      console.log('[DEBUG] MapLibre map loaded');
+      window.__maplibreLoaded = true;
+      setupLayers();
+    });
+
+    if (map.isStyleLoaded()) {
+      setupLayers();
+    }
 
     return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
       resizeObserver.disconnect();
       map.remove();
+      mapRef.current = null;
     };
-  }, []);
+  }, [retryCount]);
+
+  // Genuine retry handler: tears down map and triggers full clean initialization
+  const handleRetryBasemap = () => {
+    setMapError(null);
+    setMapLoaded(false);
+    setIsSlowLoading(false);
+    setRetryCount(c => c + 1);
+  };
 
   // Update GeoJSON source when physicalState or params change
   useEffect(() => {
@@ -383,19 +484,65 @@ export default function MapLibreMap({
   };
 
   return (
-    <div className="relative w-full h-full min-h-115 bg-[#050e18] overflow-hidden select-none">
-      {/* 1. MapLibre GL Canvas Container (Absolute inset-0 ensures full canvas geometry) */}
+    <div className="relative w-full h-full min-h-[400px] flex-1 bg-[#050e18] overflow-hidden select-none">
+      {/* 1. MapLibre GL Canvas Container (Enforced absolute geometry prevents height collapse) */}
       <div
         ref={mapContainerRef}
-        className="absolute inset-0 w-full h-full"
-        style={{ width: '100%', height: '100%' }}
+        className="aquifera-maplibre-container absolute inset-0 w-full h-full"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          height: '100%'
+        }}
       />
 
-      {/* Loading Overlay */}
-      {!mapLoaded && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#050e18] z-10 gap-2.5 text-slate-400">
-          <Loader2 size={24} className="animate-spin text-cyan-400" />
-          <span className="text-xs font-mono text-slate-300">Loading Metro Iloilo GIS Basemap...</span>
+      {/* Fatal Error Overlay */}
+      {mapError && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#050e18]/95 backdrop-blur-sm p-6 text-center select-text">
+          <div className="p-3 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 mb-3 shadow-lg">
+            <AlertTriangle size={24} />
+          </div>
+          <h3 className="text-sm font-semibold text-white mb-1.5">
+            {mapError.type === 'worker' ? 'Web Worker Execution Error' : 'GIS Basemap Initialization Failed'}
+          </h3>
+          <p className="text-xs text-slate-400 max-w-sm mb-4 font-mono leading-relaxed bg-black/40 p-2.5 rounded-lg border border-white/5">
+            {mapError.message}
+          </p>
+          <button
+            onClick={handleRetryBasemap}
+            className="aquifera-btn-primary text-xs px-4 py-2 flex items-center gap-1.5 shadow-lg cursor-pointer"
+          >
+            <RotateCcw size={13} />
+            <span>Retry Basemap</span>
+          </button>
+        </div>
+      )}
+
+      {/* Loading & Slow-Loading Floating Indicator */}
+      {!mapLoaded && !mapError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#050e18]/60 backdrop-blur-xs z-10 gap-2 text-slate-300 p-4 text-center pointer-events-none">
+          <div className="bg-slate-950/90 border border-cyan-500/30 px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5">
+            <Loader2 size={18} className="animate-spin text-cyan-400" />
+            <span className="text-xs font-mono text-slate-200">Streaming Metro Iloilo GIS Basemap...</span>
+          </div>
+          {isSlowLoading && (
+            <div className="flex flex-col items-center gap-1.5 mt-2 bg-slate-950/90 border border-amber-500/30 px-3 py-2 rounded-xl pointer-events-auto">
+              <span className="text-[11px] text-amber-300/90">
+                Basemap network stream is taking longer than expected.
+              </span>
+              <button
+                onClick={handleRetryBasemap}
+                className="aquifera-btn-secondary text-[11px] px-3 py-1 flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw size={11} />
+                <span>Retry Basemap</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
