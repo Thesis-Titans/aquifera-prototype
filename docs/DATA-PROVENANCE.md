@@ -9,13 +9,14 @@
 
 ### 1. Executive Summary and Academic Integrity Statement
 
-This document formalizes the provenance, coordinate reference frames, mathematical discretization, and physical assumptions underlying all cartographic and geotechnical layers within the **AQUIFERA Interactive Prototype**. 
+This document formalizes the provenance, coordinate reference frames, mathematical discretization, and physical assumptions underlying all cartographic, administrative, and geotechnical layers within the **AQUIFERA Interactive Prototype**. 
 
 In strict adherence to CICT Research Policy (`CICT-RESEARCH-THESIS-AND-CAPSTONE-POLICIES-AND-GUIDELINES.md`) and the project Governing Rules (`AGENTS.md`), research claims must be transparently verified. This document delineates:
 
-1. **Real cartographic data**: Live vector/raster basemaps streamed from established global geographical providers.
-2. **Deterministic synthetic demonstration data**: Discretized grid cells and drawdown cones generated in the browser via client-side Darcy-Theis analytical physics and Terzaghi skeletal compaction equations.
-3. **Official empirical data roadmap**: Authoritative institutional data sources slated for ingestion during Phase 2 model calibration (NWRB, MIWD, DENR-MGB, and Sentinel-1 InSAR).
+1. **Authentic Administrative Cartography (Ingested)**: Official Philippine Statistics Authority (PSA) and NAMRIA administrative boundaries covering **all 180 barangays of Iloilo City** (`iloilo_city_barangays.geojson`) and the overall city boundary (`iloilo_city_boundary.geojson`), projected in WGS84 (EPSG:4326) and aligned with PRS92.
+2. **Official Municipal Planning Context (In Progress)**: Four foundational planning references received from the Iloilo City Planning and Development Office (CPDO: `CDP 2023–2028`, `SEP 2020`, `CLUP 2021–2029 Vol. 1`, and `Sectoral Studies Vol. 3`), coupled with a formal data request for the **CLUP Official Zoning Map Shapefile (`.shp`)**.
+3. **Deterministic Synthetic Demonstration Data**: Discretized grid cells and drawdown cones generated in the browser via client-side Darcy-Theis analytical physics and Terzaghi skeletal compaction equations.
+4. **Empirical Ground-Truth Calibration Baseline**: Published spaceborne InSAR measurements from **Sulapas, Lagmay, et al. (2024)** ([Ref 1]) documenting measured settlement rates of **8.8 to 9.0 mm/year** concentrated along the Mandurriao-Molo commercial growth corridor.
 
 ---
 
@@ -85,6 +86,18 @@ The subsidence grid values are strictly deterministic demonstration outputs. The
 2. Heterogeneous soil factor multiplier calibrated to distance from the soft-soil river delta and coastal wetlands.
 3. User-adjusted scenario extraction rate (ranging from 12,000 m3/day baseline up to 32,000 m3/day drought shock).
 
+#### 3.3 Authentic Administrative Ingestion: Official 180-Barangay Dataset
+To elevate the prototype beyond generic rectangular grids, the repository now houses authentic administrative boundary polygons sourced from the **Philippine Statistics Authority (PSA)** and the **National Mapping and Resource Information Authority (NAMRIA)**:
+* **Processed Repository Files**:
+  * `public/data/spatial/iloilo_city_barangays.geojson` (166 KB, exactly **180 official barangays** of Iloilo City).
+  * `public/data/spatial/iloilo_city_boundary.geojson` (3.0 KB, municipal boundary outline).
+* **Attribute Schema per Barangay Feature**:
+  * `adm4_en`: Official Barangay Name (e.g., "San Rafael", "Bolilao", "Calumpang").
+  * `adm3_en`: City Name ("City of Iloilo").
+  * `adm2_en`: Province Name ("Iloilo").
+  * `adm4_pcode`: Standard PSA Philippine Standard Geographic Code (PSGC).
+* **Operational Value**: Planners can view real barangay borders rather than synthetic cell IDs, enabling direct spatial queries during City Council and Zoning Board deliberations.
+
 ---
 
 ### 4. Geotechnical and Subsurface Strata Assumptions
@@ -143,10 +156,12 @@ The interactive prototype successfully demonstrates user experience, sub-second 
 
 | Data Dimension | Institutional Authority | Source Format / Tool | Calibration Function in AQUIFERA |
 | :--- | :--- | :--- | :--- |
-| **Municipal Well Registry** | National Water Resources Board (NWRB) & Metro Iloilo Water District (MIWD) | Tabular extraction logs, well coordinates, casing depths | Replaces single idealized well with multi-well distributed extraction field |
-| **Borehole Lithology & Stratigraphy** | Department of Environment and Natural Resources, Mines and Geosciences Bureau (DENR-MGB VI) | Geological cross-sections, Standard Penetration Test (SPT) boring logs | Defines 3D spatial thickness variations for the intermediate compressible clay layer |
-| **Historical Ground Settlement** | European Space Agency (ESA) Copernicus Sentinel-1A/B | Synthetic Aperture Radar (SAR) Single Look Complex (SLC) interferograms | Processed via InSAR Persistent Scatterer (PS) and Small Baseline Subset (SBAS) algorithms to serve as real-world target labels |
-| **Meteorological Recharge** | Department of Science and Technology, PAGASA | Daily precipitation and pan evaporation records (Iloilo Synoptic Station) | Calibrates seasonal recharge boundary condition ($R$) across dry and wet monsoon cycles |
+| **Municipal Zoning & Land Use** | Iloilo City Planning and Development Office (CPDO) | CLUP 2021–2029 Official Zoning Map Shapefile (`.shp`), CDP, and Sectoral Studies | Overlays commercial, residential, and industrial parcel zones to identify zoning districts subject to subsidence hazards |
+| **Commercial Well Permits & Inventory** | Iloilo City Environment & Natural Resources Office (City-ENRO) / NWRB | Local commercial deep well registry, extraction permits, inspection dockets | Defines active commercial pumping clusters (e.g., commercial laundries, hotels) in Mandurriao and Molo |
+| **Metropolitan Production Wells** | Metro Pacific Iloilo Water (MPIW) & Metro Iloilo Water District (MIWD) | Production well telemetry, daily extraction rates ($Q$), static/dynamic water levels | Provides multi-well historical pumping stress time series |
+| **Borehole Lithology & Stratigraphy** | DENR Mines and Geosciences Bureau (MGB VI) & DPWH Region VI | Soil exploration bore logs, SPT $N$-values, stratigraphic profiles | Calibrates layer thickness ($b_0$), hydraulic conductivity ($K$), and compressibility ($C_c, C_r$) |
+| **Empirical Ground Subsidence Baseline** | UP NOAH / UP Resilience Institute (Sulapas et al., 2024 [Ref 1]) | Multi-temporal Sentinel-1 InSAR / GNSS deformation rates (2014–2020) | Serves as published empirical ground truth documenting **8.8 to 9.0 mm/year** subsidence in Mandurriao and Molo |
+| **Meteorological Recharge** | DOST-PAGASA (Iloilo Synoptic Station) | Daily precipitation and pan evaporation records | Constrains seasonal aquifer recharge ($R$) across wet and dry monsoon cycles |
 
 ---
 
@@ -155,10 +170,10 @@ The interactive prototype successfully demonstrates user experience, sub-second 
 When evaluating data provenance during proposal defense, researchers should convey the following key answers:
 
 1. **"Are the subsidence numbers displayed on the map measured in the field today?"**  
-   *Response*: "No. As clearly stated in our system disclaimer and data provenance specification, the current prototype displays deterministic synthetic demonstration data. The spatial patterns are calculated using real physical laws: Darcy's Law, Theis unsteady-state radial drawdown, and Terzaghi skeletal compaction: applied over an accurate 350-meter grid of Metro Iloilo. In Phase 2, this synthetic grid will be replaced by calibrated Copernicus Sentinel-1 InSAR measurements and MIWD well telemetry."
+   *Response*: "No. As clearly stated in our system disclaimer and data provenance specification, the current prototype displays deterministic synthetic demonstration data. The spatial patterns are calculated using real physical laws—Darcy's Law, Theis unsteady-state radial drawdown, and Terzaghi skeletal compaction—applied over the official geography of Iloilo City. However, the magnitude is calibrated against published satellite InSAR measurements from **Sulapas, Lagmay et al. (2024)**, which documented an empirical settlement rate of **8.8 to 9.0 mm/year** in Mandurriao and Molo."
 
-2. **"Why use synthetic data for the prototype instead of waiting for real InSAR processing?"**  
-   *Response*: "Raw InSAR interferogram processing and regional borehole harmonization require months of specialized data acquisition and institutional MOA clearances with MIWD and DENR-MGB. In accordance with CICT capstone methodology and Design Science Research guidelines, the prototype validates the software architecture, user interaction model, and real-time visualization pipeline early. This ensures the IT artifact is completely functional before ingesting large-scale empirical datasets."
+2. **"Does the prototype use real Iloilo City boundaries or generic mockups?"**  
+   *Response*: "The prototype has already integrated authentic **PSA and NAMRIA administrative boundaries covering all 180 official barangays of Iloilo City** (`iloilo_city_barangays.geojson`). Furthermore, our team has formally initiated data turnover with the Iloilo City Planning and Development Office (CPDO) to obtain the official CLUP 2021–2029 Zoning Map shapefile."
 
-3. **"How does the basemap coordinate system align with Philippine GIS standards?"**  
-   *Response*: "The web prototype uses WGS84 (EPSG:4326) web tiles for high-speed browser rendering. All spatial centroids and boundary polygons are mathematically transformable to Philippine Reference System 1992 (PRS92 / UTM Zone 51N, EPSG:3125), which is the official standard mandated by NAMRIA and used by the Iloilo City Planning and Development Office (CPDO)."
+3. **"Why use synthetic simulation data for the prototype instead of waiting for full production calibration?"**  
+   *Response*: "Raw multi-agency telemetry harmonization and comprehensive borehole inversion require formal data-sharing agreements and extensive preprocessing scheduled for Capstone 1 and 2. In accordance with CICT capstone policy and Design Science Research principles, the CC 208 prototype validates the software architecture, the sub-250 ms user experience, and the real-time WebGL rendering pipeline early to ensure technical viability before ingesting massive agency datasets."

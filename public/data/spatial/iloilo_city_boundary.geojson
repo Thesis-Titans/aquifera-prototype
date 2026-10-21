@@ -1,0 +1,118 @@
+{
+  "type": "FeatureCollection",
+  "name": "Iloilo_City_Boundary",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "ADM3_EN": "Iloilo City (Capital)",
+        "ADM3_PCODE": "PH0603022",
+        "ADM2_EN": "Iloilo",
+        "ADM2_PCODE": "PH06030",
+        "ADM1_EN": "Region VI (Western Visayas)",
+        "ADM1_PCODE": "PH06",
+        "ADM0_EN": "Philippines (the)",
+        "ADM0_PCODE": "PH",
+        "date": "2022-11-09",
+        "validOn": "2023-11-06",
+        "validTo": null,
+        "ADM3_REF": null,
+        "ADM3ALT1EN": null,
+        "Shape_Leng": 0.526994397249,
+        "Shape_Area": 0.00600709107393,
+        "AREA_SQKM": 72.6841248181,
+        "psgc_id": "PH0631000",
+        "psgc_code": "0631000000",
+        "psgc_name": "City of Iloilo",
+        "psgc_status": "matched",
+        "match_confidence": 1.0,
+        "psgc_type": "highly_urbanized_city",
+        "match_method": "exact",
+        "namria_adm2_pcode": "PH06030",
+        "region": "Region VI (Western Visayas)",
+        "province": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              122.59546991600007,
+              10.76020042600004
+            ],
+            [
+              122.58561123600009,
+              10.744307277000075
+            ],
+            [
+              122.59903227300003,
+              10.736902776000022
+            ],
+            [
+              122.6006176090001,
+              10.721014929000034
+            ],
+            [
+              122.58085218200006,
+              10.687364986000034
+            ],
+            [
+              122.56108176100008,
+              10.691362079000044
+            ],
+            [
+              122.5312202670001,
+              10.67923220800003
+            ],
+            [
+              122.49478270700001,
+              10.68174680800007
+            ],
+            [
+              122.49872121300007,
+              10.694781047000049
+            ],
+            [
+              122.51245649200007,
+              10.69134113900003
+            ],
+            [
+              122.5241607910001,
+              10.713187050000045
+            ],
+            [
+              122.51323946600007,
+              10.739228787000059
+            ],
+            [
+              122.531429634,
+              10.738380808000045
+            ],
+            [
+              122.54163080500007,
+              10.759936236000044
+            ],
+            [
+              122.55893537700001,
+              10.76043244400006
+            ],
+            [
+              122.56614833200001,
+              10.783204043000069
+            ],
+            [
+              122.59546991600007,
+              10.76020042600004
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

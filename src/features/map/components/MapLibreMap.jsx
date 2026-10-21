@@ -276,6 +276,54 @@ export default function MapLibreMap({
         });
       }
 
+      // 1b. Add Official PSA/NAMRIA 180-Barangay Boundaries & Municipal Perimeter Source
+      const base = import.meta.env.BASE_URL || '/';
+      const barangaysUrl = `${base.endsWith('/') ? base : base + '/'}data/spatial/iloilo_city_barangays.geojson`;
+      const boundaryUrl = `${base.endsWith('/') ? base : base + '/'}data/spatial/iloilo_city_boundary.geojson`;
+
+      if (!map.getSource('iloilo-barangays')) {
+        map.addSource('iloilo-barangays', {
+          type: 'geojson',
+          data: barangaysUrl
+        });
+      }
+
+      if (!map.getSource('iloilo-city-boundary')) {
+        map.addSource('iloilo-city-boundary', {
+          type: 'geojson',
+          data: boundaryUrl
+        });
+      }
+
+      // Add Barangay Outlines Layer (Subtle administrative boundaries)
+      if (!map.getLayer('iloilo-barangays-line')) {
+        map.addLayer({
+          id: 'iloilo-barangays-line',
+          type: 'line',
+          source: 'iloilo-barangays',
+          paint: {
+            'line-color': 'rgba(148, 163, 184, 0.40)',
+            'line-width': 1,
+            'line-opacity': 0.75
+          }
+        });
+      }
+
+      // Add Municipal Perimeter Boundary (Gold dashed border)
+      if (!map.getLayer('iloilo-city-boundary-line')) {
+        map.addLayer({
+          id: 'iloilo-city-boundary-line',
+          type: 'line',
+          source: 'iloilo-city-boundary',
+          paint: {
+            'line-color': '#f59e0b',
+            'line-width': 2,
+            'line-dasharray': [3, 2],
+            'line-opacity': 0.85
+          }
+        });
+      }
+
       // 2. Add Fill Layer with Color Ramps
       if (!map.getLayer('subsidence-fill')) {
         map.addLayer({
@@ -550,9 +598,9 @@ export default function MapLibreMap({
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5 pointer-events-none">
         <div className="bg-slate-950/85 backdrop-blur-md px-3.5 py-2 rounded-lg border border-white/10 shadow-lg pointer-events-auto flex items-center gap-2">
           <Navigation size={13} className="text-cyan-400 rotate-45" />
-          <span className="text-xs font-semibold text-slate-100">Metro Iloilo Basin (PRS92 / WGS84)</span>
+          <span className="text-xs font-semibold text-slate-100">Iloilo City (180 Barangays)</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 font-mono">
-            10.72°N, 122.56°E
+            PRS92 / WGS84
           </span>
         </div>
       </div>

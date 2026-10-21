@@ -48,7 +48,7 @@ To maintain absolute academic and scientific integrity (Form `CICT-UGR-F001` and
 | :--- | :--- | :--- | :--- |
 | **Interactive Dashboard & Shell** | Tier 1 | **Implemented** | React 19 SPA, Vite 8.3, Tailwind CSS v4 (`src/app/App.jsx`). |
 | **3D Subsurface Cutaway** | Tier 1 | **Implemented** | Three.js WebGL canvas with custom strata displacement (`src/features/aquifer-visualization/`). |
-| **2D GIS Basemap** | Tier 1 | **Implemented** | MapLibre GL JS with CARTO Dark raster tiles and synthetic GeoJSON grid (`src/features/map/`). |
+| **2D GIS Basemap** | Tier 1 | **Implemented** | MapLibre GL JS with CARTO Dark raster tiles, authentic 180-barangay PSA/NAMRIA GeoJSON boundaries, and dynamic subsidence overlays (`src/features/map/`). |
 | **Client-Side Physics Engine** | Tier 1 | **Implemented (Illustrative)** | Analytical Darcy-Theis multi-well drawdown and 1D Terzaghi skeletal compaction (`src/physics/groundwaterPhysics.js`). |
 | **Scenario State Management** | Tier 1 | **Implemented** | React state with isolated preset resets (`src/features/scenarios/hooks/useScenarioState.js`). |
 | **Dual-Engine HUD Telemetry** | Tier 1 | **Illustrative Demo Telemetry** | UI monitors displaying target engineering benchmarks and latency comparisons (`src/features/simulation/`). |
@@ -63,12 +63,13 @@ To maintain absolute academic and scientific integrity (Form `CICT-UGR-F001` and
 
 #### Tier 1: Client Presentation Layer
 - **Framework:** React 19, Vite 8.3, and Tailwind CSS v4.
-- **3D Subsurface Viewport (Three.js):**
+- **3D Subsurface Viewport (Three.js / React Three Fiber):**
   - Renders a volumetric cutaway model of Metro Iloilo's alluvial aquifer system.
   - Implements custom vertex displacement to deform the upper ground mesh in real time based on computed compaction values $\Delta b(x, y)$.
   - Uses clipping planes (`clippingPlanes: [plane]`) allowing users to slice into the 3D block to inspect internal aquitard compaction.
-- **Geographic Basemap Viewport (MapLibre GL JS):**
-  - Displays geospatial overlays aligned with regional barangay boundaries (Mandurriao, Molo, City Proper, Jaro, La Paz, Arevalo).
+- **Geographic Basemap Viewport (MapLibre GL JS / Deck.gl):**
+  - Ingests and renders official PSA/NAMRIA administrative boundaries covering **all 180 barangays of Iloilo City** (`iloilo_city_barangays.geojson`) and city perimeter (`iloilo_city_boundary.geojson`).
+  - Displays localized cumulative land subsidence ($cm$) and head drawdown ($m$) contours over the barangay polygons.
   - Synchronizes zoom, pan, and coordinate inspection with the 3D cutaway.
 - **Dual-Engine Benchmark HUD:**
   - Real-time performance monitors displaying inference duration, speedup factors, memory footprints, and $L_2$ relative errors.

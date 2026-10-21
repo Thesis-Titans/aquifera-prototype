@@ -16,11 +16,11 @@
 
 Standard finite-difference numerical solvers (such as **USGS MODFLOW 6 CSUB**) require 3 to 45 minutes to compute non-linear skeletal consolidation, preventing interactive scenario exploration during metropolitan urban planning and water allocation meetings. 
 
-The Aquifera capstone research proposes an accessible computing intervention: coupling an offline-trained **Physics-Informed Neural Operator (PINO)** surrogate engine with a modern web dashboard. The proposed system targets sub-second ($< 250\text{ ms}$, $\approx 80,000\times$ speedup) 3D hydraulic head and land subsidence simulations on standard workstation hardware (e.g., NVIDIA RTX 4050 6 GB GPU), with on-demand numerical verification against benchmark USGS MODFLOW 6 CSUB physics.
+The Aquifera capstone research proposes an accessible computing intervention: coupling an offline-trained **Physics-Informed Neural Operator (PINO)** surrogate engine with a modern web dashboard. Ground-truthed during consultations with the **Iloilo City Planning and Development Office (CPDO)**, the system targets sub-second ($< 250\text{ ms}$) 3D hydraulic head and land subsidence simulations on commodity workstation hardware (e.g., NVIDIA RTX 4050 6 GB GPU) for **live meeting-room decision support**, aiding the upcoming **CLUP 2021–2029** update while enabling on-demand numerical verification against benchmark USGS MODFLOW 6 CSUB physics.
 
 > [!NOTE]
 > **Prototype Status & Academic Integrity Statement:**  
-> This repository contains the **Tier 1 Interactive Web Prototype** created for proposal defense and UI/UX validation. Current in-browser calculations use an illustrative analytical Darcy-Theis and Terzaghi consolidation model (`src/physics/groundwaterPhysics.js`). Backend surrogate inference (Tier 3) and automated FloPy numerical verification (Tier 4) represent the **proposed research architecture** to be developed and evaluated during subsequent project phases. All HUD benchmark figures and verification curves are illustrative demonstration telemetry.
+> This repository contains the **Tier 1 Interactive Web Prototype** created for proposal defense and UI/UX validation. Current in-browser calculations use an illustrative analytical Darcy-Theis and Terzaghi consolidation model (`src/physics/groundwaterPhysics.js`) rendered over authentic **PSA/NAMRIA 180-barangay administrative boundaries**. Backend surrogate inference (Tier 3) and automated FloPy numerical verification (Tier 4) represent the **proposed research architecture** to be developed and evaluated during subsequent project phases. All HUD benchmark figures and verification curves are illustrative demonstration telemetry.
 
 ---
 
@@ -30,7 +30,7 @@ The Aquifera capstone research proposes an accessible computing intervention: co
 | :--- | :--- | :--- | :--- |
 | **Interactive Web Dashboard** | Client (Tier 1) | **Implemented** | React 19 SPA, Vite 8.3, Tailwind CSS v4, responsive layout. |
 | **3D Subsurface Viewport** | Client (Tier 1) | **Implemented** | Three.js WebGL canvas, 3-layer geotechnical strata cutaway, dynamic surface mesh displacement. |
-| **2D Geospatial Basemap** | Client (Tier 1) | **Implemented** | MapLibre GL JS with CARTO Dark basemap and synthetic demonstration GeoJSON grid. |
+| **2D Geospatial Basemap** | Client (Tier 1) | **Implemented** | MapLibre GL JS with CARTO Dark basemap, authentic 180-barangay PSA/NAMRIA GeoJSON boundaries, and dynamic subsidence overlays. |
 | **Client-Side Physics Engine** | Client (Tier 1) | **Implemented (Illustrative)** | Analytical Darcy-Theis multi-well drawdown and Terzaghi skeletal compaction (`groundwaterPhysics.js`). Evaluated for interactive demonstration; not a substitute for numerical solvers. |
 | **Scenario Presets & Reset** | Client (Tier 1) | **Implemented** | Baseline, Overdraft, MAR, Drought Shock presets with isolated state resets. |
 | **Dual-Engine Telemetry HUD** | UI Prototype | **Illustrative Demo Telemetry** | Displays target engineering telemetry ($< 250\text{ ms}$, speedup, $R^2$, $L_2$). Clearly identified as demonstration placeholders, NOT measured results from a live model. |
@@ -46,9 +46,12 @@ The Aquifera capstone research proposes an accessible computing intervention: co
 Comprehensive engineering specifications, architectural contracts, and interface design guides are maintained in the [`docs/`](./docs) directory:
 
 * [**Documentation Master Index (`docs/README.md`)**](./docs/README.md): System overview, core metric table, quick reference, and operational setup.
+* [**Data Provenance & Spatial Governance (`docs/DATA-PROVENANCE.md`)**](./docs/DATA-PROVENANCE.md): Authentic PSA/NAMRIA 180-barangay administrative boundary dataset, CPDO CLUP planning volumes, City-ENRO commercial well inventory, and defense talking points.
 * [**Software Requirements & Specifications (`docs/SPECIFICATIONS.md`)**](./docs/SPECIFICATIONS.md): Functional (FR-01 to FR-08), non-functional (NFR-01 to NFR-08 based on ISO/IEC 25010:2023), domain parameter bounds, and anti-hallucination integrity rules.
 * [**System Architecture & Pipeline (`docs/ARCHITECTURE.md`)**](./docs/ARCHITECTURE.md): 4-tier architectural specification, PINO 3D surrogate formulation, FloPy/MODFLOW 6 CSUB verification pipeline, Darcy mass conservation, and interactive data flows.
+* [**Scientific Validation & Benchmark Hierarchy (`docs/SCIENTIFIC-VALIDATION.md`)**](./docs/SCIENTIFIC-VALIDATION.md): 4-tier validation hierarchy, Theis & Cooper-Jacob analytical solutions, Terzaghi plastic compaction hysteresis, PINO loss formulation, and oral defense protocols.
 * [**UI/UX & HCI Design Guide (`docs/UI-UX-GUIDE.md`)**](./docs/UI-UX-GUIDE.md): Obsidian-dark design system, HSL color tokens, Three.js 3D viewport hierarchy, dual-engine benchmark HUD, and WCAG accessibility standards.
+* [**Design System Specification (`docs/DESIGN-SYSTEM.md`)**](./docs/DESIGN-SYSTEM.md): Canonical HSL token architecture, typography, spacing/radii scales, and multi-device layout contracts.
 * [**Prototype Implementation Plans (`docs/plans/`)**](./docs/plans): Phased implementation roadmaps, UI/UX audits, and demonstration state designs.
 
 ---

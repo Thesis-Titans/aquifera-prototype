@@ -11,7 +11,9 @@
 
 This document specifies the software requirements, behavioral constraints, and verification metrics for the **Aquifera** web simulation platform and automated data pipeline. 
 
-Under the CICT Capstone Governance Framework (CMO No. 25 s. 2015, Category 4: Application and Infrastructure Development), the project engineers a containerized, browser-accessible computing intervention that bridges the gap between complex geomechanical physics and accessible scenario exploration for water resource planners and municipal regulatory authorities.
+Under the CICT Capstone Governance Framework (CMO No. 25 s. 2015, Category 4: Application and Infrastructure Development), the project engineers a containerized, browser-accessible computing intervention that bridges the gap between complex geomechanical physics and accessible scenario exploration. 
+
+**Primary Operational Target:** Ground-truthed during stakeholder consultations with the **Iloilo City Planning and Development Office (CPDO)**, Aquifera provides a sub-second ($<250\text{ ms}$) interactive decision-support tool tailored for **live meeting-room planning sessions** by the City Planning Coordinator and Zoning Board. This addresses the regulatory void wherein commercial groundwater extraction is currently unmonitored (*"hapaw"*) and provides predictive simulation evidence for the upcoming **Comprehensive Land Use Plan (CLUP 2021–2029)** and Zoning Ordinance update.
 
 ---
 
@@ -21,7 +23,7 @@ To preserve scientific rigor and prevent misleading user expectations, the platf
 
 1. **Persistent Demonstration Notice:** The client UI displays an unobscured notification stating:  
    `RESEARCH PROTOTYPE: DEMONSTRATION WORKSPACE. LIVE NUMERICAL SIMULATIONS RUN VIA BACKGROUND VERIFICATION PIPELINE.`
-2. **Clear Data Provenance:** Every metric, map layer, and cross-section chart explicitly displays its data provenance category: `Synthetic Demonstration`, `Offline Neural Surrogate`, or `Headless MODFLOW 6 Benchmark`.
+2. **Clear Data Provenance:** Every metric, map layer, and cross-section chart explicitly displays its data provenance category: `Authentic Administrative Boundary (PSA/NAMRIA)`, `Synthetic Demonstration Physics`, `Offline Neural Surrogate`, or `Headless MODFLOW 6 Benchmark`.
 3. **Transparent Benchmark Labels:** Numerical solver comparisons display verifiable timestamp logs and hardware resource consumption. Mock curves are never labeled as measured ground-truth data.
 4. **Physical Law Enforcement:** Output fields are bounded by governing physical equations (Darcy fluid conservation and Terzaghi 1D consolidation), preventing synthetic hallucinations such as unphysical groundwater rebound during extraction.
 
@@ -30,12 +32,13 @@ To preserve scientific rigor and prevent misleading user expectations, the platf
 ### 3. Functional Requirements (FR)
 
 #### FR-01: Dual-Mode Geographic and Subsurface Viewport
-- **2D Geographic GIS Mode (MapLibre GL JS):**
+- **2D Geographic GIS Mode (MapLibre GL JS / Deck.gl):**
   - The system shall render an interactive geographic basemap centered on the Metro Iloilo deltaic basin (`10.72° N, 122.56° E`, WGS84 / PRS92 alignment).
   - The map shall feature standard pan, zoom, pitch, and reset-to-extent navigation controls.
-  - The map shall render a dynamic GeoJSON synthetic polygon grid displaying localized cumulative land subsidence ($cm$) and head drawdown ($m$).
-  - Clicking any cell shall open an inspector popup detailing cell ID, estimated subsidence, head drawdown, geological soil classification, and synthetic demonstration status.
-- **3D Geotechnical Subsurface Mode (Three.js WebGL):**
+  - **Authentic Administrative Boundary Ingestion:** The map shall render the official administrative boundaries for all **180 barangays of Iloilo City** (`iloilo_city_barangays.geojson`) sourced from PSA/NAMRIA, along with the municipal perimeter outline (`iloilo_city_boundary.geojson`).
+  - **Dynamic Subsidence Overlay:** The map shall render localized cumulative land subsidence ($cm$) and head drawdown ($m$) contours over the barangay boundaries.
+  - Clicking any barangay shall open an inspector popup detailing the official Barangay Name (`adm4_en`), PSGC Code (`adm4_pcode`), estimated settlement rate ($mm/year$), drawdown ($m$), and risk classification.
+- **3D Geotechnical Subsurface Mode (Three.js WebGL / React Three Fiber):**
   - The system shall render an interactive 3D WebGL cutaway of the Metro Iloilo deltaic aquifer system comprising three distinct hydrostratigraphic layers:
     - **Layer 1 (0 to 30 m):** Upper unconfined alluvial sand and silt aquifer.
     - **Layer 2 (30 to 60 m):** Low-permeability, compressible marine clay aquitard.
@@ -59,7 +62,7 @@ To preserve scientific rigor and prevent misleading user expectations, the platf
 #### FR-04: Terzaghi Preconsolidation Plastic Alert Thresholds
 - The platform shall track the running minimum historical hydraulic head $h_{\min}(\mathbf{x}, t)$.
 - When the localized head drops below the preconsolidation head threshold ($h < h_{\min}$), the system shall trigger a high-priority UI alert indicating that the clay interbed has transitioned from recoverable elastic compression ($S_{ske} \approx 10^{-5}\text{ m}^{-1}$) to permanent, irreversible inelastic compaction ($S_{skv} \approx 10^{-3}\text{ m}^{-1}$).
-- Visual warning badges shall highlight barangays where annual projected subsidence exceeds $5\text{ mm/year}$.
+- Visual warning badges shall highlight barangays where annual projected subsidence exceeds $5\text{ mm/year}$, with critical high-vulnerability alerts triggered at $\ge 8.0\text{ mm/year}$ (calibrated to the empirical Mandurriao-Molo satellite InSAR baseline from Sulapas et al., 2024 [Ref 1]).
 
 #### FR-05: Dual-Engine Benchmark Heads-Up Display (HUD)
 - The user interface shall feature a synchronized benchmark HUD comparing the performance of:
@@ -73,7 +76,7 @@ To preserve scientific rigor and prevent misleading user expectations, the platf
 
 #### FR-07: Geospatial Export Engine
 - The system shall provide one-click export endpoints allowing users to download simulation outputs in standard formats:
-  - **GeoJSON:** Vector contours of subsidence bowls projected in PRS92 / UTM Zone 51N for immediate ingestion into CPDO and CDRRMO GIS platforms.
+  - **GeoJSON (`/api/v1/export/geojson`):** Vector polygons and deformation contours projected in **PRS92 / UTM Zone 51N (EPSG:3125)** with embedded attribute metadata (`rate_mm_yr`, `drawdown_m`, `risk_tier`) formatted specifically for direct drag-and-drop ingestion into **QGIS** and **ArcGIS** workstations at CPDO and CDRRMO.
   - **GeoTIFF:** Georeferenced raster surfaces of hydraulic drawdown and cumulative compaction.
   - **CSV / Tabular:** Piezometric elevation time series for utility monitoring.
 

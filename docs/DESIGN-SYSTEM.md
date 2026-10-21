@@ -9,7 +9,7 @@
 
 ### 1. Design Philosophy: The Calm Scientific Workstation
 
-The **AQUIFERA** user interface is engineered as an analytical decision-support tool for municipal engineers, hydrologists, and city planners. The design philosophy adheres to four foundational tenets:
+The **AQUIFERA** user interface is engineered as an analytical decision-support and deliberation tool for municipal planners (e.g., City Planning and Development Office / CPDO), environmental officers (City-ENRO), and hydrogeologists. Grounded in stakeholder validation with City Planning Coordinator EnP. Ronald M. Cartagena, the interface is tailored for high-stakes municipal deliberations—such as evaluating commercial deep-well variance applications or amending the Comprehensive Land Use Plan (CLUP) and Zoning Ordinance. The design philosophy adheres to four foundational tenets:
 
 1. **Information Hierarchy Over Visual Decoration**: The central spatial viewports (MapLibre 2D GIS and Three.js 3D Subsurface) are the primary workspace. Secondary sidebars and analytics cards provide context without visual noise, excessive glows, or distracting animations.
 2. **Deterministic Data Provenance**: Every metric, chart, and contour visibly communicates its physical variable, units of measurement, scenario year, and empirical status (e.g., deterministic synthetic demonstration vs. calibrated reference).
@@ -53,10 +53,10 @@ All colors and surfaces are derived from a unified HSL token palette defined in 
 * **Accent (Deep Geo Purple)**: `hsl(258, 90%, 66%)` (`#a855f7`) - Geotechnical cross-sections and structural markers.
 
 #### 2.5 Semantic State Roles
-* **Success / Sustainable**: `hsl(158, 85%, 44%)` (`#10b981`) - Managed recharge, normal heads, and verified state.
-* **Warning / Caution**: `hsl(38, 92%, 50%)` (`#f59e0b`) - Moderate subsidence (10 to 18 cm) and seasonal drawdown.
-* **Danger / Critical**: `hsl(350, 89%, 60%)` (`#ef4444`) - Severe overdraft (>25k m3/day) and irreversible plastic compaction.
-* **Informational**: `hsl(199, 89%, 48%)` (`#0284c7`) - Research disclaimers and methodology guidance.
+* **Success / Sustainable**: `hsl(158, 85%, 44%)` (`#10b981`) - Managed recharge, normal hydraulic heads ($h > h_{\text{pre}}$), and verified physics state.
+* **Warning / Caution**: `hsl(38, 92%, 50%)` (`#f59e0b`) - Moderate subsidence ($3.0$ to $7.9\text{ mm/yr}$) and seasonal piezometric drawdown.
+* **Danger / Critical (Plastic Alarm)**: `hsl(350, 89%, 60%)` (`#ef4444`) - Severe overdraft, empirical InSAR threshold breach ($\ge 8.0\text{ mm/yr}$, calibrated to Sulapas et al. 2024), and irreversible plastic clay compaction.
+* **Informational**: `hsl(199, 89%, 48%)` (`#0284c7`) - Research disclaimers, CLUP zoning context, and methodology guidance.
 
 ---
 
@@ -82,10 +82,10 @@ To maintain visual harmony, all padding, gaps, and margins follow a 4px geometri
 ### 4. Layout Contract and Responsive Behavior
 
 #### 4.1 Desktop (1920x1080 and 1440x900)
-* Fixed top navigation (48px height) with brand, mode indicator, and action triggers.
+* Fixed top navigation (48px height) with brand, mode indicator, and action triggers (`Reset View`, `Snapshot (PNG)`, and `Export (GeoJSON)` emitting WGS84 and PRS92 / UTM Zone 51N payloads for CPDO QGIS/ArcGIS).
 * Middle stage: Horizontal flex row containing:
   * Left Scenario Setup Panel: Fixed 320px width (`w-80`), independent vertical scrolling via custom scrollbar.
-  * Central Viewport: Flex-1 fill, containing MapLibre 2D GIS or Three.js 3D WebGL subsurface cutaway.
+  * Central Viewport: Flex-1 fill, containing MapLibre 2D GIS (rendering official PSA/NAMRIA 180-barangay administrative polygons) or Three.js 3D WebGL subsurface cutaway (3-layer volumetric block).
 * Bottom Suite: 4-card analytical grid (`grid-cols-4`) displaying the 2D cross-section heatmap, time-series hydrograph, risk breakdown, and visualization layer controls.
 * Fixed footer (32px height) with disclaimer and versioning.
 

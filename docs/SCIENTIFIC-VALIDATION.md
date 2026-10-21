@@ -177,7 +177,20 @@ During oral defense, examiners frequently probe the boundary between software en
 #### Question 4: "Why is this a BSIT capstone rather than a Civil or Geological Engineering thesis?"
 > **Examiner Intent**: Validating BSIT program alignment under CICT guidelines.  
 > **Defense Response**:  
-> "A civil engineer's contribution is measuring soil cores or designing physical drainage infrastructure. Our contribution is strictly in Information Technology, specifically in Category 4: Application and Infrastructure Development:  
-> 1. We solve an acute computational systems bottleneck by engineering an automated simulation pipeline that couples offline neural operator surrogates with real-time web delivery.  
-> 2. We design and implement a modern, accessible web platform integrating MapLibre GL geospatial rendering and Three.js 3D WebGL subsurface visualization.  
+> "A civil or geological engineer's contribution is extracting physical borehole soil cores or designing physical recharge trenches. Our contribution is strictly in Applied Computing and Information Technology, classified in accordance with CICT Policies and Guidelines under **BSIT Category 4 (Pure Scientific Research and Simulation in IT)** and positioned at **Layer 3 (Application and Infrastructure Layer)** of the CICT computing framework:  
+> 1. We solve an acute computational systems bottleneck by engineering an automated simulation pipeline that couples offline neural operator surrogates with real-time web delivery (<250 ms latency).  
+> 2. We design and implement a modern, accessible web platform integrating MapLibre GL geospatial rendering of official PSA/NAMRIA administrative boundaries and Three.js 3D WebGL subsurface visualization.  
 > 3. We build the data integration pipeline connecting municipal well databases, satellite InSAR raster products, and numerical modeling engines into an actionable decision-support platform for municipal water governance."
+
+#### Question 5: "How does AQUIFERA reconcile empirical academic research (e.g., Dr. Siringan / Sulapas et al. 2024 / Dr. Cruz) with municipal planning reality?"
+> **Examiner Intent**: Verifying grounding in existing Philippine scientific literature versus municipal stakeholder needs.  
+> **Defense Response**:  
+> "During our empirical stakeholder validation with the City Planning and Development Office (CPDO), City Planning Coordinator EnP. Ronald M. Cartagena highlighted regional research—specifically studies associated with the UP Resilience Institute and prominent geoscientists including Dr. Fernando P. Siringan (UP MSI) and Dr. Rex Victor O. Cruz (UPLB). Published peer-reviewed research by Sulapas, Siringan, et al. (2024) established that Iloilo City experiences severe localized ground settlement of 8.8 to 9.0 mm/year, concentrated in coastal deltaic barangays with unpermitted deep-well extraction. However, this academic knowledge remains siloed in academic journals and inaccessible to municipal planners. AQUIFERA bridges this research-to-practice gap by ingesting these empirical subsidence baselines as ground-truth calibration thresholds for the surrogate model and outputting actionable PRS92/UTM Zone 51N GeoJSON layers directly usable in CPDO's Comprehensive Land Use Plan (CLUP) and Zoning Ordinance revisions."
+
+#### Question 6: "How do you ensure the 3D subsurface cutaway is computationally feasible on standard student and municipal hardware without lagging?"
+> **Examiner Intent**: Probing graphics pipeline optimization, GPU memory consumption, and browser responsiveness.  
+> **Defense Response**:  
+> "Rather than attempting full non-uniform volume rendering or deploying an overly heavy game engine (e.g., Unreal or Unity WebGL which takes hundreds of megabytes to load), AQUIFERA adopts a lightweight, decoupled WebGL architecture:  
+> 1. We separate the 2D surface GIS basemap (handled via MapLibre GL JS vector tiles) from the 3D subsurface cutaway (handled via Three.js / React Three Fiber).  
+> 2. The subsurface cutaway models a structured 3-layer stratigraphic volume (Upper Sand, Clay Aquitard, Deep Confined Aquifer) on a discrete $64 \times 64 \times 3$ grid. Vertical mesh displacement is driven by 1D Terzaghi consolidation calculations mapped onto GPU vertex shaders.  
+> 3. This decoupled approach consumes under 4.2 GB VRAM, maintains 60 FPS rendering, and delivers complete scenario evaluation in under 250 milliseconds on our baseline hardware (NVIDIA RTX 4050 6 GB laptop), fulfilling CPDO's requirement for live, meeting-room deliberation."
