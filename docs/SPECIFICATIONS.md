@@ -67,7 +67,7 @@ To preserve scientific rigor and prevent misleading user expectations, the platf
 #### FR-05: Dual-Engine Benchmark Heads-Up Display (HUD)
 - The user interface shall feature a synchronized benchmark HUD comparing the performance of:
   - **Surrogate Engine (PINO PyTorch CUDA):** Inference runtime ($< 250\text{ ms}$), VRAM usage, and estimated energy consumption.
-  - **Numerical Solver (USGS MODFLOW 6 CSUB):** Execution time ($180\text{ s}$ to $2,700\text{ s}$), CPU thread load, and grid convergence iterations.
+  - **Numerical Solver (USGS MODFLOW 6 CSUB):** Execution time (pilot: $4.5$ to $96\text{ s}$ per run), CPU thread load, and grid convergence iterations.
 - The HUD shall display relative accuracy metrics ($L_2$ head error, $L_2$ compaction error, and coefficient of determination $R^2$).
 
 #### FR-06: Asynchronous Numerical Verification Pipeline Trigger
@@ -76,7 +76,7 @@ To preserve scientific rigor and prevent misleading user expectations, the platf
 
 #### FR-07: Geospatial Export Engine
 - The system shall provide one-click export endpoints allowing users to download simulation outputs in standard formats:
-  - **GeoJSON (`/api/v1/export/geojson`):** Vector polygons and deformation contours projected in **PRS92 / UTM Zone 51N (EPSG:3125)** with embedded attribute metadata (`rate_mm_yr`, `drawdown_m`, `risk_tier`) formatted specifically for direct drag-and-drop ingestion into **QGIS** and **ArcGIS** workstations at CPDO and CDRRMO.
+  - **GeoJSON (`/api/v1/export/geojson`):** Vector polygons and deformation contours projected in **PRS92 / Philippines Zone 4 (EPSG:3124)** with embedded attribute metadata (`rate_mm_yr`, `drawdown_m`, `risk_tier`) formatted specifically for direct drag-and-drop ingestion into **QGIS** and **ArcGIS** workstations at CPDO and CDRRMO.
   - **GeoTIFF:** Georeferenced raster surfaces of hydraulic drawdown and cumulative compaction.
   - **CSV / Tabular:** Piezometric elevation time series for utility monitoring.
 
@@ -103,8 +103,8 @@ To preserve scientific rigor and prevent misleading user expectations, the platf
 ### 5. Data and Interface Specifications
 
 #### 5.1 Hydrogeological Domain Bounds (Metro Iloilo Alluvial Basin)
-- **Spatial Grid Extent:** $10.0\text{ km} \times 10.0\text{ km}$ covering Mandurriao, Molo, City Proper, and Jaro.
-- **Vertical Grid Extent:** $120.0\text{ m}$ depth discretized into 3 hydrostratigraphic layers.
+- **Spatial Grid Extent:** $3.2\text{ km} \times 3.2\text{ km}$ synthetic test domain ($64 \times 64$ cells of 50 m; proposal Fig. 6).
+- **Vertical Grid Extent:** $120.0\text{ m}$ depth discretized into 5 hydrostratigraphic layers (proposal Fig. 6).
 - **Vertical Hydraulic Conductivity ($K_{zz}$):** $1.0 \times 10^{-9}$ to $1.0 \times 10^{-7}\text{ m/s}$ (clay aquitard).
 - **Elastic Skeletal Specific Storage ($S_{ske}$):** $1.0 \times 10^{-5}\text{ m}^{-1}$.
 - **Inelastic Skeletal Specific Storage ($S_{skv}$):** $1.0 \times 10^{-4}$ to $1.0 \times 10^{-2}\text{ m}^{-1}$.

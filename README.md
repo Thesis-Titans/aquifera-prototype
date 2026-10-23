@@ -14,7 +14,7 @@
 
 **Aquifera** is an interactive web-based simulation platform designed to address the severe computational bottlenecks of traditional regional groundwater modeling. 
 
-Standard finite-difference numerical solvers (such as **USGS MODFLOW 6 CSUB**) require 3 to 45 minutes to compute non-linear skeletal consolidation, preventing interactive scenario exploration during metropolitan urban planning and water allocation meetings. 
+Standard finite-difference numerical solvers (such as **USGS MODFLOW 6 CSUB**) took 4.5 to 96 s per run (median 22.5 s) on the study's synthetic 5-layer test grid in the feasibility pilot; comparing many scenarios multiplies that cost and slows interactive scenario exploration during metropolitan urban planning and water allocation meetings. 
 
 The Aquifera capstone research proposes an accessible computing intervention: coupling an offline-trained **Physics-Informed Neural Operator (PINO)** surrogate engine with a modern web dashboard. Ground-truthed during consultations with the **Iloilo City Planning and Development Office (CPDO)**, the system targets sub-second ($< 250\text{ ms}$) 3D hydraulic head and land subsidence simulations on commodity workstation hardware (e.g., NVIDIA RTX 4050 6 GB GPU) for **live meeting-room decision support**, aiding the upcoming **CLUP 2021–2029** update while enabling on-demand numerical verification against benchmark USGS MODFLOW 6 CSUB physics.
 
@@ -29,7 +29,7 @@ The Aquifera capstone research proposes an accessible computing intervention: co
 | System Subsystem | Category | Current Status | Description & Academic Qualification |
 | :--- | :--- | :--- | :--- |
 | **Interactive Web Dashboard** | Client (Tier 1) | **Implemented** | React 19 SPA, Vite 8.3, Tailwind CSS v4, responsive layout. |
-| **3D Subsurface Viewport** | Client (Tier 1) | **Implemented** | Three.js WebGL canvas, 3-layer geotechnical strata cutaway, dynamic surface mesh displacement. |
+| **3D Subsurface Viewport** | Client (Tier 1) | **Implemented** | Three.js WebGL canvas, 5-layer strata cutaway (proposal Fig. 6), dynamic surface mesh displacement. |
 | **2D Geospatial Basemap** | Client (Tier 1) | **Implemented** | MapLibre GL JS with CARTO Dark basemap, authentic 180-barangay PSA/NAMRIA GeoJSON boundaries, and dynamic subsidence overlays. |
 | **Client-Side Physics Engine** | Client (Tier 1) | **Implemented (Illustrative)** | Analytical Darcy-Theis multi-well drawdown and Terzaghi skeletal compaction (`groundwaterPhysics.js`). Evaluated for interactive demonstration; not a substitute for numerical solvers. |
 | **Scenario Presets & Reset** | Client (Tier 1) | **Implemented** | Baseline, Overdraft, MAR, Drought Shock presets with isolated state resets. |
@@ -90,9 +90,9 @@ Comprehensive engineering specifications, architectural contracts, and interface
    * **Isolated Scenario State:** Presets and resets operate with clean, independent state memory.
 
 3. **Dual-Engine Benchmark HUD (Illustrative Target Metrics):**
-   * Real-time demonstration telemetry displaying target latency comparisons: **PINO ($< 250\text{ ms}$)** vs. **USGS MODFLOW 6 ($180\text{ s}$)**.
+   * Real-time demonstration telemetry displaying target latency comparisons: **PINO target ($< 250\text{ ms}$)** vs. **MODFLOW 6 CSUB pilot runtime ($4.5$–$96\text{ s}$)**.
    * Illustrative fidelity indicators: $R^2 = 0.942$, Relative $L_2 = 3.8\%$, $\text{RMSE} = 4.2\text{ mm}$ (calibrated as visual design targets, not measured experimental outcomes).
-   * Testbed hardware bounds: Formatted for NVIDIA RTX 4050 ($1.8\text{ GB}$ VRAM allocation).
+   * Testbed hardware bounds: NVIDIA RTX 4050 6 GB (target peak VRAM $\le 4.2\text{ GB}$).
 
 4. **Tier 4 Verification Dialog (Proposed Comparison Interface):**
    * Demonstrates the proposed on-demand background solver cross-check workflow for stakeholders.

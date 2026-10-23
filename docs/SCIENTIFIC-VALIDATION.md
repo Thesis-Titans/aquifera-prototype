@@ -27,7 +27,7 @@ This document establishes the theoretical foundations, governing equations, erro
 │         Rigorous multi-layer finite-difference baseline                │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Tier 3: Physics-Informed Neural Operator (PINO) Surrogate Engine       │
-│         Sub-second (<100 ms) mesh-independent inference with PDE loss  │
+│         Target < 250 ms inference (proposed criterion) with PDE loss   │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Tier 2: Geotechnical Skeletal Compaction with Plastic Hysteresis       │
 │         Terzaghi 1D consolidation separating elastic vs. plastic strain │
@@ -123,9 +123,9 @@ Where:
 * **$\mathcal{L}_{\text{BC}}$**: Boundary condition enforcement along the coastal boundary (Dirichlet condition: $h = 0\text{ m AMSL}$ at Iloilo Strait) and inland hills (Neumann no-flow boundary: $\frac{\partial h}{\partial n} = 0$).
 
 ##### Inference Latency Target
-* **Numerical MODFLOW 6 Runtime**: 15 to 45 minutes per multi-year 3D simulation.
-* **PINO GPU Inference**: $< 100\text{ ms}$ on NVIDIA RTX 4050 6 GB GPU.
-* **Effective Speedup**: Approximately $80,000\times$, enabling real-time interactive parameter adjustments during stakeholder planning meetings.
+* **Numerical MODFLOW 6 CSUB Runtime**: 4.5 to 96 s per 12-month run (median 22.5 s), measured in the feasibility pilot on the synthetic 5-layer grid.
+* **PINO GPU Inference**: target $< 250\text{ ms}$ on NVIDIA RTX 4050 6 GB GPU (proposed criterion; not yet measured for a trained PINO).
+* **Speedup**: target $\ge 50\times$ as a median over the held-out scenarios (proposed criterion; not yet measured).
 
 ---
 
@@ -185,12 +185,12 @@ During oral defense, examiners frequently probe the boundary between software en
 #### Question 5: "How does AQUIFERA reconcile empirical academic research (e.g., Dr. Siringan / Sulapas et al. 2024 / Dr. Cruz) with municipal planning reality?"
 > **Examiner Intent**: Verifying grounding in existing Philippine scientific literature versus municipal stakeholder needs.  
 > **Defense Response**:  
-> "During our empirical stakeholder validation with the City Planning and Development Office (CPDO), City Planning Coordinator EnP. Ronald M. Cartagena highlighted regional research—specifically studies associated with the UP Resilience Institute and prominent geoscientists including Dr. Fernando P. Siringan (UP MSI) and Dr. Rex Victor O. Cruz (UPLB). Published peer-reviewed research by Sulapas, Siringan, et al. (2024) established that Iloilo City experiences severe localized ground settlement of 8.8 to 9.0 mm/year, concentrated in coastal deltaic barangays with unpermitted deep-well extraction. However, this academic knowledge remains siloed in academic journals and inaccessible to municipal planners. AQUIFERA bridges this research-to-practice gap by ingesting these empirical subsidence baselines as ground-truth calibration thresholds for the surrogate model and outputting actionable PRS92/UTM Zone 51N GeoJSON layers directly usable in CPDO's Comprehensive Land Use Plan (CLUP) and Zoning Ordinance revisions."
+> "During our empirical stakeholder validation with the City Planning and Development Office (CPDO), City Planning Coordinator EnP. Ronald M. Cartagena highlighted regional research—specifically studies associated with the UP Resilience Institute and prominent geoscientists including Dr. Fernando P. Siringan (UP MSI) and Dr. Rex Victor O. Cruz (UPLB). Published peer-reviewed research by Sulapas, Siringan, et al. (2024) established that Iloilo City experiences severe localized ground settlement of 8.8 to 9.0 mm/year, concentrated in coastal deltaic barangays with unpermitted deep-well extraction. However, this academic knowledge remains siloed in academic journals and inaccessible to municipal planners. AQUIFERA bridges this research-to-practice gap by ingesting these empirical subsidence baselines as ground-truth calibration thresholds for the surrogate model and outputting actionable PRS92 Zone 4 (EPSG:3124) GeoJSON layers directly usable in CPDO's Comprehensive Land Use Plan (CLUP) and Zoning Ordinance revisions."
 
 #### Question 6: "How do you ensure the 3D subsurface cutaway is computationally feasible on standard student and municipal hardware without lagging?"
 > **Examiner Intent**: Probing graphics pipeline optimization, GPU memory consumption, and browser responsiveness.  
 > **Defense Response**:  
 > "Rather than attempting full non-uniform volume rendering or deploying an overly heavy game engine (e.g., Unreal or Unity WebGL which takes hundreds of megabytes to load), AQUIFERA adopts a lightweight, decoupled WebGL architecture:  
 > 1. We separate the 2D surface GIS basemap (handled via MapLibre GL JS vector tiles) from the 3D subsurface cutaway (handled via Three.js / React Three Fiber).  
-> 2. The subsurface cutaway models a structured 3-layer stratigraphic volume (Upper Sand, Clay Aquitard, Deep Confined Aquifer) on a discrete $64 \times 64 \times 3$ grid. Vertical mesh displacement is driven by 1D Terzaghi consolidation calculations mapped onto GPU vertex shaders.  
-> 3. This decoupled approach consumes under 4.2 GB VRAM, maintains 60 FPS rendering, and delivers complete scenario evaluation in under 250 milliseconds on our baseline hardware (NVIDIA RTX 4050 6 GB laptop), fulfilling CPDO's requirement for live, meeting-room deliberation."
+> 2. The subsurface cutaway draws the five hydrostratigraphic units of the proposal's reference domain (Fig. 6) over a $64 \times 64$ surface mesh; the in-browser model computes compaction for one clay unit (Layer 4) as a simplification. Vertical mesh displacement is driven by 1D Terzaghi consolidation calculations mapped onto GPU vertex shaders.  
+> 3. The full platform is designed to stay within 4.2 GB of VRAM and to return a scenario estimate in under 250 milliseconds on our baseline hardware (NVIDIA RTX 4050 6 GB laptop); both are proposed acceptance criteria to be measured in the evaluation."

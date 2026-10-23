@@ -2,7 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Layers, Compass, Activity, Eye, Crosshair, X, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { DOMAIN, HYDRO_PARAMS, getPointHydrogeology } from '../../../physics/groundwaterPhysics';
+import { DOMAIN, HYDRO_PARAMS, COMPACTING_LAYER_ID, getPointHydrogeology } from '../../../physics/groundwaterPhysics';
+
+// Scene units: 1 unit = 10 m of depth; the 120 m domain spans 0 to -12 units.
+const LAYER_IDS = DOMAIN.layers.map(l => l.id);
+const LAYER_MESH_COLORS = { layer1: 0xc89666, layer2: 0x7c2d12, layer3: 0x1e3a8a, layer4: 0x8c5332, layer5: 0x172554 };
+// Deep production well screen at the middle of Layer 5 (proposal Fig. 6: wells in Layers 3 and 5).
+const WELL_SCREEN_Y = -(DOMAIN.layers[4].top + DOMAIN.layers[4].bottom) / 20;
 
 export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setLayerVisibilities, onMoveWell }) {
   const containerRef = useRef(null);
@@ -51,71 +57,33 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     physicalStateRef.current = physicalState;
   }, [isProbeActive, onMoveWell, physicalState]);
 
-  // Helper: Build stratified hydrogeology blocks
+  // Helper: Build stratified hydrogeology blocks (5 units from proposal Fig. 6)
   const buildStratigraphy = (scene, cutawayPlane) => {
     const boxSize = 20;
-
-    // Layer 1: Upper Unconfined Sand (0 to 30 m depth -> 0 to -3 units)
-    // Note: Top face (+Y, index 2) is invisible so deformed vertex-colored surfaceMesh displays the subsidence depression!
-    const sand1Geo = new THREE.BoxGeometry(boxSize, 3, boxSize);
-    const sand1SideMat = new THREE.MeshStandardMaterial({
-      color: 0xc89666,
-      roughness: 0.85,
-      metalness: 0.05,
-      transparent: true,
-      opacity: 0.95,
-      clippingPlanes: [cutawayPlane],
-      clipShadows: true,
-      side: THREE.DoubleSide
+    DOMAIN.layers.forEach(layer => {
+      const height = layer.thickness / 10;
+      const sideMat = new THREE.MeshStandardMaterial({
+        color: LAYER_MESH_COLORS[layer.id],
+        roughness: layer.type === 'clay' ? 0.92 : 0.75,
+        metalness: layer.type === 'aquifer' ? 0.15 : 0.05,
+        transparent: true,
+        opacity: 0.95,
+        clippingPlanes: [cutawayPlane],
+        clipShadows: true,
+        side: THREE.DoubleSide
+      });
+      // Layer 1's top face (+Y, index 2) is invisible so the deformed vertex-colored surfaceMesh shows the subsidence depression.
+      const materials = layer.id === 'layer1'
+        ? [sideMat, sideMat, new THREE.MeshBasicMaterial({ visible: false }), sideMat, sideMat, sideMat]
+        : sideMat;
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(boxSize, height, boxSize), materials);
+      mesh.position.y = -(layer.top / 10) - height / 2;
+      mesh.name = layer.id;
+      scene.add(mesh);
+      if (layer.id === COMPACTING_LAYER_ID) {
+        clayBlockRef.current = mesh;
+      }
     });
-    const invisibleTopMat = new THREE.MeshBasicMaterial({ visible: false });
-    const sand1Mats = [
-      sand1SideMat,    // +X (Right)
-      sand1SideMat,    // -X (Left)
-      invisibleTopMat, // +Y (Top: Open so surfaceMesh shows depression)
-      sand1SideMat,    // -Y (Bottom)
-      sand1SideMat,    // +Z (Front)
-      sand1SideMat     // -Z (Back)
-    ];
-    const sand1Mesh = new THREE.Mesh(sand1Geo, sand1Mats);
-    sand1Mesh.position.y = -1.5;
-    sand1Mesh.name = 'layer1';
-    scene.add(sand1Mesh);
-
-    // Layer 2: Compressible Clay Aquitard (30 to 60 m depth -> -3 to -6 units)
-    const clayGeo = new THREE.BoxGeometry(boxSize, 3, boxSize);
-    const clayMat = new THREE.MeshStandardMaterial({
-      color: 0x7c2d12,
-      roughness: 0.92,
-      metalness: 0.05,
-      transparent: true,
-      opacity: 0.98,
-      clippingPlanes: [cutawayPlane],
-      clipShadows: true,
-      side: THREE.DoubleSide
-    });
-    const clayMesh = new THREE.Mesh(clayGeo, clayMat);
-    clayMesh.position.y = -4.5;
-    clayMesh.name = 'layer2';
-    scene.add(clayMesh);
-    clayBlockRef.current = clayMesh;
-
-    // Layer 3: Lower Confined Aquifer (60 to 120 m depth -> -6 to -12 units)
-    const sand2Geo = new THREE.BoxGeometry(boxSize, 6, boxSize);
-    const sand2Mat = new THREE.MeshStandardMaterial({
-      color: 0x1e3a8a,
-      roughness: 0.65,
-      metalness: 0.15,
-      transparent: true,
-      opacity: 0.95,
-      clippingPlanes: [cutawayPlane],
-      clipShadows: true,
-      side: THREE.DoubleSide
-    });
-    const sand2Mesh = new THREE.Mesh(sand2Geo, sand2Mat);
-    sand2Mesh.position.y = -9.0;
-    sand2Mesh.name = 'layer3';
-    scene.add(sand2Mesh);
   };
 
   // Helper: Build 3D Spatial Orientation Gizmo & Basin Metric Rulers
@@ -142,8 +110,8 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     const depthLine = new THREE.Line(depthLineGeo, depthLineMat);
     gizmoGroup.add(depthLine);
 
-    // Graduation ticks at 0m, -30m (-3u), -60m (-6u), -120m (-12u)
-    const tickDepths = [0, -3, -6, -12];
+    // Graduation ticks at the surface and at each layer boundary (Fig. 6: 20, 40, 70, 95, 120 m)
+    const tickDepths = [0, ...DOMAIN.layers.map(l => -l.bottom / 10)];
     tickDepths.forEach(y => {
       const tickGeo = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(-10.05, y, 0.05),
@@ -472,7 +440,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
 
       const targets = [];
       if (surfaceMeshRef.current) targets.push(surfaceMeshRef.current);
-      ['layer1', 'layer2', 'layer3'].forEach(name => {
+      LAYER_IDS.forEach(name => {
         const obj = scene.getObjectByName(name);
         if (obj && obj.visible) targets.push(obj);
       });
@@ -639,8 +607,8 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         const subMeters = grid ? grid[gi * res + gj] : 0;
         const surfaceY = -subMeters * (verticalExaggeration * 0.25);
 
-        // Well casing runs from surfaceY down to -9.0
-        const casingHeight = Math.max(0.5, 9.0 + surfaceY);
+        // Well casing runs from surfaceY down to the screen in Layer 5
+        const casingHeight = Math.max(0.5, surfaceY - WELL_SCREEN_Y);
         const casingGeo = new THREE.CylinderGeometry(0.18, 0.18, casingHeight, 16);
         const casingMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.3 });
         const casing = new THREE.Mesh(casingGeo, casingMat);
@@ -661,7 +629,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         head.position.set(wx, surfaceY + 0.48, wz);
         group.add(head);
 
-        // Slotted intake strainer (screen) in the lower confined aquifer (-9.0 units)
+        // Slotted intake strainer (screen) in the basal gravel aquifer (Layer 5)
         const screenGeo = new THREE.CylinderGeometry(0.24, 0.24, 1.8, 16);
         const screenMat = new THREE.MeshStandardMaterial({
           color: 0x38bdf8,
@@ -670,7 +638,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
           wireframe: true
         });
         const screen = new THREE.Mesh(screenGeo, screenMat);
-        screen.position.set(wx, -9.0, wz);
+        screen.position.set(wx, WELL_SCREEN_Y, wz);
         screen.name = i === 0 ? 'pulseRing' : `screen_${i}`;
         group.add(screen);
       });
@@ -694,7 +662,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
   useEffect(() => {
     if (!sceneRef.current) return;
     const scene = sceneRef.current;
-    ['layer1', 'layer2', 'layer3'].forEach(id => {
+    LAYER_IDS.forEach(id => {
       const obj = scene.getObjectByName(id);
       if (obj) obj.visible = layerVisibilities[id];
     });
@@ -1064,42 +1032,21 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
           <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] mr-1">
             STRATA:
           </span>
-          <button
-            onClick={() => setLayerVisibilities(prev => ({ ...prev, layer1: !prev.layer1 }))}
-            className={`h-7 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
-              layerVisibilities.layer1 
-                ? 'bg-amber-500/15 border-amber-500/40 text-amber-200 shadow-xs' 
-                : 'bg-white/4 border-white/8 text-slate-500 opacity-60 line-through'
-            }`}
-            title="Toggle Upper Sand Layer & Ground Surface (0 to -30m)"
-          >
-            <div className="w-2 h-2 rounded-full bg-[#c89666]" />
-            <span>Sand (0-30m)</span>
-          </button>
-          <button
-            onClick={() => setLayerVisibilities(prev => ({ ...prev, layer2: !prev.layer2 }))}
-            className={`h-7 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
-              layerVisibilities.layer2 
-                ? 'bg-orange-500/15 border-orange-500/40 text-orange-200 shadow-xs' 
-                : 'bg-white/4 border-white/8 text-slate-500 opacity-60 line-through'
-            }`}
-            title="Toggle Compressible Clay Aquitard (30 to -60m)"
-          >
-            <div className="w-2 h-2 rounded-full bg-[#ea580c]" />
-            <span>Clay (30-60m)</span>
-          </button>
-          <button
-            onClick={() => setLayerVisibilities(prev => ({ ...prev, layer3: !prev.layer3 }))}
-            className={`h-7 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
-              layerVisibilities.layer3 
-                ? 'bg-sky-500/15 border-sky-500/40 text-sky-200 shadow-xs' 
-                : 'bg-white/4 border-white/8 text-slate-500 opacity-60 line-through'
-            }`}
-            title="Toggle Lower Confined Aquifer (60 to -120m)"
-          >
-            <div className="w-2 h-2 rounded-full bg-[#0284c7]" />
-            <span>Aquifer (60-120m)</span>
-          </button>
+          {DOMAIN.layers.map(layer => (
+            <button
+              key={layer.id}
+              onClick={() => setLayerVisibilities(prev => ({ ...prev, [layer.id]: !prev[layer.id] }))}
+              className={`h-7 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                layerVisibilities[layer.id]
+                  ? 'bg-white/8 border-white/25 text-slate-200 shadow-xs'
+                  : 'bg-white/4 border-white/8 text-slate-500 opacity-60 line-through'
+              }`}
+              title={`Toggle Layer ${layer.id.slice(-1)}: ${layer.name} (${layer.top} to ${layer.bottom} m)${layer.id === 'layer1' ? ' & Ground Surface' : ''}`}
+            >
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: layer.color }} />
+              <span>{layer.shortName} ({layer.top}-{layer.bottom}m)</span>
+            </button>
+          ))}
         </div>
 
         {/* Subsidence Colormap Legend */}

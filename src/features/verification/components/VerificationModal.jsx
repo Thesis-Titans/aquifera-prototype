@@ -102,7 +102,7 @@ export default function VerificationModal({ isOpen, onClose, physicalState, para
                 <span className="text-xs font-bold uppercase tracking-wider">1. Spatial Discretization</span>
               </div>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                Planned 64×64 finite-difference mesh matching the 3 hydrostratigraphic units (Sand 1, Clay Aquitard, Confined Sand 2) with constant-head coastal boundary at the Iloilo Strait.
+                Planned 64×64 finite-difference mesh matching the 5 hydrostratigraphic units of proposal Fig. 6 with constant-head coastal boundary at the Iloilo Strait.
               </p>
               <span className="text-[10px] font-mono text-slate-400 bg-slate-950/60 px-2 py-1 rounded border border-white/5">
                 Target: dx=50m, dy=50m
@@ -133,7 +133,7 @@ export default function VerificationModal({ isOpen, onClose, physicalState, para
                 Proposed comparative runtime benchmark measuring surrogate inference on GPU workstation versus finite-difference iterative solver solution time on identical domains.
               </p>
               <span className="text-[10px] font-mono text-slate-400 bg-slate-950/60 px-2 py-1 rounded border border-white/5">
-                Target Spec: &lt; 250 ms vs 180-300 s
+                Target: &lt; 250 ms; MODFLOW 6 CSUB pilot runtime 4.5-96 s
               </span>
             </div>
 

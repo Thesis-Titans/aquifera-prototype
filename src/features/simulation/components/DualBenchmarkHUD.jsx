@@ -4,10 +4,11 @@ import { Zap, Clock, ChevronDown, ChevronUp, Info } from 'lucide-react';
 export default function DualBenchmarkHUD({ physicalState }) {
   const [isCollapsed, setIsCollapsed] = useState(true);
 
-  // Target Benchmarking Specifications from ARCHITECTURE.md
+  // Targets from the proposal (CICT-UGR-F001 Table 1); baseline from the feasibility pilot
+  // (MODFLOW 6 CSUB, synthetic 5-layer grid, 20 sampled scenarios, median 22.5 s).
   const targetPinoLatencyMs = '< 250';
-  const baselineModflowSec = '180 to 300';
-  const targetSpeedup = '~80,000×';
+  const baselineModflowSec = '4.5 to 96';
+  const targetSpeedup = '≥ 50× (median)';
 
   if (isCollapsed) {
     return (
@@ -20,7 +21,7 @@ export default function DualBenchmarkHUD({ physicalState }) {
         <span className="text-xs font-semibold text-white flex items-center gap-1.5">
           <Zap size={13} className="text-cyan-400" /> Target PINO Latency (Spec): <strong className="font-mono tabular-nums text-cyan-300 font-bold">{targetPinoLatencyMs} ms</strong>
         </span>
-        <span className="text-xs text-slate-400 font-medium font-mono">(Target ~80,000×)</span>
+        <span className="text-xs text-slate-400 font-medium font-mono">(Target {targetSpeedup})</span>
         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
           TARGET SPEC
         </span>
@@ -41,7 +42,7 @@ export default function DualBenchmarkHUD({ physicalState }) {
         </div>
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-            Target R² &gt; 0.90
+            Target Rel. L₂ &le; 5%
           </span>
           <button
             onClick={() => setIsCollapsed(true)}
@@ -75,14 +76,14 @@ export default function DualBenchmarkHUD({ physicalState }) {
             <Clock size={14} className="text-slate-400" /> USGS MODFLOW 6 Baseline:
           </span>
           <span className="font-mono tabular-nums text-xs text-slate-300 font-semibold">
-            {baselineModflowSec} s <span className="text-slate-400 font-normal">(3 to 5 min)</span>
+            {baselineModflowSec} s <span className="text-slate-400 font-normal">(pilot, median 22.5 s)</span>
           </span>
         </div>
 
         {/* Speedup Badge */}
         <div className="flex items-center justify-between px-3.5 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
           <span className="text-xs font-bold text-cyan-300">
-            Architectural Speedup Target:
+            Speedup Target (proposed criterion):
           </span>
           <span className="font-mono tabular-nums text-xs font-black text-cyan-300">
             {targetSpeedup}
@@ -100,9 +101,9 @@ export default function DualBenchmarkHUD({ physicalState }) {
         </div>
 
         <div className="bg-slate-900/60 p-3 rounded-xl border border-white/10 shadow-xs">
-          <span className="text-[11px] text-slate-400 block font-medium">Target Compaction RMSE:</span>
+          <span className="text-[11px] text-slate-400 block font-medium">Abs. Compaction Error:</span>
           <span className="font-mono tabular-nums text-sm text-emerald-400 font-bold block mt-1">
-            &le; 5.0 mm
+            Reported (mm)
           </span>
         </div>
       </div>

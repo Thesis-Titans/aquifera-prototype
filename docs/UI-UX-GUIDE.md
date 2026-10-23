@@ -64,7 +64,7 @@ The desktop interface follows a structured 4-region layout optimized for $1920 \
 
 #### 3.1 Top Navigation Bar
 - Displays project branding, current scenario preset (`Status-Quo Commercial Pumping`, `Dry-Season Crisis`, `Surface Water Substitution`), and the mandatory persistent integrity notice.
-- Includes quick-action buttons: `Reset View`, `Snapshot (PNG)`, and `Export (GeoJSON)`. The GeoJSON export generates standard WGS84 and PRS92 / UTM Zone 51N geospatial payloads designed for immediate ingestion into CPDO's QGIS and ArcGIS desktop planning environments.
+- Includes quick-action buttons: `Reset View`, `Snapshot (PNG)`, and `Export (GeoJSON)`. The GeoJSON export generates standard WGS84 and PRS92 / Philippines Zone 4 (EPSG:3124) geospatial payloads designed for immediate ingestion into CPDO's QGIS and ArcGIS desktop planning environments.
 
 #### 3.2 Left Sidebar: Scenario & Well Controls
 - **Well Configuration Accordion:** Individual controls for up to 6 deep production wells. Adjusting sliders alters continuous pumping rates ($0$ to $5,000\text{ m}^3/\text{day}$).
@@ -79,14 +79,14 @@ The desktop interface follows a structured 4-region layout optimized for $1920 \
   - Full navigation capabilities: pan, zoom, pitch, bearing reset, and extent recentering.
   - Interactive cell/barangay inspector: hover outlines and popup cards detailing Barangay Name, administrative PSGC code, estimated localized subsidence rate, and active commercial well density.
 - **3D Subsurface Cutaway (Three.js WebGL):**
-  - Volumetric block cutaway displaying a structured 3-layer stratigraphic volume: Upper Sand Alluvium (0 to 30 m), Compressible Marine Clay Aquitard (30 to 60 m), and Deep Confined Production Sand (60 to 120 m).
+  - Volumetric block cutaway displaying the five units of proposal Fig. 6: upper unconfined sand (0 to 20 m), upper confining clay (20 to 40 m), middle semi-confined aquifer (40 to 70 m), lower compressible clay interbeds (70 to 95 m), and basal gravel aquifer (95 to 120 m).
   - OrbitControls: left-click to orbit, right-click to pan, scroll wheel to zoom, with camera angle quick-presets (Isometric, Cross-Section Profile, North-South Dip).
   - Stratum clipping slider: horizontally slices into the block from $0\%$ to $100\%$ to expose internal aquitard compaction.
   - Dynamic ground surface and layer deformation driven by 1D Terzaghi consolidation vertex shaders, visualizing the localized cone of depression.
   - Decoupled WebGL rendering pipeline guaranteeing $\le 4.2\text{ GB}$ VRAM consumption and $> 60\text{ FPS}$ frame rates on commodity hardware.
 
 #### 3.4 Benchmark Target HUD Overlay
-- **Target Specifications:** Displays target neural operator latency ($< 250\text{ ms}$) versus baseline USGS MODFLOW 6 runtime ($180\text{ s}$ to $300\text{ s}$), validating responsiveness for live, in-person CPDO / Zoning Board meeting deliberations.
+- **Target Specifications:** Displays target neural operator latency ($< 250\text{ ms}$) versus the MODFLOW 6 CSUB runtime measured in the feasibility pilot ($4.5$ to $96\text{ s}$), validating responsiveness for live, in-person CPDO / Zoning Board meeting deliberations.
 - **Collapsible Ergonomics:** Minimizable floating pill in the upper-right viewport corner to maximize map viewing area.
 - **Academic Disclosures:** Explicitly labels performance targets as architectural specifications from proposal documentation, maintaining scientific integrity.
 

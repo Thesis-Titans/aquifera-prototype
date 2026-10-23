@@ -340,7 +340,7 @@ export default function BottomAnalyticsSuite({
                 </div>
               </div>
               <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5 font-mono">
-                (R² &gt; 0.90 Target)
+                (head and compaction)
               </span>
             </div>
           </div>
@@ -410,16 +410,16 @@ export default function BottomAnalyticsSuite({
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-1 text-slate-300 font-sans font-medium">Target RMSE</td>
-                  <td className="py-1 text-white">&lt; 0.005 m</td>
+                  <td className="py-1 text-slate-300 font-sans font-medium">Target Rel. L₂ Error</td>
+                  <td className="py-1 text-white">&le; 5%</td>
                   <td className="py-1 text-slate-400">Baseline</td>
                   <td className="py-1 text-right text-cyan-400">Spec Goal</td>
                 </tr>
                 <tr>
                   <td className="py-1 text-slate-300 font-sans font-medium">Inference Latency</td>
                   <td className="py-1 text-white">&lt; 250 ms</td>
-                  <td className="py-1 text-slate-400">180-300 s</td>
-                  <td className="py-1 text-right text-[#10b981] font-semibold">~80,000×</td>
+                  <td className="py-1 text-slate-400">4.5-96 s (pilot)</td>
+                  <td className="py-1 text-right text-[#10b981] font-semibold">&ge; 50× (target)</td>
                 </tr>
               </tbody>
             </table>

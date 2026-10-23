@@ -36,7 +36,7 @@ The 2D interactive geographic viewport is powered by MapLibre GL JS, rendering a
 
 #### 2.2 Spatial Reference Systems (SRS)
 * **Web Client Display Coordinate System**: World Geodetic System 1984 (WGS84, EPSG:4326), reprojected via Web Mercator (EPSG:3857) in MapLibre.
-* **Target Regional Reference System for Phase 2 GIS Ingestion**: Philippine Reference System 1992 / UTM Zone 51N (PRS92 / EPSG:3125), the official geodetic coordinate system mandated by the National Mapping and Resource Information Authority (NAMRIA).
+* **Target Regional Reference System for Phase 2 GIS Ingestion**: Philippine Reference System 1992 / Philippines Zone 4 (PRS92 / EPSG:3124; Zone 4 covers Iloilo City, as checked in the feasibility pilot), the official geodetic coordinate system mandated by the National Mapping and Resource Information Authority (NAMRIA).
 
 #### 2.3 Geographic Extents and Focus Bounding Box
 The simulation covers the coastal and riverine floodplain of Metro Iloilo:
@@ -102,30 +102,15 @@ To elevate the prototype beyond generic rectangular grids, the repository now ho
 
 ### 4. Geotechnical and Subsurface Strata Assumptions
 
-The 3D interactive subsurface model (`src/components/Aquifer3DCanvas.jsx`) renders a 3-layer hydrostratigraphic profile representing the unconsolidated Quaternary alluvium of the Iloilo Plain.
+The 3D interactive subsurface model (`src/features/aquifer-visualization/components/Aquifer3DCanvas.jsx`) renders the five hydrostratigraphic units of the proposal's reference domain (CICT-UGR-F001, Fig. 6). This is a generic test domain, not Iloilo City's stratigraphy; thicknesses and parameters are working assumptions. The in-browser analytical model computes compaction for Layer 4 only and uses its own illustrative parameters (`HYDRO_PARAMS` in `src/physics/groundwaterPhysics.js`).
 
-#### 4.1 Layer 1: Upper Unconfined Alluvial Sand (0 to 30 m Depth)
-* **Lithology**: Fine to coarse alluvial sand with intercalated river gravels.
-* **Hydraulic Conductivity ($K$)**: 10 to 25 m/day (baseline: 15 m/day).
-* **Specific Yield ($S_y$)**: 0.15 (dimensionless).
-* **Geotechnical Behavior**: Elastic, immediate drainage with negligible long-term consolidation.
-* **3D Visual Shader**: Muted sand gold (`#c89666`), rendered with a dynamic cutaway plane.
-
-#### 4.2 Layer 2: Intermediate Marine Clay / Silt Aquitard (30 to 45 m Depth)
-* **Lithology**: Normally to slightly overconsolidated plastic marine clay, organic silts, and mudflat deposits.
-* **Layer Thickness ($b_0$)**: 15 to 35 meters across the urban core.
-* **Virgin Compression Index ($C_c$)**: 0.35 to 0.55 (governs irreversible compaction).
-* **Recompression / Swelling Index ($C_r$)**: 0.04 to 0.08 (governs reversible elastic bounce).
-* **Preconsolidation Head Threshold ($h_{\text{pre}}$)**: -15.0 meters below ground surface.
-* **Geotechnical Behavior**: Highly compressible. When hydraulic head drops below $h_{\text{pre}}$, pore water pressure dissipates into the aquifer, transferring overburden stress to the clay skeleton and inducing permanent plastic compaction.
-* **3D Visual Shader**: Dense terra cotta clay (`#8b4513`), displaying vertex-color stress contours.
-
-#### 4.3 Layer 3: Lower Confined Gravel/Sand Aquifer (45 to 100 m Depth)
-* **Lithology**: Dense semi-cemented fluvial gravel, basaltic sand, and sandstone conglomerate.
-* **Transmissivity ($T$)**: 450 to 900 m2/day ($T = K \times b$).
-* **Elastic Storage Coefficient ($S$)**: $1.0 \times 10^{-4}$ to $5.0 \times 10^{-4}$ ($S = S_s \times b$).
-* **Pumping Epicenter**: Deep municipal and commercial production wells penetrating into this confined unit.
-* **3D Visual Shader**: Aquifer marine cyan (`#1e40af` to `#0284c7`), displaying animated particle vectors representing groundwater seepage flux toward the well screen.
+| Layer | Depth (m) | Unit | Parameters (Fig. 6) | Role in the prototype |
+| :-: | :-: | :--- | :--- | :--- |
+| 1 | 0–20 | Upper unconfined alluvial sand | $K_{xx} = 1.5 \times 10^{-4}$ m/s; $S_y = 0.18$; $S_{ske} = 1.0 \times 10^{-5}$ m⁻¹ | Ground surface; shows the subsidence surface |
+| 2 | 20–40 | Upper confining clay aquitard | $K_{zz} = 1.2 \times 10^{-8}$ m/s; $S_{ske} = 2.0 \times 10^{-5}$ m⁻¹; $S_{skv} = 1.5 \times 10^{-3}$ m⁻¹ | Drawn; not compacted in the simplified model |
+| 3 | 40–70 | Middle semi-confined aquifer | $K_{xx} = 2.0 \times 10^{-4}$ m/s; $S_{ske} = 1.2 \times 10^{-5}$ m⁻¹ | Production aquifer |
+| 4 | 70–95 | Lower compressible clay interbeds | $K_{zz} = 8.0 \times 10^{-9}$ m/s; $S_{ske} = 3.0 \times 10^{-5}$ m⁻¹; $S_{skv} = 2.8 \times 10^{-3}$ m⁻¹ | Compacting unit of the simplified model ($b_0 = 25$ m); turns red when the preconsolidation head is breached |
+| 5 | 95–120 | Basal deep semi-confined gravel aquifer | $K_{xx} = 3.5 \times 10^{-4}$ m/s; $S_{ske} = 1.0 \times 10^{-5}$ m⁻¹ | Production aquifer; well screens are drawn here |
 
 ---
 

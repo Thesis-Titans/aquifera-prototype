@@ -82,10 +82,10 @@ To maintain visual harmony, all padding, gaps, and margins follow a 4px geometri
 ### 4. Layout Contract and Responsive Behavior
 
 #### 4.1 Desktop (1920x1080 and 1440x900)
-* Fixed top navigation (48px height) with brand, mode indicator, and action triggers (`Reset View`, `Snapshot (PNG)`, and `Export (GeoJSON)` emitting WGS84 and PRS92 / UTM Zone 51N payloads for CPDO QGIS/ArcGIS).
+* Fixed top navigation (48px height) with brand, mode indicator, and action triggers (`Reset View`, `Snapshot (PNG)`, and `Export (GeoJSON)` emitting WGS84 and PRS92 / Philippines Zone 4 (EPSG:3124) payloads for CPDO QGIS/ArcGIS).
 * Middle stage: Horizontal flex row containing:
   * Left Scenario Setup Panel: Fixed 320px width (`w-80`), independent vertical scrolling via custom scrollbar.
-  * Central Viewport: Flex-1 fill, containing MapLibre 2D GIS (rendering official PSA/NAMRIA 180-barangay administrative polygons) or Three.js 3D WebGL subsurface cutaway (3-layer volumetric block).
+  * Central Viewport: Flex-1 fill, containing MapLibre 2D GIS (rendering official PSA/NAMRIA 180-barangay administrative polygons) or Three.js 3D WebGL subsurface cutaway (5-layer volumetric block, proposal Fig. 6).
 * Bottom Suite: 4-card analytical grid (`grid-cols-4`) displaying the 2D cross-section heatmap, time-series hydrograph, risk breakdown, and visualization layer controls.
 * Fixed footer (32px height) with disclaimer and versioning.
 

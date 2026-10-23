@@ -29,10 +29,10 @@ Aquifera implements a **4-Tier Decoupled Architecture** designed to balance real
                     ▼                                ▼
 ┌──────────────────────────────────────┐ ┌───────────────────────────────┐
 │     TIER 3: SURROGATE INFERENCE      │ │ TIER 4: NUMERICAL VERIFICATION│
-│ • PyTorch CUDA 12.x Execution        │ │ • Headless USGS MODFLOW 6     │
+│ • PyTorch CUDA Execution             │ │ • Headless USGS MODFLOW 6     │
 │ • Pre-Trained 3D PINO Model          │ │ • CSUB (Compaction Package)   │
 │ • Latency < 250 ms                   │ │ • FloPy Model Discretization  │
-│ • Peak VRAM <= 4.2 GB                │ │ • Runtime: 3 to 45 minutes    │
+│ • Peak VRAM <= 4.2 GB                │ │ • Runtime: 4.5-96 s (pilot)   │
 └──────────────────────────────────────┘ └───────────────────────────────┘
 ```
 
@@ -42,7 +42,7 @@ To maintain absolute academic and scientific integrity (Form `CICT-UGR-F001` and
 
 * **Tier 1 (Client Presentation)** represents the **implemented working prototype** contained within this repository, demonstrating interactive 3D WebGL geotechnical cutaways, 2D MapLibre GIS mapping, analytical Darcy-Theis drawdown, and scenario controls.
 * **Tiers 2, 3, and 4 (API Gateway, PINO Inference Engine, and FloPy Verification Pipeline)** represent the **proposed system architecture and research target specification**. These tiers define the engineering roadmap to be executed during model training, surrogate benchmarking, and numerical validation phases.
-* **Demonstration Telemetry**: Metrics presented in the Tier 1 client (e.g., 2.3 ms latency, speedup factors, R^2, and Wilcoxon signed-rank comparisons) are illustrative design targets and demonstration placeholders calibrated for user interface walkthroughs. They must not be cited as measured empirical findings of a trained neural operator.
+* **Demonstration Telemetry**: Metrics presented in the Tier 1 client (e.g., latency and speedup targets, error targets, and Wilcoxon signed-rank comparisons) are illustrative design targets and demonstration placeholders calibrated for user interface walkthroughs. They must not be cited as measured empirical findings of a trained neural operator.
 
 | Architectural Subsystem | Tier | Implementation Status | Technical Realization in Repository |
 | :--- | :--- | :--- | :--- |
@@ -134,7 +134,7 @@ Weights $\lambda_{\text{flow}}$ and $\lambda_{\text{comp}}$ are dynamically bala
                  └───────────────────┬─────────────────────┘
                                      ▼
                       [ Update Dual-Engine HUD ]
-                      • PINO Latency: 2.3 ms
+                      • PINO latency target: < 250 ms    
                       • Preconsolidation Flag: ACTIVE
                       • Status: Stable
 ```
@@ -214,7 +214,7 @@ src/
 | **`features/scenarios`** | Manages scenario parameters, well pumping extraction rates, MAR injection, preset switching, and parameter reset behavior. | Does not render 3D meshes or manage map layer styling. |
 | **`features/simulation`** | Displays dual-engine HUD telemetry (PINO inference latency, speedup factors, memory footprints, and $L_2$ relative errors). | Does not execute server-side neural operator inference directly; reflects telemetry provided by simulation state. |
 | **`features/map`** | Renders 2D MapLibre GL JS basemap, Carto dark raster tiles, synthetic GeoJSON subsidence grid, district markers, and popup inspection. | Does not own scenario parameters or alter global simulation presets. |
-| **`features/aquifer-visualization`** | Manages Three.js WebGL scene lifecycle, 3-layer geological strata (sand/clay/sand), real-time mesh deformation, and volumetric cutaway clipping. | Does not define geographic coordinate projections or replace authoritative numerical solvers. |
+| **`features/aquifer-visualization`** | Manages Three.js WebGL scene lifecycle, 5-layer geological strata (proposal Fig. 6), real-time mesh deformation, and volumetric cutaway clipping. | Does not define geographic coordinate projections or replace authoritative numerical solvers. |
 | **`features/analytics`** | Renders multi-station drawdown time series, Terzaghi consolidation curves, and coastal flood risk meters via Recharts. | Does not re-calculate raw Darcy equations; consumes outputs computed by domain physics. |
 | **`features/verification`** | Displays numerical verification dialog with simulated MODFLOW 6 CSUB benchmark cross-checks and Wilcoxon signed-rank results. | Does not present client-side simulated curves as live production solver connections. |
 | **`components/layout`** | Renders header branding, mode switches (2D GIS, 3D Subsurface, Split View), and verification launch triggers. | Does not contain scenario state logic. |

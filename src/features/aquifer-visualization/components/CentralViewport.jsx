@@ -14,9 +14,11 @@ export default function CentralViewport({
   onMoveWell
 }) {
   const [layerVisibilities, setLayerVisibilities] = useState({
-    sand1: true,
-    clay: true,
-    sand2: true,
+    layer1: true,
+    layer2: true,
+    layer3: true,
+    layer4: true,
+    layer5: true,
     subsidenceOverlay: true
   });
 

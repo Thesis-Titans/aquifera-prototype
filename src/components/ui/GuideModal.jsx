@@ -59,7 +59,7 @@ export default function GuideModal({ isOpen, onClose }) {
               3. The Computing Breakthrough (PINO Surrogate)
             </h4>
             <p>
-              Traditional numerical simulators (USGS MODFLOW 6) take 3 to 5 minutes per run, blocking real-time planning meetings. Aquifera trains a <strong className="text-white">Physics-Informed Neural Operator (PINO)</strong> offline to approximate the governing flow and Terzaghi consolidation PDEs in <strong className="text-primary font-mono font-bold">under 250 milliseconds (~80,000× speedup)</strong>.
+              Numerical simulators such as USGS MODFLOW 6 with CSUB took from about 5 to 96 seconds per run on our synthetic test grid, and comparing many pumping scenarios multiplies that cost. Aquifera trains a <strong className="text-white">Physics-Informed Neural Operator (PINO)</strong> offline to approximate the governing flow and Terzaghi consolidation PDEs with a <strong className="text-primary font-mono font-bold">target under 250 milliseconds</strong>.
             </p>
           </div>
 

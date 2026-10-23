@@ -2,6 +2,11 @@
  * Aquifera Hydrogeological Physics Engine
  * Formulates multi-layer radial drawdown and 1D Terzaghi skeletal compaction.
  * Follows USGS MODFLOW 6 SUB package physical equations.
+ *
+ * Simplification: the study domain has 5 hydrostratigraphic units (proposal Fig. 6), but this
+ * in-browser model computes compaction for one clay unit only (Layer 4, the lower compressible
+ * clay interbeds) from Theis drawdown in the production aquifer. It is an illustrative analytical
+ * model, not the MODFLOW 6 CSUB reference or the PINO surrogate.
  */
 
 // Domain Specifications (Matching CICT-UGR-F001 Aquifera Proposal)
@@ -10,12 +15,23 @@ export const DOMAIN = {
   lengthMeters: 3200,     // 3.2 km
   totalDepthMeters: 120,  // 120 m
   gridResolution: 64,     // 64x64 surface mesh
+  // Reference layering from proposal Fig. 6 (generic test domain, not Iloilo City's stratigraphy).
   layers: [
-    { id: 'layer1', name: 'Upper Unconfined Sand', top: 0, bottom: 30, thickness: 30, type: 'sand', color: '#e0a96d' },
-    { id: 'layer2', name: 'Clay Aquitard (Compressible)', top: 30, bottom: 60, thickness: 30, type: 'clay', color: '#a0522d' },
-    { id: 'layer3', name: 'Lower Confined Aquifer', top: 60, bottom: 120, thickness: 60, type: 'sand', color: '#3b82f6' }
+    { id: 'layer1', name: 'Upper Unconfined Sand', shortName: 'Sand', top: 0, bottom: 20, thickness: 20, type: 'sand', color: '#e0a96d',
+      lithology: 'Unconfined alluvial sand', kText: 'K_xx = 1.5 × 10⁻⁴ m/s' },
+    { id: 'layer2', name: 'Upper Confining Clay Aquitard', shortName: 'Clay', top: 20, bottom: 40, thickness: 20, type: 'clay', color: '#a0522d',
+      lithology: 'Confining clay aquitard', kText: 'K_zz = 1.2 × 10⁻⁸ m/s (Low permeability)' },
+    { id: 'layer3', name: 'Middle Semi-Confined Aquifer', shortName: 'Aquifer', top: 40, bottom: 70, thickness: 30, type: 'aquifer', color: '#3b82f6',
+      lithology: 'Semi-confined production sand', kText: 'K_xx = 2.0 × 10⁻⁴ m/s' },
+    { id: 'layer4', name: 'Lower Compressible Clay Interbeds', shortName: 'Clay', top: 70, bottom: 95, thickness: 25, type: 'clay', color: '#c2410c',
+      lithology: 'Compressible clay interbeds', kText: 'K_zz = 8.0 × 10⁻⁹ m/s (Low permeability)' },
+    { id: 'layer5', name: 'Basal Deep Semi-Confined Gravel Aquifer', shortName: 'Gravel', top: 95, bottom: 120, thickness: 25, type: 'aquifer', color: '#1d4ed8',
+      lithology: 'Semi-confined gravel aquifer', kText: 'K_xx = 3.5 × 10⁻⁴ m/s' }
   ]
 };
+
+// The single clay unit whose compaction the simplified analytical model computes.
+export const COMPACTING_LAYER_ID = 'layer4';
 
 // Physical Constants and Reference Parameters (Representative Coastal Alluvium)
 /**
@@ -26,7 +42,7 @@ export const DOMAIN = {
  * - sandTransmissivity: Transmissivity of lower confined production sand (240.0 m^2/day; K ~ 4 m/day, b = 60 m).
  * - sandStorativity: Confined aquifer storage coefficient (4.0e-4, dimensionless).
  * - sandSke: Elastic skeletal specific storage of sand (2.5e-5 m^-1).
- * - clayThickness: Nominal thickness of compressible clay aquitard (30.0 m).
+ * - clayThickness: Thickness of the compressible clay unit (Layer 4 in proposal Fig. 6, 25.0 m).
  * - claySke: Elastic (recompression) skeletal storage of clay (8.0e-5 m^-1; Cr ~ 0.04-0.06).
  * - claySkv: Inelastic (virgin) skeletal storage of clay (2.8e-3 m^-1; Cc ~ 0.40-0.45 representative of soft estuarine clays).
  * - clayTimeLagDays: Hydrodynamic pore pressure dissipation lag constant (30.0 days).
@@ -41,7 +57,7 @@ export const HYDRO_PARAMS = {
   sandTransmissivity: 240.0,  // T in m^2/day (Lower confined aquifer)
   sandStorativity: 0.0004,    // S (confined)
   sandSke: 2.5e-5,            // Elastic skeletal storage (m^-1)
-  clayThickness: 30.0,        // b0 in meters
+  clayThickness: 25.0,        // b0 in meters (Layer 4, proposal Fig. 6)
   claySke: 8.0e-5,            // Elastic skeletal storage of clay (m^-1) - up to 2-3 cm elastic
   claySkv: 2.8e-3,            // Inelastic skeletal storage of clay (m^-1) - rapid 15-40 cm collapse!
   clayTimeLagDays: 30.0       // Hydrodynamic lag tau
@@ -239,7 +255,7 @@ export function computeGroundwaterState(params, options = {}) {
         // Preconsolidation head was breached historically -> permanent matrix collapse locked in
         pointsInelastic++;
         const deltaHInelastic = hPre - histMinHead;
-        // Calibrated against Iloilo delta core sample consolidation (Cc = 0.45, 35m clay aquitard)
+        // 0.081 is an illustrative scaling factor for the demonstration; it is not calibrated to field data.
         deltaBInelastic = bClay * HYDRO_PARAMS.claySkv * deltaHInelastic * 0.081;
 
         // If current head has rebounded above historical min head, hysteresis is physically active
@@ -317,35 +333,17 @@ export function getPointHydrogeology(worldX, worldY, worldZ, physicalState) {
   // Vertical scaling: 0 units = 0m, -12 units = -120m (1 unit = 10m depth)
   const depthMeters = Math.min(0, Math.max(-120, Math.round(worldY * 10)));
 
-  // Stratigraphic Layer Identification
-  let stratum = {
-    id: 'layer1',
-    name: 'Upper Unconfined Sand',
-    depthRange: '0 m to -30 m',
-    lithology: 'Fine to coarse alluvial sand',
-    kText: 'K_xx = 1.5 × 10⁻⁴ m/s',
-    color: '#e0a96d'
+  // Stratigraphic Layer Identification (proposal Fig. 6 layering)
+  const depthBelowSurface = Math.abs(depthMeters);
+  const layer = DOMAIN.layers.find(l => depthBelowSurface < l.bottom) || DOMAIN.layers[DOMAIN.layers.length - 1];
+  const stratum = {
+    id: layer.id,
+    name: layer.name,
+    depthRange: `${layer.top === 0 ? '0' : -layer.top} m to ${-layer.bottom} m`,
+    lithology: layer.lithology,
+    kText: layer.kText,
+    color: layer.color
   };
-
-  if (depthMeters < -60) {
-    stratum = {
-      id: 'layer3',
-      name: 'Lower Confined Aquifer',
-      depthRange: '-60 m to -120 m',
-      lithology: 'High-transmissivity production gravel & sand',
-      kText: 'K_xx = 2.0 × 10⁻⁴ m/s',
-      color: '#3b82f6'
-    };
-  } else if (depthMeters < -30) {
-    stratum = {
-      id: 'layer2',
-      name: 'Compressible Clay Aquitard',
-      depthRange: '-30 m to -60 m',
-      lithology: 'Overconsolidated compressible illite/smectite clay',
-      kText: 'K_zz = 1.2 × 10⁻⁸ m/s (Low permeability)',
-      color: '#a0522d'
-    };
-  }
 
   // Bilinear interpolation on displacement and head grids
   const res = physicalState.resolution;
@@ -370,7 +368,7 @@ export function getPointHydrogeology(worldX, worldY, worldZ, physicalState) {
   const effectiveStressKPa = Math.max(0, totalOverburdenKPa - porePressureKPa);
 
   // Preconsolidation Status
-  const isYielding = localHeadM < HYDRO_PARAMS.preconsolidationHead && stratum.id === 'layer2';
+  const isYielding = localHeadM < HYDRO_PARAMS.preconsolidationHead && stratum.id === COMPACTING_LAYER_ID;
 
   return {
     coordinates: {
