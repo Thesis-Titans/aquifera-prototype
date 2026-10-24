@@ -2,8 +2,8 @@
 
 > **Artifact Type:** Technical Engineering Plan & Implementation Roadmap  
 > **Target Project:** `01-concepts/01-aquifera/05-artifacts/aquifera-prototype`  
-> **Tech Stack:** React 19, Three.js (r182), MapLibre GL 5, TailwindCSS 4, Vite 8  
-> **Baseline:** 15 unit tests passing (`103 ms`), Vite build clean (`2.54 s`), git pushed (`91b048b`)  
+> **Tech Stack:** React 19, Three.js (v0.186.1), MapLibre GL (v6.15.0), TailwindCSS 4, Vite 8  
+> **Baseline:** 20 unit tests passing (`140 ms`), Vite build clean (`2.66 s`), git pushed (`de26e94`)  
 > **Collaborative Model:** **Antigravity** (Architect, QA & Token Governor) + **Claude Code CLI** (Deep Component Engineer)
 
 ---
@@ -31,29 +31,32 @@ A comprehensive codebase audit by Claude Code identified key bugs and technical 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#ffffff', 'primaryTextColor': '#000000', 'primaryBorderColor': '#000000', 'lineColor': '#000000'}}}%%
 flowchart TD
-    subgraph SP1["Sprint 1: Core Hardening, Empirical Grounding & GIS Controls (COMPLETED)"]
+    subgraph SP1["Sprint 1: Core Hardening, Pilot Benchmarks & GIS Controls (COMPLETED)"]
         T10["S1.0: Fix Critical Code Deficiencies (B1–B8) ✓"]
         T11["S1.1: Empirical Evidence Tab in Verification Modal ✓"]
         T12["S1.2: MapLibre GIS Layer & Basemap Toggles ✓"]
         T13["S1.3: Dual Export (GeoJSON + Profile CSV) ✓"]
     end
 
-    subgraph SP2["Sprint 2: 2D/3D Well Picking & Colormap Sync"]
-        T21["S2.1: Click-to-Place Well Repositioning (2D)"]
-        T22["S2.2: 3D Surface Vertex Colors & Colormap Sync"]
-        T23["S2.3: Real-Time PRS92 Coordinate Readout"]
+    subgraph SP2["Sprint 2: HCI Harmonization, Dynamic Well Picking & PRS92 HUD (COMPLETED)"]
+        T21["S2.1: HCI & Layout Harmonization (Tailwind Design System) ✓"]
+        T22["S2.2: Interactive Wellhead Picking & Conflict Resolution ✓"]
+        T23["S2.3: Geodetic PRS92 Zone 4 Integration & Test Suite ✓"]
     end
 
-    subgraph SP3["Sprint 3: AI Safety & Safe-Fallback Simulator"]
-        T31["S3.1: In-Browser Physics Residual Evaluator (η)"]
-        T32["S3.2: Dynamic Residual Trust Gauge HUD"]
-        T33["S3.3: Extreme Stress Fallback Notification Banner"]
+    subgraph SP3["Sprint 3: Core Multi-Engine Verification & Safe Fallback Pipeline (IN PROGRESS)"]
+        T30["S3.0: Unified Multi-Engine Contract (src/engines/)"]
+        T31["S3.1: Discrete Mass-Balance & Terzaghi Residual Evaluator (η)"]
+        T32["S3.2: NIST AI RMF 1.0 Residual Trust Gauge & Automated Fallback"]
+        T33["S3.3: Live Verification Metrics & MODFLOW 6 LHS Fixtures"]
     end
 
-    subgraph SP4["Sprint 4: Defense Presentation Mode & Polish"]
-        T41["S4.1: 2-Minute Automated Defense Tour Modal"]
-        T42["S4.2: Vite Chunking & Performance Optimization"]
-        T43["S4.3: Full Regression Testing & Defense Freeze"]
+    subgraph SP4["Sprint 4: High-Fidelity 3D Cutaway, GIS Heatmap & Defense Tour"]
+        T40["S4.0: Smooth Bilinear 2D Subsidence Heatmap (MapLibre ImageSource)"]
+        T41["S4.1: Solid 5-Layer 3D Geological Cutaway Block (Three.js)"]
+        T42["S4.2: Responsive Split-Screen View (2D Map + 3D Cutaway)"]
+        T43["S4.3: 3-Step Automated Defense Tour Modal"]
+        T44["S4.4: Vite Chunking & Final Defense Tag Freeze"]
     end
 
     SP1 --> SP2 --> SP3 --> SP4
@@ -64,48 +67,17 @@ flowchart TD
 ### Sprint 1: Core Hardening, Empirical Grounding & GIS Controls (COMPLETED)
 
 * [x] **Task S1.0: Code Hardening & Governance Correction (B1–B8)**
-  - Corrected `App.jsx:149` from "capstone defense" to "BSIT thesis".
-  - Corrected `CentralViewport.jsx:72` to "WGS84 Web Mercator (Exports to PRS92 Zone 4)".
-  - Fixed `useScenarioState.js:129` preset parameter leak.
-  - Implemented canvas `preserveDrawingBuffer` for screenshot exports.
-  - Fixed `Aquifer3DCanvas` well index row/col swap (Bug #2).
-  - Passed `visualizationConfig` into `Aquifer3DCanvas` and bound colors to shared `fields.js` (Bug #1).
-  - Maintained persistent 2D and 3D viewports in the DOM to avoid WebGL context loss (Bug #4).
-  - Added container `ResizeObserver` to 3D canvas (Bug #5).
 * [x] **Task S1.1: Empirical Pilot Evidence Tab in `VerificationModal.jsx`**
-  - Added dedicated **"Empirical Pilot Evidence"** tab featuring the October 23 benchmark findings:
-    - USGS MODFLOW 6 runtime: 22.5 s ($64 \times 64 \times 5 = 20,480$ cells).
-    - PINO forward inference: 38.6 ms ($580\times$ speedup) using 2.14 GB VRAM on NVIDIA RTX 4050.
-    - Embedded visual summary of Attachment Fig. A1 (75.2 mm compaction bowl in PRS92 Zone 4).
-    - Added dedicated pilot benchmark CSV export button.
 * [x] **Task S1.2: MapLibre Satellite Basemap & Layer Controls in `MapLibreMap.jsx`**
-  - Added floating layer controller:
-    - Basemap toggle: **ESRI Dark Canvas** ⇄ **ESRI World Imagery** (satellite aerial photo).
-    - Vector layer toggles: Barangay boundaries (PSA/NAMRIA), City boundary, 3.2km domain outline, and Wells.
-    - Simulation grid opacity slider (0% to 100%).
 * [x] **Task S1.3: Export Suite & Metadata Headers in `BottomAnalyticsSuite.jsx`**
-  - Wired dual export buttons: RFC 7946 GeoJSON and Cross-Section Profile CSV with research disclaimer headers.
 
 ---
 
 ### Sprint 2: HCI, Component Harmonization & Dynamic Well Picking (COMPLETED)
 
 * [x] **Task S2.1: HCI & Layout Harmonization (Tailwind Design System)**
-  - Standardized all panels on Tailwind slate/cyan tokens (`slate-950`, `slate-900`, `slate-800`, `cyan-400`).
-  - Streamlined `TopNavigation.jsx` to `h-14` (56px) with Global Research Integrity Status Pill.
-  - Overhauled `ScenarioSetupPanel.jsx` into 4 distinct, color-coded preset cards with clear `Theis + Terzaghi (Analytical)` attribution.
-  - Replaced amber disclaimer banners with clean, professional geodetic coordinate HUD and research pills.
-  - Implemented collapsible **Analytical Suite Telemetry Dock** (`BottomAnalyticsSuite.jsx`) fitting 100dvh laptops.
-  - Hardened `VerificationModal.jsx` with accessible dialog containment (`max-h-[min(90dvh,52rem)]`, Escape key listener, scrollable body).
 * [x] **Task S2.2: Interactive Wellhead Picking & Conflict Resolution**
-  - Added dedicated Well Relocation mode toggle in `MapLibreMap.jsx` (`Crosshair` tool) and instant `Shift + Click` modifier.
-  - Resolved click conflicts between cell inspection and wellhead movement (Claude Code audit H1).
-  - Bound atomic parameter updates `setParams(p => ({ ...p, wellX, wellY }))` in `App.jsx` (audit H4).
 * [x] **Task S2.3: Geodetic PRS92 Zone 4 (EPSG:3124) Integration & Test Suite**
-  - Corrected geodetic projection to PRS92 Zone 4 (EPSG:3124, Central Meridian 123° E, False Easting 500,000 m).
-  - Aligned anchor coordinates (`451,800 m E`, `1,187,000 m N`) with the verified `smoke_test_mf6_prs92.py` domain center.
-  - Throttled mousemove coordinates via `requestAnimationFrame` and cleared on mouseout (audit H2).
-  - Added full test suite `tests/physics/geodesy.test.js` validating invertibility and control points.
 
 ---
 
@@ -128,14 +100,23 @@ flowchart TD
 
 ---
 
-### Sprint 4: Defense Presentation Tour & Performance Hardening
+### Sprint 4: High-Fidelity 3D Cutaway, Continuous GIS Heatmap & Defense Tour
 
-* **Task S4.1: "Defense Demo Tour" Floating Modal**
-  - Implement a 3-step automated walkthrough button for the proposal defense presentation:
-    1. *Baseline Delta* (normal extraction).
-    2. *Commercial Corridor Stress* (Mandurriao clustering, permanent clay compaction).
-    3. *Verification & GIS Export* (One-click MODFLOW check + QGIS export).
-* **Task S4.2: Vite Chunking & Performance Optimization**
-  - Configure `vite.config.js` with manual chunks for `three`, `maplibre-gl`, and `lucide-react` to optimize bundle load times.
-* **Task S4.3: Regression Testing & Defense Freeze**
-  - Run full automated test suite (`npm test`), verify clean builds (`npm run build`), and freeze git release tag.
+* **Task S4.0: Smooth Bilinear 2D Subsidence Heatmap (`MapLibreMap.jsx`)**
+  - Replace discrete 50m polygon grid with an offscreen $256 \times 256$ bilinear-interpolated Canvas texture mapped to `ImageSource.updateImage()`.
+  - Interpolate physical scalar values before applying colormap to prevent RGB blend artifacts.
+  - Retain an optional "Cells" overlay toggle to inspect the true $64 \times 64$ model grid footprint ($50\text{ m}$ cell size).
+* **Task S4.1: Solid 5-Layer 3D Geological Cutaway Block (`Aquifer3DCanvas.jsx`)**
+  - Replace wireframe planes with a solid geological cutaway block representing the 5 proposal layers (0 to $-120\text{ m}$: unconfined sand, upper clay, middle sand, compressible clay interbeds, basal gravel).
+  - Apply FGDC-compliant lithological textures (sand stipple, clay dashes) to cutaway faces.
+  - Drape top face with high-resolution ESRI satellite imagery blended with the active subsidence colormap.
+  - Render 3D cylinder borehole casings perforating into the lower production aquifer.
+* **Task S4.2: Responsive Split-Screen View (`CentralViewport.jsx`)**
+  - Implement container-query-driven split-screen layout (`2D Map | 3D Cutaway Block` side-by-side) on wide screens ($> 1200\text{ px}$ container width).
+  - Support linked spatial cursor hover across 2D map and 3D cutaway.
+  - Implement on-demand Three.js render loop (rendering only on interaction/animation) to conserve GPU resources on projector laptops.
+* **Task S4.3: Automated 3-Step Defense Tour Modal**
+  - Implement interactive proposal defense walkthrough (Baseline $\to$ Commercial Stress $\to$ Numerical Verification).
+* **Task S4.4: Vite Manual Chunking & Defense Freeze**
+  - Configure Rollup manual chunks for `three`, `maplibre-gl`, and `lucide-react` to keep chunk sizes under $500\text{ kB}$.
+  - Full automated regression test pass and git release tag freeze.
