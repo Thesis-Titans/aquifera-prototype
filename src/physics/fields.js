@@ -147,6 +147,68 @@ export function domainOutlineGeoJSON() {
   };
 }
 
+/** Static 64x64 finite difference grid wireframe mesh lines (50.8 m cell footprint). */
+export function buildGridWireframeGeoJSON(res = DOMAIN.gridResolution) {
+  const step = DOMAIN.widthMeters / (res - 1);
+  const half = DOMAIN.widthMeters / 2;
+  const features = [];
+  
+  for (let i = 0; i < res; i++) {
+    const y = -half + i * step;
+    features.push({
+      type: 'Feature',
+      properties: { lineType: 'h', i },
+      geometry: {
+        type: 'LineString',
+        coordinates: [metersToLngLat(-half, y), metersToLngLat(half, y)]
+      }
+    });
+  }
+  for (let j = 0; j < res; j++) {
+    const x = -half + j * step;
+    features.push({
+      type: 'Feature',
+      properties: { lineType: 'v', j },
+      geometry: {
+        type: 'LineString',
+        coordinates: [metersToLngLat(x, -half), metersToLngLat(x, half)]
+      }
+    });
+  }
+  return { type: 'FeatureCollection', features };
+}
+
+/** GeoJSON Polygon highlighting a single clicked 50m grid cell */
+export function cellPolygonGeoJSON(state, idx) {
+  if (idx == null || !state) return { type: 'FeatureCollection', features: [] };
+  const res = state.resolution || DOMAIN.gridResolution;
+  const i = Math.floor(idx / res);
+  const j = idx % res;
+  const step = DOMAIN.widthMeters / (res - 1);
+  const half = DOMAIN.widthMeters / 2;
+  const x0 = -half + j * step - step / 2;
+  const y0 = -half + i * step - step / 2;
+  const x1 = x0 + step;
+  const y1 = y0 + step;
+  return {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      properties: { idx },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          metersToLngLat(x0, y0),
+          metersToLngLat(x1, y0),
+          metersToLngLat(x1, y1),
+          metersToLngLat(x0, y1),
+          metersToLngLat(x0, y0)
+        ]]
+      }
+    }]
+  };
+}
+
 /** Values at one node, with its offset from the domain centre. */
 export function describeNode(state, idx) {
   const res = state.resolution;

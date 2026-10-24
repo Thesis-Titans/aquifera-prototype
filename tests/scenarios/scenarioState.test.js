@@ -88,4 +88,14 @@ describe('AQUIFERA Scenario Interaction and Capture Contract', () => {
     assert.equal(period2.isHysteresisRetained, true);
     assert.ok(period2.permanentInelasticCm > 0);
   });
+
+  test('corridor preset breaches preconsolidation head and activates clustered wells without fallback', () => {
+    const corridorParams = SCENARIO_PRESETS.corridor.params;
+    const state = computeGroundwaterState(corridorParams);
+
+    // Mandurriao commercial corridor stress must trigger permanent plastic compaction
+    assert.equal(state.isPreconsolidationBreached, true, 'Corridor preset must breach preconsolidation threshold');
+    assert.ok(state.inelasticSubsidenceMm > 0, 'Permanent inelastic compaction must be > 0');
+    assert.equal(state.wells.length, 2, 'Pumping > 15k m3/d must resolve 2 clustered production wells');
+  });
 });

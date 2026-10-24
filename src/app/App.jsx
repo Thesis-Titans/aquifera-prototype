@@ -5,6 +5,7 @@ import { CentralViewport } from '../features/aquifer-visualization';
 import { BottomAnalyticsSuite } from '../features/analytics';
 import { VerificationModal } from '../features/verification';
 import { GuideModal } from '../components/ui';
+import { DefenseTourCard } from '../features/simulation';
 
 export default function App() {
   // Hydrogeological Scenario and Physics Engine State
@@ -22,20 +23,23 @@ export default function App() {
     selectedEngineId,
     setSelectedEngineId,
     perturbSurrogate,
+    setPerturbSurrogate,
     togglePerturbation
   } = useScenarioState();
 
   // UI Navigation & View State
   const [activeTab, setActiveTab] = useState('Home');
-  const [viewMode, setViewMode] = useState('2D'); // '2D' (MapLibre) or '3D' (Three.js)
+  const [viewMode, setViewMode] = useState('2D'); // '2D' (MapLibre), '3D' (Three.js), or 'split'
 
   // Visualization Controls State
   const DEFAULT_VIZ = { dataType: 'subsidence', opacity: 75, colorScale: 'standard' };
   const [visualizationConfig, setVisualizationConfig] = useState(DEFAULT_VIZ);
 
-  // Modals
+  // Modals & Guided Walkthroughs
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isDefenseTourOpen, setIsDefenseTourOpen] = useState(false);
+  const [defenseTourStep, setDefenseTourStep] = useState(0);
 
   // Reset to default baseline
   const handleResetParams = () => {
@@ -99,6 +103,7 @@ export default function App() {
         onOpenGuide={() => setIsGuideOpen(true)}
         onCaptureScreenshot={handleCaptureScreenshot}
         onOpenVerification={() => setIsVerificationOpen(true)}
+        onStartDefenseTour={() => setIsDefenseTourOpen(true)}
       />
 
       {/* 2. Middle Interactive Stage (Left Sidebar + Central Dual Viewport) */}
@@ -176,6 +181,20 @@ export default function App() {
       <GuideModal
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
+      />
+
+      {/* Guided 3-Step Defense Tour Walkthrough Card */}
+      <DefenseTourCard
+        isOpen={isDefenseTourOpen}
+        onClose={() => setIsDefenseTourOpen(false)}
+        currentStepIndex={defenseTourStep}
+        onSelectStep={setDefenseTourStep}
+        applyPreset={applyPreset}
+        setSelectedEngineId={setSelectedEngineId}
+        setPerturbSurrogate={setPerturbSurrogate}
+        setViewMode={setViewMode}
+        onOpenVerification={() => setIsVerificationOpen(true)}
+        physicalState={physicalState}
       />
     </div>
   );

@@ -42,10 +42,8 @@ export const ENGINE_VERSION = '0.2.0-Probe';
  * @returns {Object} Surrogate state conforming to the multi-engine contract
  */
 export function evaluate(params, options = {}) {
-  const {
-    perturbForTest = false,
-    historyBuffer = null
-  } = options;
+  const isPerturbed = Boolean(options.perturbForTest || options.perturbSurrogate);
+  const { historyBuffer = null } = options;
 
   const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
@@ -60,7 +58,7 @@ export function evaluate(params, options = {}) {
 
   const pumpingRate = params.pumpingRate ?? 12000;
   // Out-of-distribution check strictly bounded by LHS experimental envelope (500 to 32,000 m³/d)
-  const isOutOfDistribution = pumpingRate > LHS_ENVELOPE.maxPumpingRate || perturbForTest;
+  const isOutOfDistribution = pumpingRate > LHS_ENVELOPE.maxPumpingRate || isPerturbed;
 
   // Deterministic GPU inference latency specification (based on gpu_fno_check.py measurements)
   const simulatedGpuLatencyMs = 14.2;
@@ -87,7 +85,7 @@ export function evaluate(params, options = {}) {
 
       if (isOutOfDistribution) {
         // Physical mass-balance violation (out-of-distribution anomaly)
-        const anomalyFactor = perturbForTest ? 0.35 : 0.22;
+        const anomalyFactor = isPerturbed ? 0.35 : 0.22;
         surrogateDisplacement = refDisplacement * (1.0 + anomalyFactor * (1.0 + spectralHarmonic));
         surrogateHead = refHead - (refState.maxDrawdown * 0.35 * Math.abs(spectralHarmonic));
       } else {

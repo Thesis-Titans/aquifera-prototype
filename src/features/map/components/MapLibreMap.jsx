@@ -1,19 +1,22 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Map, setWorkerUrl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Navigation, ZoomIn, ZoomOut, RotateCcw, Layers, Loader2, AlertTriangle, X, Sliders, Crosshair } from 'lucide-react';
+import { Navigation, ZoomIn, ZoomOut, RotateCcw, Layers, Loader2, AlertTriangle, X, Sliders, Crosshair, Grid3x3 } from 'lucide-react';
 import {
   QUANTITIES,
   DOMAIN_BOUNDS,
-  buildGridGeoJSON,
   domainOutlineGeoJSON,
   fillColorExpression,
   cssGradient,
   describeNode,
   metersToLngLat,
   lngLatToMeters,
-  metersToPRS92
+  metersToPRS92,
+  buildGridWireframeGeoJSON,
+  cellPolygonGeoJSON,
+  nodeAtMeters
 } from '../../../physics/fields';
+import { rasterizeFieldToImageData } from '../../../physics/heatmap';
 import { DOMAIN } from '../../../physics/groundwaterPhysics';
 
 // Configure MapLibre background worker for Vite environment
@@ -82,6 +85,17 @@ const GIS_BASEMAP_STYLE = {
 const DOMAIN_LNGLAT_BOUNDS = [[DOMAIN_BOUNDS.west, DOMAIN_BOUNDS.south], [DOMAIN_BOUNDS.east, DOMAIN_BOUNDS.north]];
 const FIT_OPTIONS = { padding: { top: 70, bottom: 40, left: 40, right: 70 }, pitch: 20, bearing: 0 };
 
+// Order for MapLibre image source: [NW, NE, SE, SW]
+const DOMAIN_IMAGE_CORNERS = (() => {
+  const half = DOMAIN.widthMeters / 2;
+  return [
+    metersToLngLat(-half, -half), // NW: [west, north]
+    metersToLngLat(half, -half),  // NE: [east, north]
+    metersToLngLat(half, half),   // SE: [east, south]
+    metersToLngLat(-half, half)   // SW: [west, south]
+  ];
+})();
+
 function wellsGeoJSON(physicalState) {
   return {
     type: 'FeatureCollection',
@@ -116,7 +130,8 @@ export default function MapLibreMap({
     barangays: true,
     cityBoundary: true,
     domainOutline: true,
-    wells: true
+    wells: true,
+    gridMesh: false
   });
   const [gridOpacity, setGridOpacity] = useState(
     visualizationConfig?.opacity ? visualizationConfig.opacity / 100 : 0.75
@@ -133,8 +148,9 @@ export default function MapLibreMap({
     return () => clearTimeout(timer);
   }, [mapLoaded, mapError, retryCount]);
 
-  // Map cells come from the same physics grid as the 3D view and the charts
-  const geojsonGrid = useMemo(() => buildGridGeoJSON(physicalState, dataType), [physicalState, dataType]);
+  // Task S4.0: Model grid wireframe (static 64x64 finite difference mesh lines) & clicked cell highlight
+  const wireframeData = useMemo(() => buildGridWireframeGeoJSON(physicalState?.resolution || 64), [physicalState?.resolution]);
+  const cellHighlightData = useMemo(() => cellPolygonGeoJSON(physicalState, selectedIdx), [physicalState, selectedIdx]);
   const wellsData = useMemo(() => wellsGeoJSON(physicalState), [physicalState]);
   const selected = selectedIdx != null && physicalState ? describeNode(physicalState, selectedIdx) : null;
 
@@ -144,17 +160,19 @@ export default function MapLibreMap({
   const onMoveWellRef = useRef(onMoveWell);
   const onCursorMoveRef = useRef(onCursorMove);
   const isWellPlacingModeRef = useRef(isWellPlacingMode);
+  const physicalStateRef = useRef(physicalState);
   useEffect(() => {
     onMoveWellRef.current = onMoveWell;
     onCursorMoveRef.current = onCursorMove;
     isWellPlacingModeRef.current = isWellPlacingMode;
+    physicalStateRef.current = physicalState;
   });
 
   // Latest data for the one-time layer setup inside the map initialisation effect
-  const latestRef = useRef({ geojsonGrid, wellsData, colorScale, gridOpacity });
+  const latestRef = useRef({ wireframeData, cellHighlightData, wellsData, colorScale, gridOpacity, layerVisibility, dataType, physicalState });
   useEffect(() => {
-    latestRef.current = { geojsonGrid, wellsData, colorScale, gridOpacity };
-  }, [geojsonGrid, wellsData, colorScale, gridOpacity]);
+    latestRef.current = { wireframeData, cellHighlightData, wellsData, colorScale, gridOpacity, layerVisibility, dataType, physicalState };
+  }, [wireframeData, cellHighlightData, wellsData, colorScale, gridOpacity, layerVisibility, dataType, physicalState]);
 
   // Initialize MapLibre GL Map
   useEffect(() => {
@@ -223,7 +241,12 @@ export default function MapLibreMap({
       const dataBase = `${base.endsWith('/') ? base : base + '/'}data/spatial/`;
       map.addSource('iloilo-barangays', { type: 'geojson', data: `${dataBase}iloilo_city_barangays.geojson` });
       map.addSource('iloilo-city-boundary', { type: 'geojson', data: `${dataBase}iloilo_city_boundary.geojson` });
-      map.addSource('result-grid', { type: 'geojson', data: latest.geojsonGrid });
+      map.addSource('result-raster', {
+        type: 'image',
+        coordinates: DOMAIN_IMAGE_CORNERS
+      });
+      map.addSource('grid-mesh', { type: 'geojson', data: latest.wireframeData });
+      map.addSource('cell-highlight', { type: 'geojson', data: latest.cellHighlightData });
       map.addSource('domain-outline', { type: 'geojson', data: domainOutlineGeoJSON() });
       map.addSource('wells', { type: 'geojson', data: latest.wellsData });
 
@@ -241,22 +264,41 @@ export default function MapLibreMap({
         paint: { 'line-color': '#f59e0b', 'line-width': 1.5, 'line-dasharray': [3, 2], 'line-opacity': 0.8 }
       });
 
-      // Synthetic result grid
+      // Task S4.0: Continuous Bilinear Heatmap Raster Layer
       map.addLayer({
-        id: 'result-fill',
-        type: 'fill',
-        source: 'result-grid',
+        id: 'result-raster-layer',
+        type: 'raster',
+        source: 'result-raster',
         paint: {
-          'fill-color': fillColorExpression(latest.colorScale),
-          'fill-opacity': ['case', ['<', ['get', 'v'], 0.004], 0, latest.gridOpacity]
+          'raster-opacity': latest.gridOpacity,
+          'raster-fade-duration': 0,
+          'raster-resampling': 'linear'
         }
       });
+
+      // Task S4.0: 64x64 Finite Difference Grid Wireframe Mesh (50.8m cells)
       map.addLayer({
-        id: 'result-highlight',
+        id: 'grid-mesh-line',
         type: 'line',
-        source: 'result-grid',
-        paint: { 'line-color': '#ffffff', 'line-width': 2 },
-        filter: ['==', ['get', 'idx'], -1]
+        source: 'grid-mesh',
+        layout: {
+          'visibility': latest.layerVisibility.gridMesh ? 'visible' : 'none'
+        },
+        paint: {
+          'line-color': 'rgba(34, 211, 238, 0.35)',
+          'line-width': 0.75
+        }
+      });
+
+      // Single-cell highlight on click
+      map.addLayer({
+        id: 'cell-highlight-line',
+        type: 'line',
+        source: 'cell-highlight',
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': 2
+        }
       });
       map.addLayer({
         id: 'domain-outline-line',
@@ -286,16 +328,26 @@ export default function MapLibreMap({
         }
       });
 
+      // Initialize raster image on load
+      if (latest.physicalState) {
+        const src = map.getSource('result-raster');
+        if (src) {
+          const img = rasterizeFieldToImageData(latest.physicalState, latest.dataType, latest.colorScale);
+          src.updateImage({ image: img });
+        }
+      }
+
       // Named domain bounds margin for well placement (Claude Code audit H5)
-      const MAX_DOMAIN_OFFSET = DOMAIN.widthMeters / 2 - 50;
+      const half = DOMAIN.widthMeters / 2;
+      const MAX_DOMAIN_OFFSET = half - 50;
 
       // Throttled mousemove via requestAnimationFrame to eliminate render storms on CentralViewport (Claude Code audit H2)
       let animFrameId = null;
       map.on('mousemove', (e) => {
         if (animFrameId) cancelAnimationFrame(animFrameId);
         animFrameId = requestAnimationFrame(() => {
+          const [x, y] = lngLatToMeters(e.lngLat.lng, e.lngLat.lat);
           if (onCursorMoveRef.current) {
-            const [x, y] = lngLatToMeters(e.lngLat.lng, e.lngLat.lat);
             const prs = metersToPRS92(x, y);
             onCursorMoveRef.current({
               easting: prs.easting,
@@ -305,6 +357,14 @@ export default function MapLibreMap({
               lng: e.lngLat.lng,
               lat: e.lngLat.lat
             });
+          }
+          const isInside = Math.abs(x) <= half && Math.abs(y) <= half;
+          if (isWellPlacingModeRef.current || e.originalEvent?.shiftKey) {
+            map.getCanvas().style.cursor = 'crosshair';
+          } else if (isInside) {
+            map.getCanvas().style.cursor = 'pointer';
+          } else {
+            map.getCanvas().style.cursor = '';
           }
         });
       });
@@ -317,39 +377,22 @@ export default function MapLibreMap({
         }
       });
 
-      // Global click handler: places well when well placing mode is active or Shift key held
+      // Global click handler: places well when well placing mode is active; otherwise selects clicked 50m cell
       map.on('click', (e) => {
+        const [x, y] = lngLatToMeters(e.lngLat.lng, e.lngLat.lat);
         if (isWellPlacingModeRef.current || e.originalEvent?.shiftKey) {
-          const [x, y] = lngLatToMeters(e.lngLat.lng, e.lngLat.lat);
-          if (Math.abs(x) <= MAX_DOMAIN_OFFSET && Math.abs(y) <= MAX_DOMAIN_OFFSET && onMoveWellRef.current) {
-            onMoveWellRef.current(x, y);
-            setIsWellPlacingMode(false);
-          }
-        }
-      });
-
-      map.on('mousemove', 'result-fill', (e) => {
-        if (e.features?.length) {
-          map.getCanvas().style.cursor = (isWellPlacingModeRef.current || e.originalEvent?.shiftKey) ? 'crosshair' : 'pointer';
-          map.setFilter('result-highlight', ['==', ['get', 'idx'], e.features[0].properties.idx]);
-        }
-      });
-      map.on('mouseleave', 'result-fill', () => {
-        map.getCanvas().style.cursor = '';
-        map.setFilter('result-highlight', ['==', ['get', 'idx'], -1]);
-      });
-
-      // Cell click handler: inspects cell by default; relocates well ONLY if well placing mode or Shift is active (Claude Code audit H1)
-      map.on('click', 'result-fill', (e) => {
-        if (isWellPlacingModeRef.current || e.originalEvent?.shiftKey) {
-          const [x, y] = lngLatToMeters(e.lngLat.lng, e.lngLat.lat);
           if (Math.abs(x) <= MAX_DOMAIN_OFFSET && Math.abs(y) <= MAX_DOMAIN_OFFSET && onMoveWellRef.current) {
             onMoveWellRef.current(x, y);
             setIsWellPlacingMode(false);
           }
           return;
         }
-        if (e.features?.length) setSelectedIdx(e.features[0].properties.idx);
+        if (Math.abs(x) <= half && Math.abs(y) <= half && physicalStateRef.current) {
+          const idx = nodeAtMeters(physicalStateRef.current, x, y);
+          setSelectedIdx(idx);
+        } else {
+          setSelectedIdx(null);
+        }
       });
     };
 
@@ -391,15 +434,17 @@ export default function MapLibreMap({
     if (map.getLayer('wells-circle')) {
       map.setLayoutProperty('wells-circle', 'visibility', layerVisibility.wells ? 'visible' : 'none');
     }
+    if (map.getLayer('grid-mesh-line')) {
+      map.setLayoutProperty('grid-mesh-line', 'visibility', layerVisibility.gridMesh ? 'visible' : 'none');
+    }
   }, [layerVisibility, mapLoaded]);
 
-  // Simulation grid opacity & color scale sync
+  // Simulation grid opacity sync on the continuous raster
   useEffect(() => {
     const map = mapRef.current;
-    if (!mapLoaded || !map?.getLayer('result-fill')) return;
-    map.setPaintProperty('result-fill', 'fill-color', fillColorExpression(colorScale));
-    map.setPaintProperty('result-fill', 'fill-opacity', ['case', ['<', ['get', 'v'], 0.004], 0, gridOpacity]);
-  }, [colorScale, gridOpacity, mapLoaded]);
+    if (!mapLoaded || !map?.getLayer('result-raster-layer')) return;
+    map.setPaintProperty('result-raster-layer', 'raster-opacity', gridOpacity);
+  }, [gridOpacity, mapLoaded]);
 
   // Genuine retry handler: tears down map and triggers full clean initialization
   const handleRetryBasemap = () => {
@@ -410,10 +455,27 @@ export default function MapLibreMap({
   };
 
   // Keep sources in sync with physical simulation state
+  // Task S4.0: Keep raster image in sync with physical simulation state & colormap
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current || !physicalState) return;
+    const source = mapRef.current.getSource('result-raster');
+    if (source) {
+      const img = rasterizeFieldToImageData(physicalState, dataType, colorScale);
+      source.updateImage({ image: img });
+    }
+  }, [physicalState, dataType, colorScale, mapLoaded]);
+
+  // Keep cell highlight in sync
   useEffect(() => {
     if (!mapLoaded) return;
-    mapRef.current?.getSource('result-grid')?.setData(geojsonGrid);
-  }, [geojsonGrid, mapLoaded]);
+    mapRef.current?.getSource('cell-highlight')?.setData(cellHighlightData);
+  }, [cellHighlightData, mapLoaded]);
+
+  // Keep wireframe mesh in sync
+  useEffect(() => {
+    if (!mapLoaded) return;
+    mapRef.current?.getSource('grid-mesh')?.setData(wireframeData);
+  }, [wireframeData, mapLoaded]);
 
   useEffect(() => {
     if (!mapLoaded) return;
@@ -626,6 +688,19 @@ export default function MapLibreMap({
                 type="checkbox"
                 checked={layerVisibility.domainOutline}
                 onChange={(e) => setLayerVisibility(v => ({ ...v, domainOutline: e.target.checked }))}
+                className="accent-cyan-400 rounded cursor-pointer"
+              />
+            </label>
+
+            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer hover:text-white">
+              <span className="flex items-center gap-2">
+                <Grid3x3 size={13} className="text-cyan-400" />
+                Model Grid Mesh (50m)
+              </span>
+              <input
+                type="checkbox"
+                checked={layerVisibility.gridMesh}
+                onChange={(e) => setLayerVisibility(v => ({ ...v, gridMesh: e.target.checked }))}
                 className="accent-cyan-400 rounded cursor-pointer"
               />
             </label>

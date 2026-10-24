@@ -64,33 +64,132 @@ export default function Aquifer3DCanvas({
     physicalStateRef.current = physicalState;
   }, [isProbeActive, onMoveWell, physicalState]);
 
-  // Helper: Build stratified hydrogeology blocks (5 units from proposal Fig. 6)
-  const buildStratigraphy = (scene, cutawayPlane) => {
-    const boxSize = 20;
-    DOMAIN.layers.forEach(layer => {
-      const height = layer.thickness / 10;
-      const sideMat = new THREE.MeshStandardMaterial({
-        color: LAYER_MESH_COLORS[layer.id],
-        roughness: layer.type === 'clay' ? 0.92 : 0.75,
-        metalness: layer.type === 'aquifer' ? 0.15 : 0.05,
-        transparent: true,
-        opacity: 0.95,
-        clippingPlanes: [cutawayPlane],
-        clipShadows: true,
-        side: THREE.DoubleSide
+  const stratigraphyGroupRef = useRef(null);
+  const texturesRef = useRef([]);
+  const requestRenderRef = useRef(null);
+
+  // Helper: Procedural FGDC Lithology Texture Generator (Zero CORS / Zero Assets)
+  function createLithologyTexture(type, baseColorHex, width = 128, height = 128) {
+    if (typeof document === 'undefined') return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    ctx.fillStyle = baseColorHex;
+    ctx.fillRect(0, 0, width, height);
+
+    if (type === 'sand') {
+      // Fine stipple sand grains
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      for (let k = 0; k < 120; k++) {
+        const x = (k * 37) % width;
+        const y = (k * 73) % height;
+        ctx.fillRect(x, y, 1.5, 1.5);
+      }
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      for (let k = 0; k < 100; k++) {
+        const x = (k * 43) % width;
+        const y = (k * 67) % height;
+        ctx.fillRect(x, y, 1.5, 1.5);
+      }
+    } else if (type === 'clay') {
+      // Horizontal clay shale laminae
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.lineWidth = 1.2;
+      for (let row = 8; row < height; row += 16) {
+        for (let col = (row % 32 === 0 ? 4 : 16); col < width; col += 24) {
+          ctx.beginPath();
+          ctx.moveTo(col, row);
+          ctx.lineTo(col + 12, row);
+          ctx.stroke();
+        }
+      }
+    } else if (type === 'gravel') {
+      // Rounded alluvial pebbles
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      ctx.lineWidth = 1;
+      for (let k = 0; k < 20; k++) {
+        const cx = ((k * 53) % (width - 20)) + 10;
+        const cy = ((k * 89) % (height - 20)) + 10;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 6, 4, k * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  // Helper: Build solid stratified hydrogeology blocks with capped cut faces
+  const buildStratigraphy = (scene, isCutawayMode) => {
+    if (stratigraphyGroupRef.current) {
+      scene.remove(stratigraphyGroupRef.current);
+      stratigraphyGroupRef.current.traverse((o) => {
+        if (o.geometry) o.geometry.dispose();
       });
-      // Layer 1's top face (+Y, index 2) is invisible so the deformed vertex-colored surfaceMesh shows the subsidence depression.
-      const materials = layer.id === 'layer1'
-        ? [sideMat, sideMat, new THREE.MeshBasicMaterial({ visible: false }), sideMat, sideMat, sideMat]
-        : sideMat;
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(boxSize, height, boxSize), materials);
-      mesh.position.y = -(layer.top / 10) - height / 2;
+    }
+
+    const group = new THREE.Group();
+    group.name = 'stratigraphyGroup';
+    stratigraphyGroupRef.current = group;
+
+    const boxSize = 20;
+    const depth = isCutawayMode ? 10 : 20;
+    const centerZ = isCutawayMode ? -5 : 0;
+
+    DOMAIN.layers.forEach((layer) => {
+      const height = layer.thickness / 10;
+      const colorHex = '#' + LAYER_MESH_COLORS[layer.id].toString(16).padStart(6, '0');
+      const textureType = layer.type === 'clay' ? 'clay' : (layer.id === 'layer5' ? 'gravel' : 'sand');
+      const lithoTex = createLithologyTexture(textureType, colorHex);
+      if (lithoTex) {
+        lithoTex.repeat.set(boxSize / 4, Math.max(1, height / 1.5));
+        texturesRef.current.push(lithoTex);
+      }
+
+      // BoxGeometry face order: [+X, -X, +Y, -Y, +Z (Front Cut Face), -Z (Back)]
+      const baseMat = new THREE.MeshStandardMaterial({
+        color: LAYER_MESH_COLORS[layer.id],
+        roughness: 0.85,
+        metalness: 0.1,
+        transparent: false,
+        opacity: 1.0
+      });
+
+      const cutFaceMat = new THREE.MeshStandardMaterial({
+        color: LAYER_MESH_COLORS[layer.id],
+        map: lithoTex,
+        roughness: 0.85,
+        metalness: 0.1,
+        transparent: false,
+        opacity: 1.0
+      });
+
+      const topMat = layer.id === 'layer1'
+        ? new THREE.MeshBasicMaterial({ visible: false })
+        : baseMat;
+
+      const materials = [baseMat, baseMat, topMat, baseMat, cutFaceMat, baseMat];
+      const geo = new THREE.BoxGeometry(boxSize, height, depth);
+      const mesh = new THREE.Mesh(geo, materials);
+      mesh.position.set(0, -(layer.top / 10) - height / 2, centerZ);
       mesh.name = layer.id;
-      scene.add(mesh);
+      group.add(mesh);
+
       if (layer.id === COMPACTING_LAYER_ID) {
         clayBlockRef.current = mesh;
       }
     });
+
+    scene.add(group);
   };
 
   // Helper: Build 3D Spatial Orientation Gizmo & Basin Metric Rulers
@@ -225,8 +324,8 @@ export default function Aquifer3DCanvas({
     blueRimLight.position.set(-15, 12, -15);
     scene.add(blueRimLight);
 
-    // 6. Clipping Plane for Volumetric Cutaway (Front Half)
-    const cutawayPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    // 6. Clipping Plane for Volumetric Cutaway (Front Half at z > 0 discarded)
+    const cutawayPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
     clippingPlanesRef.current = [cutawayPlane];
 
     // 7. Base Coordinate Grid & Impermeable Bedrock Slab
@@ -246,7 +345,7 @@ export default function Aquifer3DCanvas({
     scene.add(bedrockMesh);
 
     // Build Stratified Hydrogeology Blocks & Spatial Rulers
-    buildStratigraphy(scene, cutawayPlane);
+    buildStratigraphy(scene, isCutaway);
     buildSpatialGizmo(scene);
 
     // 8. Ground Surface Terrain Heightfield (64x64)
@@ -357,56 +456,37 @@ export default function Aquifer3DCanvas({
     scene.add(probeGroup);
     probeGroupRef.current = probeGroup;
 
-    // 12. Animation Loop (Modern timestamp tracking, zero deprecations)
-    let animationFrameId;
-    let startTime = performance.now();
+    // 12. On-Demand Render Loop with Hoisted Math Objects (Claude Code audit S4.1)
+    const scratchQuat = new THREE.Quaternion();
+    const scratchVX = new THREE.Vector3();
+    const scratchVY = new THREE.Vector3();
+    const scratchVZ = new THREE.Vector3();
 
-    const animate = () => {
-      animationFrameId = requestAnimationFrame(animate);
-      const elapsedSec = (performance.now() - startTime) * 0.001;
-
-      // Pulse well strainer intake rings
-      if (wellMeshGroupRef.current) {
-        const ring = wellMeshGroupRef.current.getObjectByName('pulseRing');
-        if (ring) {
-          const s = 1 + Math.sin(elapsedSec * 3.5) * 0.12;
-          ring.scale.set(s, s, 1);
-        }
-      }
-
-      // Pulse probe target ring
-      if (probeGroupRef.current && probeGroupRef.current.visible) {
-        const pRing = probeGroupRef.current.getObjectByName('probeRing');
-        if (pRing) {
-          const ps = 1 + Math.sin(elapsedSec * 4.5) * 0.15;
-          pRing.scale.set(ps, ps, 1);
-        }
-      }
-
-      // Update 60 FPS Camera Compass Azimuth
+    const updateCompassAndGizmo = () => {
+      // Camera Compass Needle
       if (controls && compassNeedleRef.current) {
         const azimuthRad = controls.getAzimuthalAngle();
         const deg = (azimuthRad * 180) / Math.PI;
         compassNeedleRef.current.style.transform = `rotate(${-deg}deg)`;
       }
 
-      // Update 60 FPS 3D Spatial Orientation Gizmo Projections
+      // 3D Spatial Orientation Gizmo Projections (Zero Allocations)
       if (camera && gizmoXRef.current && gizmoYRef.current && gizmoZRef.current) {
-        const qInv = camera.quaternion.clone().invert();
-        const vX = new THREE.Vector3(1, 0, 0).applyQuaternion(qInv);
-        const vY = new THREE.Vector3(0, 1, 0).applyQuaternion(qInv);
-        const vZ = new THREE.Vector3(0, 0, -1).applyQuaternion(qInv);
+        scratchQuat.copy(camera.quaternion).invert();
+        scratchVX.set(1, 0, 0).applyQuaternion(scratchQuat);
+        scratchVY.set(0, 1, 0).applyQuaternion(scratchQuat);
+        scratchVZ.set(0, 0, -1).applyQuaternion(scratchQuat);
 
         const radius = 22;
         const cx = 30;
         const cy = 30;
 
-        const pxX = cx + vX.x * radius;
-        const pyX = cy - vX.y * radius;
-        const pxY = cx + vY.x * radius;
-        const pyY = cy - vY.y * radius;
-        const pxZ = cx + vZ.x * radius;
-        const pyZ = cy - vZ.y * radius;
+        const pxX = cx + scratchVX.x * radius;
+        const pyX = cy - scratchVX.y * radius;
+        const pxY = cx + scratchVY.x * radius;
+        const pyY = cy - scratchVY.y * radius;
+        const pxZ = cx + scratchVZ.x * radius;
+        const pyZ = cy - scratchVZ.y * radius;
 
         gizmoXRef.current.setAttribute('x2', pxX.toFixed(1));
         gizmoXRef.current.setAttribute('y2', pyX.toFixed(1));
@@ -428,11 +508,23 @@ export default function Aquifer3DCanvas({
           gizmoZHeadRef.current.setAttribute('cy', pyZ.toFixed(1));
         }
       }
-
-      controls.update();
-      renderer.render(scene, camera);
     };
-    animate();
+
+    let animFrame = null;
+    const requestRender = () => {
+      if (animFrame == null) {
+        animFrame = requestAnimationFrame(() => {
+          animFrame = null;
+          if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;
+          controls.update();
+          updateCompassAndGizmo();
+          renderer.render(scene, camera);
+        });
+      }
+    };
+    requestRenderRef.current = requestRender;
+    controls.addEventListener('change', requestRender);
+    requestRender();
 
     // 13. Interactive 3D Raycasting Probe Listeners
     const raycaster = new THREE.Raycaster();
@@ -456,21 +548,26 @@ export default function Aquifer3DCanvas({
       return intersects.length > 0 ? intersects[0] : null;
     };
 
+    let probeAnimFrame = null;
     const handlePointerMove = (e) => {
       if (!isProbeActiveRef.current) return;
-      const hit = getRaycastHit(e);
-      if (hit) {
-        const hitPoint = hit.point;
-        if (probeGroupRef.current) {
-          probeGroupRef.current.position.set(hitPoint.x, hitPoint.y, hitPoint.z);
-          probeGroupRef.current.visible = true;
-        }
+      if (probeAnimFrame) cancelAnimationFrame(probeAnimFrame);
+      probeAnimFrame = requestAnimationFrame(() => {
+        const hit = getRaycastHit(e);
+        if (hit) {
+          const hitPoint = hit.point;
+          if (probeGroupRef.current) {
+            probeGroupRef.current.position.set(hitPoint.x, hitPoint.y, hitPoint.z);
+            probeGroupRef.current.visible = true;
+          }
 
-        const hydro = getPointHydrogeology(hitPoint.x, hitPoint.y, hitPoint.z, physicalStateRef.current);
-        if (hydro) {
-          setProbedData(prev => (prev?.isPinned ? prev : hydro));
+          const hydro = getPointHydrogeology(hitPoint.x, hitPoint.y, hitPoint.z, physicalStateRef.current);
+          if (hydro) {
+            setProbedData(prev => (prev?.isPinned ? prev : hydro));
+          }
+          requestRender();
         }
-      }
+      });
     };
 
     const handlePointerDown = (e) => {
@@ -500,6 +597,7 @@ export default function Aquifer3DCanvas({
             setProbedData({ ...hydro, isPinned: true });
             setIsProbePinned(true);
           }
+          requestRender();
         }
       }
     };
@@ -513,6 +611,7 @@ export default function Aquifer3DCanvas({
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      requestRender();
     };
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -524,11 +623,30 @@ export default function Aquifer3DCanvas({
     resizeObserver.observe(container);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      if (animFrame) cancelAnimationFrame(animFrame);
+      if (probeAnimFrame) cancelAnimationFrame(probeAnimFrame);
       container.removeEventListener('pointermove', handlePointerMove);
       container.removeEventListener('pointerdown', handlePointerDown);
       resizeObserver.disconnect();
+      controls.dispose();
+      scene.traverse((obj) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach((m) => {
+              if (m.map) m.map.dispose();
+              m.dispose();
+            });
+          } else {
+            if (obj.material.map) obj.material.map.dispose();
+            obj.material.dispose();
+          }
+        }
+      });
+      texturesRef.current.forEach((t) => t.dispose());
+      texturesRef.current = [];
       renderer.dispose();
+      renderer.forceContextLoss();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
@@ -593,13 +711,15 @@ export default function Aquifer3DCanvas({
 
     // Update Clay Compaction Visual State
     if (clayBlockRef.current) {
-      if (physicalState.isPreconsolidationBreached) {
-        clayBlockRef.current.material.color.setHex(0xb91c1c);
-        clayBlockRef.current.material.emissive = new THREE.Color(0x450a0a);
-      } else {
-        clayBlockRef.current.material.color.setHex(0x8c5332);
-        clayBlockRef.current.material.emissive = new THREE.Color(0x000000);
-      }
+      const mats = Array.isArray(clayBlockRef.current.material)
+        ? clayBlockRef.current.material
+        : [clayBlockRef.current.material];
+      const targetColor = physicalState.isPreconsolidationBreached ? 0xb91c1c : 0x8c5332;
+      const targetEmissive = physicalState.isPreconsolidationBreached ? 0x450a0a : 0x000000;
+      mats.forEach((m) => {
+        if (m && m.color) m.color.setHex(targetColor);
+        if (m && m.emissive) m.emissive.setHex(targetEmissive);
+      });
     }
 
     // Reconstruct Well Assemblies
@@ -681,6 +801,7 @@ export default function Aquifer3DCanvas({
         cone.scale.set(coneRadius / 8, coneHeight / 6, coneRadius / 8);
         cone.visible = showWaterTable;
       }
+      requestRenderRef.current?.();
     }
   }, [physicalState, verticalExaggeration, showWaterTable, visualizationConfig?.colorScale, visualizationConfig?.dataType]);
 
@@ -695,16 +816,24 @@ export default function Aquifer3DCanvas({
     if (surfaceMeshRef.current) {
       surfaceMeshRef.current.visible = layerVisibilities.layer1;
     }
+    requestRenderRef.current?.();
   }, [layerVisibilities]);
 
   useEffect(() => {
-    if (!rendererRef.current) return;
+    if (!rendererRef.current || !sceneRef.current) return;
     rendererRef.current.localClippingEnabled = isCutaway;
+    buildStratigraphy(sceneRef.current, isCutaway);
+    if (surfaceMeshRef.current) {
+      surfaceMeshRef.current.material.clippingPlanes = isCutaway ? clippingPlanesRef.current : [];
+      surfaceMeshRef.current.material.needsUpdate = true;
+    }
+    requestRenderRef.current?.();
   }, [isCutaway]);
 
   useEffect(() => {
     if (!surfaceMeshRef.current) return;
     surfaceMeshRef.current.material.wireframe = isWireframe;
+    requestRenderRef.current?.();
   }, [isWireframe]);
 
   const setPresetCamera = (type) => {
@@ -730,6 +859,7 @@ export default function Aquifer3DCanvas({
     }
     controls.update();
     setCameraView(type);
+    requestRenderRef.current?.();
   };
 
   return (

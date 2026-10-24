@@ -1,12 +1,13 @@
 import React from 'react';
-import { Home, Sliders, BarChart3, Camera, HelpCircle, ShieldCheck } from 'lucide-react';
+import { Home, Sliders, BarChart3, Camera, HelpCircle, ShieldCheck, GraduationCap } from 'lucide-react';
 
 export default function TopNavigation({
   activeTab = 'Home',
   onSelectTab,
   onOpenGuide,
   onCaptureScreenshot,
-  onOpenVerification
+  onOpenVerification,
+  onStartDefenseTour
 }) {
   const navTabs = [
     { id: 'Home', label: 'Workspace', icon: Home },
@@ -79,6 +80,16 @@ export default function TopNavigation({
 
         {/* Action Tools */}
         <div className="flex items-center gap-2">
+          <button
+            id="nav-defense-tour-btn"
+            onClick={onStartDefenseTour}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-linear-to-r from-cyan-950/80 to-blue-950/80 border border-cyan-500/40 hover:border-cyan-400 text-cyan-200 hover:text-white transition-all shadow-xs cursor-pointer"
+            title="Launch 3-Step Interactive Thesis Defense Walkthrough"
+          >
+            <GraduationCap size={13} className="text-cyan-400" />
+            <span className="hidden sm:inline font-bold">Defense Tour</span>
+          </button>
+
           <button
             onClick={onCaptureScreenshot}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/90 border border-slate-700/60 hover:border-cyan-400/50 text-slate-300 hover:text-white transition-all shadow-xs cursor-pointer"

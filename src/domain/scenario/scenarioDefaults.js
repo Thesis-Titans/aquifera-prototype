@@ -59,6 +59,20 @@ export const SCENARIO_PRESETS = {
       wellX: 0,
       wellY: 0
     }
+  },
+  corridor: {
+    name: '5. Commercial Corridor Stress (18k m³/d)',
+    description: 'Concentrated commercial extraction inducing permanent clay compaction (Mandurriao corridor).',
+    params: {
+      pumpingRate: 18000,
+      hydraulicConductivity: 14,
+      specificStorage: 0.0001,
+      rechargeRateMmYear: 80,
+      pumpingDays: 180,
+      wellCount: 2,
+      wellX: 200,
+      wellY: -150
+    }
   }
 };
 
