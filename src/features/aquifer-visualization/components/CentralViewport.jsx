@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MapLibreMap } from '../../map';
 import Aquifer3DCanvas from './Aquifer3DCanvas';
 import { DualBenchmarkHUD } from '../../simulation';
-import { Map, Box, Compass } from 'lucide-react';
+import { Map, Box, Compass, ShieldAlert } from 'lucide-react';
 
 export default function CentralViewport({
   physicalState,
@@ -11,7 +11,12 @@ export default function CentralViewport({
   viewMode = '2D',
   setViewMode,
   onSelectDistrict,
-  onMoveWell
+  onMoveWell,
+  onOpenVerification,
+  selectedEngineId = 'analytical',
+  onSelectEngine,
+  perturbSurrogate = false,
+  onTogglePerturbation
 }) {
   const [layerVisibilities, setLayerVisibilities] = useState({
     layer1: true,
@@ -24,6 +29,7 @@ export default function CentralViewport({
 
   const [cursorCoords, setCursorCoords] = useState(null);
   const is3D = viewMode === '3D';
+  const isFallbackEngaged = physicalState?.meta?.fallbackEngaged || false;
 
   return (
     <div className="relative flex-1 h-full w-full min-h-0 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden flex flex-col shadow-2xl">
@@ -80,10 +86,10 @@ export default function CentralViewport({
 
         {/* Right: Active Spatial Projection Tag & Research Disclaimer */}
         <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
-          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-900 border border-slate-800 text-slate-400 hidden xl:inline-block">
-            Analytical Preview (Theis + Terzaghi)
+          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-900 border border-slate-800 text-slate-300 hidden xl:inline-block">
+            {physicalState?.meta?.engineName || 'Theis + Terzaghi (Analytical)'}
           </span>
-          <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_hsl(187,92%,48%)] animate-pulse" />
+          <span className={`w-2 h-2 rounded-full ${isFallbackEngaged ? 'bg-amber-400 animate-ping' : 'bg-cyan-400 animate-pulse'} shadow-[0_0_8px_hsl(187,92%,48%)]`} />
           <span className="text-[11px] text-slate-300 font-sans font-medium hidden sm:inline">
             {is3D ? 'WebGL Three.js (Stratified)' : 'EPSG:3124 / EPSG:3857'}
           </span>
@@ -92,6 +98,30 @@ export default function CentralViewport({
 
       {/* 2. Interactive Viewport Stage (2D MapLibre or 3D Three.js persistent panes) */}
       <div className="relative flex-1 min-h-0 w-full h-full overflow-hidden">
+        
+        {/* Automated NIST AI RMF 1.0 Fallback Alert Banner */}
+        {isFallbackEngaged && (
+          <div className="absolute top-3 left-4 z-25 max-w-md bg-amber-950/95 border border-amber-500/50 backdrop-blur-xl px-3.5 py-2.5 rounded-xl shadow-2xl flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <ShieldAlert size={18} className="text-amber-400 shrink-0 animate-pulse" />
+              <div className="min-w-0">
+                <span className="font-bold text-amber-200 block text-xs">NIST AI RMF 1.0 Fallback Engaged</span>
+                <span className="text-amber-300/80 text-[10px] truncate block">
+                  Surrogate residual trust metric breached tolerance (τ = 0.15). Reverted to USGS MODFLOW 6 CSUB.
+                </span>
+              </div>
+            </div>
+            {onOpenVerification && (
+              <button
+                onClick={onOpenVerification}
+                className="px-2 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-[10px] font-semibold transition-all shrink-0 cursor-pointer"
+              >
+                Inspect
+              </button>
+            )}
+          </div>
+        )}
+
         <div
           data-viewport-pane="2D"
           aria-hidden={is3D}
@@ -121,8 +151,14 @@ export default function CentralViewport({
           />
         </div>
 
-        {/* 3. Dual-Engine Benchmark Target HUD Overlay */}
-        <DualBenchmarkHUD physicalState={physicalState} />
+        {/* 3. Multi-Engine Benchmark & Residual Trust HUD Overlay */}
+        <DualBenchmarkHUD
+          physicalState={physicalState}
+          selectedEngineId={selectedEngineId}
+          onSelectEngine={onSelectEngine}
+          perturbSurrogate={perturbSurrogate}
+          onTogglePerturbation={onTogglePerturbation}
+        />
       </div>
 
     </div>

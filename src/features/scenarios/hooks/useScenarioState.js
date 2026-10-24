@@ -1,50 +1,55 @@
 import { useState, useMemo, useCallback } from 'react';
-import { computeGroundwaterState, resetHysteresisState } from '../../../physics/groundwaterPhysics.js';
+import { evaluateWithEngine, DEFAULT_ENGINE, listEngines } from '../../../engines/index.js';
 import { SCENARIO_PRESETS, DEFAULT_PARAMS } from '../../../domain/scenario/scenarioDefaults.js';
 
 export { SCENARIO_PRESETS, DEFAULT_PARAMS };
 
 /**
  * Custom hook to isolate scenario parameters, physical simulation state,
- * preset switching, live exploratory previews, and explicit comparison capture.
+ * multi-engine switching ('analytical', 'reference', 'pino'), preset handling,
+ * NIST AI RMF 1.0 residual trust metrics, and automated fallback governance.
  *
- * Interaction Contract:
- * 1. Live Exploratory Preview:
- *    Editing parameters via sliders or presets immediately recalculates `physicalState`
- *    reactively. The 2D map, 3D cutaway mesh, and key insight gauges display this live state.
- * 2. Explicit Scenario Capture:
- *    Clicking "Capture Scenario for Comparison" creates an explicit snapshot in `capturedScenario`.
- *    Analytical comparison tables and benchmark deltas consume this captured state rather than
- *    fluctuating during transient slider drags.
- * 3. Change Detection:
- *    `hasUncapturedChanges` flags when the live parameter preview has diverged from the captured scenario.
- * 4. Zero Artificial Delays:
- *    Because the deterministic physical model computes in under 4ms, scenario capture is instantaneous
- *    with zero fake loading animations.
+ * Multi-Engine Contract:
+ * - 'analytical': In-browser Theis + Terzaghi closed-form solver (~2 ms)
+ * - 'pino': Physics-Informed Neural Operator 3D surrogate probe (<250 ms target spec)
+ * - 'reference': USGS MODFLOW 6.8.1 CSUB finite-difference numerical solution (22.5 s median)
+ *
+ * Automated Fallback Governance (NIST AI RMF 1.0):
+ * If 'pino' is active and normalized residual metric eta exceeds safety threshold
+ * tau = 0.15, the pipeline automatically falls back to 'reference' and records provenance.
  */
-export function useScenarioState(initialParams = DEFAULT_PARAMS) {
+export function useScenarioState(initialParams = DEFAULT_PARAMS, initialEngineId = DEFAULT_ENGINE) {
   const [params, setParamsState] = useState(initialParams);
   const [activePreset, setActivePreset] = useState('baseline');
+  const [selectedEngineId, setSelectedEngineId] = useState(initialEngineId);
+  const [perturbSurrogate, setPerturbSurrogate] = useState(false);
 
-  // Compute live exploratory physical state via Darcy/Theis and 1D Terzaghi skeletal compaction
-  // Pure, side-effect free calculation with zero module-level buffer leaks
+  // Compute live exploratory physical state through the selected engine with residual gating
   const physicalState = useMemo(() => {
-    return computeGroundwaterState(params);
-  }, [params]);
+    return evaluateWithEngine(selectedEngineId, params, {
+      perturbForTest: perturbSurrogate
+    });
+  }, [selectedEngineId, params, perturbSurrogate]);
 
   // Captured scenario for formal comparative analysis
-  const [capturedScenario, setCapturedScenario] = useState(() => ({
-    params: { ...initialParams },
-    physicalState: computeGroundwaterState(initialParams),
-    preset: 'baseline',
-    capturedAt: 'Initial Baseline'
-  }));
+  const [capturedScenario, setCapturedScenario] = useState(() => {
+    const initialState = evaluateWithEngine(initialEngineId, initialParams);
+    return {
+      params: { ...initialParams },
+      physicalState: initialState,
+      preset: 'baseline',
+      capturedAt: 'Initial Baseline',
+      engineId: initialEngineId
+    };
+  });
 
   // Detect whether live parameters have changed since last capture
   const hasUncapturedChanges = useMemo(() => {
     const capturedParams = capturedScenario.params;
-    return Object.keys(params).some(k => params[k] !== capturedParams[k]);
-  }, [params, capturedScenario.params]);
+    const paramsChanged = Object.keys(params).some(k => params[k] !== capturedParams[k]);
+    const engineChanged = selectedEngineId !== capturedScenario.engineId;
+    return paramsChanged || engineChanged;
+  }, [params, selectedEngineId, capturedScenario.params, capturedScenario.engineId]);
 
   // Update a single parameter and mark preset as custom
   const setParam = useCallback((key, value) => {
@@ -82,14 +87,21 @@ export function useScenarioState(initialParams = DEFAULT_PARAMS) {
       params: { ...params },
       physicalState,
       preset: activePreset,
-      capturedAt: timeLabel
+      capturedAt: timeLabel,
+      engineId: selectedEngineId
     });
-  }, [params, physicalState, activePreset]);
+  }, [params, physicalState, activePreset, selectedEngineId]);
 
   // Reset to default baseline state
   const resetToBaseline = useCallback(() => {
     setActivePreset('baseline');
     setParamsState(DEFAULT_PARAMS);
+    setPerturbSurrogate(false);
+  }, []);
+
+  // Toggle surrogate stress perturbation (for evaluating NIST AI RMF fallback)
+  const togglePerturbation = useCallback(() => {
+    setPerturbSurrogate(prev => !prev);
   }, []);
 
   return {
@@ -106,6 +118,16 @@ export function useScenarioState(initialParams = DEFAULT_PARAMS) {
     activePreset,
     setActivePreset,
     applyPreset,
-    resetToBaseline
+    resetToBaseline,
+    // Multi-engine & NIST AI RMF 1.0 Fallback API
+    selectedEngineId,
+    setSelectedEngineId,
+    perturbSurrogate,
+    setPerturbSurrogate,
+    togglePerturbation,
+    availableEngines: listEngines(),
+    fallbackEngaged: physicalState?.meta?.fallbackEngaged || false,
+    residual: physicalState?.residual,
+    gate: physicalState?.gate
   };
 }

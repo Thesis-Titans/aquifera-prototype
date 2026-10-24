@@ -18,7 +18,11 @@ export default function App() {
     captureScenarioForComparison,
     activePreset,
     applyPreset,
-    resetToBaseline
+    resetToBaseline,
+    selectedEngineId,
+    setSelectedEngineId,
+    perturbSurrogate,
+    togglePerturbation
   } = useScenarioState();
 
   // UI Navigation & View State
@@ -120,6 +124,10 @@ export default function App() {
           setViewMode={setViewMode}
           onMoveWell={(x, y) => setParams(prev => ({ ...prev, wellX: Math.round(x), wellY: Math.round(y) }))}
           onOpenVerification={() => setIsVerificationOpen(true)}
+          selectedEngineId={selectedEngineId}
+          onSelectEngine={setSelectedEngineId}
+          perturbSurrogate={perturbSurrogate}
+          onTogglePerturbation={togglePerturbation}
         />
 
       </main>
@@ -161,6 +169,8 @@ export default function App() {
         physicalState={physicalState}
         params={params}
         capturedScenario={capturedScenario}
+        selectedEngineId={selectedEngineId}
+        onSelectEngine={setSelectedEngineId}
       />
 
       <GuideModal
