@@ -1,66 +1,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import { computeGroundwaterState, resetHysteresisState } from '../../../physics/groundwaterPhysics.js';
+import { SCENARIO_PRESETS, DEFAULT_PARAMS } from '../../../domain/scenario/scenarioDefaults.js';
 
-export const SCENARIO_PRESETS = {
-  baseline: {
-    name: '1. Baseline (12k m³/d)',
-    description: 'Current estimated municipal extraction with normal rainfall recharge.',
-    params: {
-      pumpingRate: 12000,
-      hydraulicConductivity: 15,
-      specificStorage: 0.0001,
-      rechargeRateMmYear: 200,
-      pumpingDays: 180,
-      wellCount: 1,
-      wellX: 0,
-      wellY: 0
-    }
-  },
-  overdraft: {
-    name: '2. Overdraft (26k m³/d)',
-    description: 'Heavy industrial/commercial extraction exceeding safe sustainable yield.',
-    params: {
-      pumpingRate: 26000,
-      hydraulicConductivity: 12,
-      specificStorage: 0.0001,
-      rechargeRateMmYear: 100,
-      pumpingDays: 180,
-      wellCount: 1,
-      wellX: 0,
-      wellY: 0
-    }
-  },
-  mar: {
-    name: '3. Managed Recharge',
-    description: 'Managed Aquifer Recharge (MAR) intervention with supplemental surface water injection.',
-    params: {
-      pumpingRate: 15000,
-      hydraulicConductivity: 18,
-      specificStorage: 0.00012,
-      rechargeRateMmYear: 320,
-      pumpingDays: 180,
-      wellCount: 1,
-      wellX: 0,
-      wellY: 0
-    }
-  },
-  drought: {
-    name: '4. Drought Shock',
-    description: 'Severe meteorological drought (El Niño) with reduced recharge and emergency pumping.',
-    params: {
-      pumpingRate: 32000,
-      hydraulicConductivity: 10,
-      specificStorage: 0.00008,
-      rechargeRateMmYear: 30,
-      pumpingDays: 180,
-      wellCount: 1,
-      wellX: 0,
-      wellY: 0
-    }
-  }
-};
-
-export const DEFAULT_PARAMS = SCENARIO_PRESETS.baseline.params;
+export { SCENARIO_PRESETS, DEFAULT_PARAMS };
 
 /**
  * Custom hook to isolate scenario parameters, physical simulation state,
@@ -126,10 +68,10 @@ export function useScenarioState(initialParams = DEFAULT_PARAMS) {
     const targetPreset = SCENARIO_PRESETS[presetKey];
     if (targetPreset) {
       setActivePreset(presetKey);
-      setParamsState(prev => ({
-        ...prev,
+      setParamsState({
+        ...DEFAULT_PARAMS,
         ...targetPreset.params
-      }));
+      });
     }
   }, []);
 

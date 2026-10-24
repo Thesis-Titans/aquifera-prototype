@@ -76,7 +76,7 @@ export default function TopNavigation({
         <button
           onClick={onOpenGuide}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 border border-white/10 hover:border-cyan-400/50 text-slate-200 hover:text-white transition-all shadow-xs cursor-pointer"
-          title="Open Capstone Research Guide & Architecture Reference"
+          title="Open Research Guide & Architecture Reference"
         >
           <HelpCircle size={14} className="text-cyan-400" />
           <span className="hidden md:inline">Guide</span>

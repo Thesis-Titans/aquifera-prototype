@@ -16,7 +16,7 @@
 
 Standard finite-difference numerical solvers (such as **USGS MODFLOW 6 CSUB**) took 4.5 to 96 s per run (median 22.5 s) on the study's synthetic 5-layer test grid in the feasibility pilot; comparing many scenarios multiplies that cost and slows interactive scenario exploration during metropolitan urban planning and water allocation meetings. 
 
-The Aquifera capstone research proposes an accessible computing intervention: coupling an offline-trained **Physics-Informed Neural Operator (PINO)** surrogate engine with a modern web dashboard. Ground-truthed during consultations with the **Iloilo City Planning and Development Office (CPDO)**, the system targets sub-second ($< 250\text{ ms}$) 3D hydraulic head and land subsidence simulations on commodity workstation hardware (e.g., NVIDIA RTX 4050 6 GB GPU) for **live meeting-room decision support**, aiding the upcoming **CLUP 2021–2029** update while enabling on-demand numerical verification against benchmark USGS MODFLOW 6 CSUB physics.
+The Aquifera BSIT thesis research proposes an accessible computing intervention: coupling an offline-trained **Physics-Informed Neural Operator (PINO)** surrogate engine with a modern web dashboard. Anchored in statutory local urban planning requirements (PD 1067, CLUP 2021–2029), the system targets sub-second ($< 250\text{ ms}$) 3D hydraulic head and land subsidence simulations on commodity workstation hardware (e.g., NVIDIA RTX 4050 6 GB GPU) for **live meeting-room decision support**, while enabling on-demand numerical verification against benchmark USGS MODFLOW 6 CSUB physics.
 
 > [!NOTE]
 > **Prototype Status & Academic Integrity Statement:**  
@@ -36,7 +36,7 @@ The Aquifera capstone research proposes an accessible computing intervention: co
 | **Dual-Engine Telemetry HUD** | UI Prototype | **Illustrative Demo Telemetry** | Displays target engineering telemetry ($< 250\text{ ms}$, speedup, $R^2$, $L_2$). Clearly identified as demonstration placeholders, NOT measured results from a live model. |
 | **Verification Modal Cross-Checks** | UI Prototype | **Illustrative Demo Interface** | Interactive dialog demonstrating the proposed benchmark comparison interface and cross-section charts. |
 | **API Gateway & Orchestration** | Backend (Tier 2) | **Proposed Specification** | FastAPI async service, Redis caching, Celery queue. Documented in `docs/ARCHITECTURE.md` as target architecture. |
-| **PINO Surrogate Inference Engine**| Backend (Tier 3) | **Proposed Research Goal** | Pre-trained PyTorch 3D Physics-Informed Neural Operator to be trained and benchmarked during capstone methodology. |
+| **PINO Surrogate Inference Engine**| Backend (Tier 3) | **Proposed Research Goal** | Pre-trained PyTorch 3D Physics-Informed Neural Operator to be trained and benchmarked during thesis methodology. |
 | **MODFLOW 6 Verification Pipeline** | Numerical (Tier 4) | **Proposed Benchmark Pipeline** | Automated FloPy / USGS MODFLOW 6 CSUB verification pipeline to be deployed for empirical cross-validation. |
 
 ---
@@ -157,4 +157,4 @@ npm run preview
 ---
 
 ## 📄 License
-This project is developed for academic capstone research under the College of ICT.
+This project is developed for academic BSIT thesis research under the College of ICT.

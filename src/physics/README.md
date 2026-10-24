@@ -11,10 +11,10 @@
 
 The computational logic contained in `groundwaterPhysics.js` provides **instantaneous, deterministic client-side hydrogeological feedback** directly inside the web browser. 
 
-In accordance with CICT research ethics and Section 2 (P0: Scientific Claim Integrity) of the repository review:
+To maintain strict research integrity and accurate claim discipline:
 * This module is an **illustrative analytical surrogate**, not an offline-trained high-dimensional neural operator or a USGS MODFLOW 6 finite-difference simulator.
-* Outputs are deterministic demonstration values designed to exhibit realistic physical sensitivity (Darcy flow, radial Theis cone of depression, and Terzaghi plastic compaction) during interactive capstone defense demonstrations.
-* In Phase 2, this module serves as Tier 1 in the 4-tier validation hierarchy, while Tier 3 (PINO surrogate inference) and Tier 4 (MODFLOW 6 FloPy cross-checks) will execute via a dedicated computing pipeline.
+* Outputs are deterministic demonstration values designed to exhibit realistic physical sensitivity (Darcy flow, radial Theis cone of depression, and Terzaghi plastic compaction) during interactive BSIT thesis defense demonstrations.
+* In the platform architecture, this module serves as client-side preview in Tier 1, while Tier 3 (PINO surrogate inference) and Tier 4 (MODFLOW 6 FloPy verification) execute via containerized backend services.
 
 ---
 

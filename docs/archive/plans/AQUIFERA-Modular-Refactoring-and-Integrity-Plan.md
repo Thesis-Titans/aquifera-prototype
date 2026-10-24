@@ -1,5 +1,7 @@
 # AQUIFERA: Modular Refactoring, Architecture Boundaries, and Scientific Integrity Plan
 
+> **Status:** SUPERSEDED by [`../../plans/SPRINT-PLAN.md`](../../plans/SPRINT-PLAN.md) (October 24, 2026). Retained for historical design reference only.
+
 **West Visayas State University | College of Information and Communications Technology (CICT)**  
 *Bachelor of Science in Information Technology (BSIT) | Course: CC 208 (Methods of Research in Computing)*  
 *Academic Year 2026-2027 | Research Group 2*  

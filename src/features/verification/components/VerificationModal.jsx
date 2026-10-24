@@ -85,7 +85,7 @@ export default function VerificationModal({ isOpen, onClose, physicalState, para
                 Research Integrity Notice: Proposed Verification Workflow (Solver Not Connected)
               </span>
               <span className="text-slate-300 leading-relaxed font-normal">
-                This modal presents the planned numerical verification architecture for our capstone research defense.
+                This modal presents the planned numerical verification architecture for our BSIT thesis research defense.
                 No live USGS MODFLOW 6 binary, headless worker, or automated FloPy solver is connected to this client-side prototype.
                 The curves, metrics, and workflow stages below represent proposed verification protocols rather than measured experimental findings.
               </span>

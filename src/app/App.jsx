@@ -146,7 +146,7 @@ export default function App() {
           <span className="font-mono text-cyan-400">MapLibre + Three.js Engine</span>
         </div>
         <div className="text-[11px] text-slate-400 font-normal">
-          Note: This is a research demonstration prototype. Outputs are synthetic demonstration data for capstone defense.
+          Note: This is a research demonstration prototype. Outputs are synthetic demonstration data for BSIT thesis defense.
         </div>
       </footer>
 

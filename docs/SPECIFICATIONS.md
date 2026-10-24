@@ -11,9 +11,9 @@
 
 This document specifies the software requirements, behavioral constraints, and verification metrics for the **Aquifera** web simulation platform and automated data pipeline. 
 
-Under the CICT Capstone Governance Framework (CMO No. 25 s. 2015, Category 4: Application and Infrastructure Development), the project engineers a containerized, browser-accessible computing intervention that bridges the gap between complex geomechanical physics and accessible scenario exploration. 
+As a BSIT thesis project under Category 4 (Pure Scientific Research and Simulation in IT, Layer 3: Application and Infrastructure), the study engineers a containerized, browser-accessible computing platform that bridges the gap between complex geomechanical simulation and accessible scenario exploration.
 
-**Primary Operational Target:** Ground-truthed during stakeholder consultations with the **Iloilo City Planning and Development Office (CPDO)**, Aquifera provides a sub-second ($<250\text{ ms}$) interactive decision-support tool tailored for **live meeting-room planning sessions** by the City Planning Coordinator and Zoning Board. This addresses the regulatory void wherein commercial groundwater extraction is currently unmonitored (*"hapaw"*) and provides predictive simulation evidence for the upcoming **Comprehensive Land Use Plan (CLUP 2021–2029)** and Zoning Ordinance update.
+**Primary Operational Target:** Informed by municipal planning frameworks (Iloilo City CLUP 2021–2029, P.D. 1067), Aquifera provides a sub-second ($<250\text{ ms}$) interactive decision-support tool tailored for scenario screening by municipal land-use planners and zoning administrators to evaluate localized groundwater extraction and compaction hazards.
 
 ---
 
@@ -22,9 +22,9 @@ Under the CICT Capstone Governance Framework (CMO No. 25 s. 2015, Category 4: Ap
 To preserve scientific rigor and prevent misleading user expectations, the platform enforces the following integrity standards:
 
 1. **Persistent Demonstration Notice:** The client UI displays an unobscured notification stating:  
-   `RESEARCH PROTOTYPE: DEMONSTRATION WORKSPACE. LIVE NUMERICAL SIMULATIONS RUN VIA BACKGROUND VERIFICATION PIPELINE.`
+   `RESEARCH PROTOTYPE: Outputs are synthetic demonstration data for BSIT thesis defense.`
 2. **Clear Data Provenance:** Every metric, map layer, and cross-section chart explicitly displays its data provenance category: `Authentic Administrative Boundary (PSA/NAMRIA)`, `Synthetic Demonstration Physics`, `Offline Neural Surrogate`, or `Headless MODFLOW 6 Benchmark`.
-3. **Transparent Benchmark Labels:** Numerical solver comparisons display verifiable timestamp logs and hardware resource consumption. Mock curves are never labeled as measured ground-truth data.
+3. **Transparent Benchmark Labels:** Numerical solver comparisons display verifiable timestamp logs and hardware resource consumption. Mock curves are never labeled as measured field observations or reference numerical solutions.
 4. **Physical Law Enforcement:** Output fields are bounded by governing physical equations (Darcy fluid conservation and Terzaghi 1D consolidation), preventing synthetic hallucinations such as unphysical groundwater rebound during extraction.
 
 ---

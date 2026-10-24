@@ -1,5 +1,7 @@
 # AQUIFERA UI/UX, HCI, and Visual Consistency Audit
 
+> **Status:** SUPERSEDED by [`../../plans/SPRINT-PLAN.md`](../../plans/SPRINT-PLAN.md) (October 24, 2026). Retained for historical design reference only.
+
 **Repository reviewed:** `Thesis-Titans/aquifera-prototype` (default branch `main`)  
 **Review type:** Read-only source audit; no repository files, branches, issues, or pull requests were changed.  
 **Decision:** **REFRAME the styling approach and standardize the existing interface before adding more visual features.** Keep React, Vite, Tailwind CSS v4, Lucide React, and Three.js. Do not redesign from scratch or add a new component library by default.

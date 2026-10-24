@@ -1,5 +1,5 @@
 # AQUIFERA Scientific Validation and Evaluation Framework
-## Multi-Tier Benchmark Architecture, Geotechnical Hysteresis, and Capstone Defense Protocol
+## Multi-Tier Benchmark Architecture, Geotechnical Hysteresis, and BSIT Thesis Defense Protocol
 
 **West Visayas State University | College of Information and Communications Technology (CICT)**  
 *Bachelor of Science in Information Technology (BSIT) | Course: CC 208 (Methods of Research in Computing)*  
@@ -155,14 +155,14 @@ The prototype features a persistent real-time monitoring HUD (`src/components/Du
 
 ---
 
-### 4. Capstone Defense Protocol: Questions and Answers
+### 4. Thesis Defense Protocol: Questions and Answers
 
 During oral defense, examiners frequently probe the boundary between software engineering, artificial intelligence, and physical science. The following defense positions must be adopted:
 
 #### Question 1: "Why does your prototype run instantly in the browser without an expensive supercomputer?"
 > **Examiner Intent**: Checking whether the student understands client-side computation vs. offline neural surrogate acceleration.  
 > **Defense Response**:  
-> "The current prototype achieves instantaneous sub-second response by executing the closed-form Theis non-equilibrium equation and Terzaghi 1D consolidation equations directly inside the browser's JavaScript V8 engine. For multi-well 3D modeling, traditional numerical solvers like MODFLOW 6 require 15 to 45 minutes because they invert massive sparse matrices over hundreds of thousands of grid cells for every time step. Our full architecture replaces that runtime bottleneck with an offline-trained Physics-Informed Neural Operator (PINO). Once the PINO model is trained, forward inference is simply a sequence of tensor matrix multiplications that evaluate in under 100 milliseconds on a standard 6 GB workstation GPU."
+> "The current prototype achieves instantaneous sub-second response by executing the closed-form Theis non-equilibrium equation and Terzaghi 1D consolidation equations directly inside the browser's JavaScript V8 engine. For multi-well 3D modeling, our feasibility pilot showed that a single forward run of USGS MODFLOW 6 CSUB requires an average of 22.5 seconds (4.5 to 96 seconds across 20 sampled parameter scenarios on a 64×64×5 grid). Running a 500-scenario planning sweep takes over 3.1 hours of batch compute. Our full architecture replaces that iterative bottleneck with an offline-trained Physics-Informed Neural Operator (PINO). Once the PINO model is trained, forward inference evaluates in 38.6 milliseconds on our NVIDIA RTX 4050 testbed GPU, easily satisfying the proposed sub-250 ms acceptance target."
 
 #### Question 2: "Is your system real science or just pretty computer animations?"
 > **Examiner Intent**: Probing physical validity, mathematical rigor, and anti-hallucination safeguards.  
@@ -172,20 +172,20 @@ During oral defense, examiners frequently probe the boundary between software en
 #### Question 3: "What happens if the neural operator produces a hallucinated prediction?"
 > **Examiner Intent**: Evaluating safety, failure modes, and verification mechanisms.  
 > **Defense Response**:  
-> "Our design includes a built-in automated verification fallback. In the DualBenchmark HUD and Verification Modal, the system monitors two physical conservation constraints: the volumetric water balance residual $\mathcal{L}_{\text{mass}}$ and the deviation from analytical bounds. If a predicted scenario exceeds the 5% error threshold, the system flags the result as unverified, highlights the anomalous cells in the GIS viewport, and prompts the user to launch a background MODFLOW 6 numerical run to re-anchor the prediction."
+> "Our design incorporates a built-in automated verification fallback adhering to NIST AI RMF 1.0 safe-fallback principles. In the DualBenchmark HUD and Verification Modal, the system monitors physical conservation constraints: the volumetric fluid mass balance residual and Terzaghi effective stress continuity. If an exploratory scenario exhibits elevated residuals ($\eta > \tau$), the platform flags the result as unverified, alerts the user, and automatically queues background numerical verification using headless USGS MODFLOW 6 CSUB."
 
-#### Question 4: "Why is this a BSIT capstone rather than a Civil or Geological Engineering thesis?"
-> **Examiner Intent**: Validating BSIT program alignment under CICT guidelines.  
+#### Question 4: "Why is this a BSIT thesis rather than a Civil or Geological Engineering study?"
+> **Examiner Intent**: Validating BSIT program alignment and lane discipline.  
 > **Defense Response**:  
-> "A civil or geological engineer's contribution is extracting physical borehole soil cores or designing physical recharge trenches. Our contribution is strictly in Applied Computing and Information Technology, classified in accordance with CICT Policies and Guidelines under **BSIT Category 4 (Pure Scientific Research and Simulation in IT)** and positioned at **Layer 3 (Application and Infrastructure Layer)** of the CICT computing framework:  
-> 1. We solve an acute computational systems bottleneck by engineering an automated simulation pipeline that couples offline neural operator surrogates with real-time web delivery (<250 ms latency).  
-> 2. We design and implement a modern, accessible web platform integrating MapLibre GL geospatial rendering of official PSA/NAMRIA administrative boundaries and Three.js 3D WebGL subsurface visualization.  
-> 3. We build the data integration pipeline connecting municipal well databases, satellite InSAR raster products, and numerical modeling engines into an actionable decision-support platform for municipal water governance."
+> "Civil and geological engineers construct physical subsurface strata models and design physical recharge infrastructure. Our contribution is strictly in Applied Computing and Information Technology, situated within **Layer 3 (Application and Infrastructure)**:  
+> 1. We solve an acute computational systems bottleneck by engineering a containerized simulation platform that pairs offline neural operator surrogates with sub-250 ms interactive web delivery.  
+> 2. We design and implement a modern web application integrating MapLibre GL geospatial rendering of official PSA administrative boundaries and Three.js 3D WebGL subsurface visualization.  
+> 3. We engineer the automated verification pipeline and spatial translation service (WGS84 GeoJSON and PRS92 Zone 4 GeoPackage) that turns complex numerical physics into an accessible decision-support tool for municipal spatial planners."
 
-#### Question 5: "How does AQUIFERA reconcile empirical academic research (e.g., Dr. Siringan / Sulapas et al. 2024 / Dr. Cruz) with municipal planning reality?"
+#### Question 5: "How does AQUIFERA reconcile published empirical research (Sulapas et al., 2024) with municipal planning reality?"
 > **Examiner Intent**: Verifying grounding in existing Philippine scientific literature versus municipal stakeholder needs.  
 > **Defense Response**:  
-> "During our empirical stakeholder validation with the City Planning and Development Office (CPDO), City Planning Coordinator EnP. Ronald M. Cartagena highlighted regional research—specifically studies associated with the UP Resilience Institute and prominent geoscientists including Dr. Fernando P. Siringan (UP MSI) and Dr. Rex Victor O. Cruz (UPLB). Published peer-reviewed research by Sulapas, Siringan, et al. (2024) established that Iloilo City experiences severe localized ground settlement of 8.8 to 9.0 mm/year, concentrated in coastal deltaic barangays with unpermitted deep-well extraction. However, this academic knowledge remains siloed in academic journals and inaccessible to municipal planners. AQUIFERA bridges this research-to-practice gap by ingesting these empirical subsidence baselines as ground-truth calibration thresholds for the surrogate model and outputting actionable PRS92 Zone 4 (EPSG:3124) GeoJSON layers directly usable in CPDO's Comprehensive Land Use Plan (CLUP) and Zoning Ordinance revisions."
+> "Published peer-reviewed research by Sulapas et al. (2024) established that Metro Iloilo experiences localized ground settlement of up to 9.0 mm/year, concentrated in coastal deltaic areas from southeastern Mandurriao to Molo and La Paz. However, these geodetic findings remain locked in scholarly literature and inaccessible to municipal zoning officers. AQUIFERA bridges this research-to-practice gap by translating forward-simulated compaction models into actionable PRS92 Zone 4 (EPSG:3124) GeoPackage layers directly usable in QGIS alongside Comprehensive Land Use Plan (CLUP 2021–2029) zoning maps."
 
 #### Question 6: "How do you ensure the 3D subsurface cutaway is computationally feasible on standard student and municipal hardware without lagging?"
 > **Examiner Intent**: Probing graphics pipeline optimization, GPU memory consumption, and browser responsiveness.  

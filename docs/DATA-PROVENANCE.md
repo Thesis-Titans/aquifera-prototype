@@ -11,12 +11,12 @@
 
 This document formalizes the provenance, coordinate reference frames, mathematical discretization, and physical assumptions underlying all cartographic, administrative, and geotechnical layers within the **AQUIFERA Interactive Prototype**. 
 
-In strict adherence to CICT Research Policy (`CICT-RESEARCH-THESIS-AND-CAPSTONE-POLICIES-AND-GUIDELINES.md`) and the project Governing Rules (`AGENTS.md`), research claims must be transparently verified. This document delineates:
+To establish a transparent and defensible empirical baseline, this document delineates:
 
 1. **Authentic Administrative Cartography (Ingested)**: Official Philippine Statistics Authority (PSA) and NAMRIA administrative boundaries covering **all 180 barangays of Iloilo City** (`iloilo_city_barangays.geojson`) and the overall city boundary (`iloilo_city_boundary.geojson`), projected in WGS84 (EPSG:4326) and aligned with PRS92.
 2. **Official Municipal Planning Context (In Progress)**: Four foundational planning references received from the Iloilo City Planning and Development Office (CPDO: `CDP 2023–2028`, `SEP 2020`, `CLUP 2021–2029 Vol. 1`, and `Sectoral Studies Vol. 3`), coupled with a formal data request for the **CLUP Official Zoning Map Shapefile (`.shp`)**.
 3. **Deterministic Synthetic Demonstration Data**: Discretized grid cells and drawdown cones generated in the browser via client-side Darcy-Theis analytical physics and Terzaghi skeletal compaction equations.
-4. **Empirical Ground-Truth Calibration Baseline**: Published spaceborne InSAR measurements from **Sulapas, Lagmay, et al. (2024)** ([Ref 1]) documenting measured settlement rates of **8.8 to 9.0 mm/year** concentrated along the Mandurriao-Molo commercial growth corridor.
+4. **Empirical InSAR Reference Baseline**: Published spaceborne InSAR measurements from **Sulapas et al. (2024)** documenting measured settlement rates of up to **9.0 mm/year** concentrated along the Mandurriao-Molo commercial growth corridor.
 
 ---
 
@@ -116,7 +116,7 @@ The 3D interactive subsurface model (`src/features/aquifer-visualization/compone
 
 ### 5. Roadmap to Official Empirical Phase 2 Data Integration
 
-The interactive prototype successfully demonstrates user experience, sub-second visualization, and dual-benchmark telemetry. During Capstone Phase 2 (Implementation and Validation), synthetic parameters will be substituted with calibrated field data:
+The interactive prototype successfully demonstrates user experience, sub-second visualization, and dual-benchmark telemetry. In subsequent thesis phases (Implementation and Validation), synthetic parameters will be substituted with calibrated field data:
 
 ```
 [Phase 1 Prototype: Calibrated Synthetic Grid]
@@ -145,7 +145,7 @@ The interactive prototype successfully demonstrates user experience, sub-second 
 | **Commercial Well Permits & Inventory** | Iloilo City Environment & Natural Resources Office (City-ENRO) / NWRB | Local commercial deep well registry, extraction permits, inspection dockets | Defines active commercial pumping clusters (e.g., commercial laundries, hotels) in Mandurriao and Molo |
 | **Metropolitan Production Wells** | Metro Pacific Iloilo Water (MPIW) & Metro Iloilo Water District (MIWD) | Production well telemetry, daily extraction rates ($Q$), static/dynamic water levels | Provides multi-well historical pumping stress time series |
 | **Borehole Lithology & Stratigraphy** | DENR Mines and Geosciences Bureau (MGB VI) & DPWH Region VI | Soil exploration bore logs, SPT $N$-values, stratigraphic profiles | Calibrates layer thickness ($b_0$), hydraulic conductivity ($K$), and compressibility ($C_c, C_r$) |
-| **Empirical Ground Subsidence Baseline** | UP NOAH / UP Resilience Institute (Sulapas et al., 2024 [Ref 1]) | Multi-temporal Sentinel-1 InSAR / GNSS deformation rates (2014–2020) | Serves as published empirical ground truth documenting **8.8 to 9.0 mm/year** subsidence in Mandurriao and Molo |
+| **Empirical Ground Subsidence Baseline** | Sentinel-1 InSAR (Sulapas et al., 2024) | Multi-temporal Sentinel-1 InSAR / GNSS deformation rates (2014–2020) | Serves as published empirical reference rate documenting up to **9.0 mm/year** subsidence in Mandurriao and Molo |
 | **Meteorological Recharge** | DOST-PAGASA (Iloilo Synoptic Station) | Daily precipitation and pan evaporation records | Constrains seasonal aquifer recharge ($R$) across wet and dry monsoon cycles |
 
 ---
@@ -155,10 +155,10 @@ The interactive prototype successfully demonstrates user experience, sub-second 
 When evaluating data provenance during proposal defense, researchers should convey the following key answers:
 
 1. **"Are the subsidence numbers displayed on the map measured in the field today?"**  
-   *Response*: "No. As clearly stated in our system disclaimer and data provenance specification, the current prototype displays deterministic synthetic demonstration data. The spatial patterns are calculated using real physical laws—Darcy's Law, Theis unsteady-state radial drawdown, and Terzaghi skeletal compaction—applied over the official geography of Iloilo City. However, the magnitude is calibrated against published satellite InSAR measurements from **Sulapas, Lagmay et al. (2024)**, which documented an empirical settlement rate of **8.8 to 9.0 mm/year** in Mandurriao and Molo."
+   *Response*: "No. As clearly stated in our system disclaimer and data provenance specification, the current prototype displays deterministic synthetic demonstration data. The spatial patterns are calculated using real physical laws—Darcy's Law, Theis unsteady-state radial drawdown, and Terzaghi skeletal compaction—applied over the official geography of Iloilo City. The magnitude is informed by published satellite InSAR measurements from **Sulapas et al. (2024)**, which documented an empirical settlement rate of up to **9.0 mm/year** in Mandurriao and Molo."
 
 2. **"Does the prototype use real Iloilo City boundaries or generic mockups?"**  
-   *Response*: "The prototype has already integrated authentic **PSA and NAMRIA administrative boundaries covering all 180 official barangays of Iloilo City** (`iloilo_city_barangays.geojson`). Furthermore, our team has formally initiated data turnover with the Iloilo City Planning and Development Office (CPDO) to obtain the official CLUP 2021–2029 Zoning Map shapefile."
+   *Response*: "The prototype integrates authentic **PSA and NAMRIA administrative boundaries covering all 180 official barangays of Iloilo City** (`iloilo_city_barangays.geojson`). Furthermore, our team has initiated formal coordination with the Iloilo City Planning and Development Office (CPDO) to obtain the official CLUP 2021–2029 Zoning Map shapefile."
 
 3. **"Why use synthetic simulation data for the prototype instead of waiting for full production calibration?"**  
-   *Response*: "Raw multi-agency telemetry harmonization and comprehensive borehole inversion require formal data-sharing agreements and extensive preprocessing scheduled for Capstone 1 and 2. In accordance with CICT capstone policy and Design Science Research principles, the CC 208 prototype validates the software architecture, the sub-250 ms user experience, and the real-time WebGL rendering pipeline early to ensure technical viability before ingesting massive agency datasets."
+   *Response*: "Multi-agency telemetry harmonization and comprehensive borehole inversion require formal data-sharing agreements and extensive preprocessing scheduled for subsequent thesis phases. Prototype development validates the software architecture, the sub-250 ms user experience, and the real-time WebGL rendering pipeline early to ensure technical viability before ingesting massive agency datasets."

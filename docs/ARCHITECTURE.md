@@ -38,7 +38,7 @@ Aquifera implements a **4-Tier Decoupled Architecture** designed to balance real
 
 #### 1.1 Implementation Status and Research Delineation
 
-To maintain absolute academic and scientific integrity (Form `CICT-UGR-F001` and CICT Capstone Policy):
+To maintain absolute academic and scientific integrity (Form `CICT-UGR-F001`):
 
 * **Tier 1 (Client Presentation)** represents the **implemented working prototype** contained within this repository, demonstrating interactive 3D WebGL geotechnical cutaways, 2D MapLibre GIS mapping, analytical Darcy-Theis drawdown, and scenario controls.
 * **Tiers 2, 3, and 4 (API Gateway, PINO Inference Engine, and FloPy Verification Pipeline)** represent the **proposed system architecture and research target specification**. These tiers define the engineering roadmap to be executed during model training, surrogate benchmarking, and numerical validation phases.

@@ -9,7 +9,7 @@
 
 ### 1. Design Philosophy: The Calm Scientific Workstation
 
-The **AQUIFERA** user interface is engineered as an analytical decision-support and deliberation tool for municipal planners (e.g., City Planning and Development Office / CPDO), environmental officers (City-ENRO), and hydrogeologists. Grounded in stakeholder validation with City Planning Coordinator EnP. Ronald M. Cartagena, the interface is tailored for high-stakes municipal deliberations—such as evaluating commercial deep-well variance applications or amending the Comprehensive Land Use Plan (CLUP) and Zoning Ordinance. The design philosophy adheres to four foundational tenets:
+The **AQUIFERA** user interface is engineered as an analytical decision-support and deliberation tool for municipal planners (e.g., City Planning and Development Office / CPDO), environmental officers (City-ENRO), and hydrogeologists. Grounded in municipal planning frameworks (CLUP 2021–2029, P.D. 1067), the interface is tailored for high-stakes municipal deliberations—such as evaluating commercial deep-well variance applications or amending the Comprehensive Land Use Plan (CLUP) and Zoning Ordinance. The design philosophy adheres to four foundational tenets:
 
 1. **Information Hierarchy Over Visual Decoration**: The central spatial viewports (MapLibre 2D GIS and Three.js 3D Subsurface) are the primary workspace. Secondary sidebars and analytics cards provide context without visual noise, excessive glows, or distracting animations.
 2. **Deterministic Data Provenance**: Every metric, chart, and contour visibly communicates its physical variable, units of measurement, scenario year, and empirical status (e.g., deterministic synthetic demonstration vs. calibrated reference).

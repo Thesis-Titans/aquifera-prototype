@@ -1,5 +1,7 @@
 # AQUIFERA Interactive Visualization Prototype: Revised Implementation Plan
 
+> **Status:** SUPERSEDED by [`../../plans/SPRINT-PLAN.md`](../../plans/SPRINT-PLAN.md) (October 24, 2026). Retained for historical design reference only.
+
 Repository: https://github.com/Thesis-Titans/aquifera-prototype  
 Supersedes: `AQUIFERA-Prototype-Baseline-Audit-and-Revised-Plan.md`  
 Decision: **Reframe and improve the existing implementation; do not rebuild from scratch.**  
