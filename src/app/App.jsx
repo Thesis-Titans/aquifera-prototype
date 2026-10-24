@@ -11,6 +11,7 @@ export default function App() {
   const {
     params,
     setParams,
+    setParam,
     physicalState,
     capturedScenario,
     hasUncapturedChanges,
@@ -25,12 +26,8 @@ export default function App() {
   const [viewMode, setViewMode] = useState('2D'); // '2D' (MapLibre) or '3D' (Three.js)
 
   // Visualization Controls State
-  const [visualizationConfig, setVisualizationConfig] = useState({
-    dataType: 'subsidence',
-    timeSlice: '2050',
-    opacity: 75,
-    colorScale: 'Standard'
-  });
+  const DEFAULT_VIZ = { dataType: 'subsidence', opacity: 75, colorScale: 'standard' };
+  const [visualizationConfig, setVisualizationConfig] = useState(DEFAULT_VIZ);
 
   // Modals
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
@@ -39,12 +36,7 @@ export default function App() {
   // Reset to default baseline
   const handleResetParams = () => {
     resetToBaseline();
-    setVisualizationConfig({
-      dataType: 'subsidence',
-      timeSlice: '2050',
-      opacity: 75,
-      colorScale: 'Standard'
-    });
+    setVisualizationConfig(DEFAULT_VIZ);
   };
 
   // Screenshot capture for defense slides
@@ -123,6 +115,7 @@ export default function App() {
           visualizationConfig={visualizationConfig}
           viewMode={viewMode}
           setViewMode={setViewMode}
+          onMoveWell={(x, y) => setParam('wellX', Math.round(x)) || setParam('wellY', Math.round(y))}
         />
 
       </main>
@@ -135,7 +128,8 @@ export default function App() {
           capturedScenario={capturedScenario}
           hasUncapturedChanges={hasUncapturedChanges}
           onOpenVerification={() => setIsVerificationOpen(true)}
-          onResetView={handleResetParams}
+          onSetParam={setParam}
+          onResetScenario={handleResetParams}
           visualizationConfig={visualizationConfig}
           setVisualizationConfig={setVisualizationConfig}
           is3D={viewMode === '3D'}

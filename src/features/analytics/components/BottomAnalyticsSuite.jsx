@@ -1,534 +1,341 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  TrendingUp, 
-  ShieldAlert, 
-  FileText, 
+import React, { useMemo, useState } from 'react';
+import {
+  TrendingUp,
+  Target,
+  FileText,
   SlidersHorizontal,
-  ArrowDown, 
-  Droplet, 
-  Clock, 
-  Target, 
+  ArrowDown,
+  Droplet,
+  Lock,
   RotateCcw,
-  ChevronDown
+  ChevronDown,
+  ShieldCheck,
+  Download
 } from 'lucide-react';
+import { computeGroundwaterState, HYDRO_PARAMS } from '../../../physics/groundwaterPhysics';
+import { QUANTITIES, COLOR_SCALES, profileThroughWell, quantityMax, exportGeoJSON } from '../../../physics/fields';
+import { DEFAULT_PARAMS } from '../../scenarios/hooks/useScenarioState';
+
+// Reference run for the comparison table: the baseline preset, computed with the same model.
+const BASELINE_STATE = computeGroundwaterState(DEFAULT_PARAMS);
+
+const PANEL = 'bg-[#071524] rounded-xl border border-[#13263b] p-4 flex flex-col gap-3 shadow-xl min-w-0';
+const SELECT = 'w-full bg-[#0a1c2e] text-slate-100 text-xs rounded-lg border border-[#18344e] px-3 py-2 appearance-none focus:outline-none focus-visible:border-[#0ea5e9] focus-visible:ring-1 focus-visible:ring-[#0ea5e9] cursor-pointer';
+
+function PanelHeader({ icon: Icon, title, badge, badgeClass = 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' }) {
+  return (
+    <div className="flex items-center justify-between border-b border-white/5 pb-2 gap-2">
+      <div className="flex items-center gap-2 min-w-0">
+        <Icon size={16} className="text-[#0ea5e9] shrink-0" />
+        <h3 className="text-sm font-bold text-white tracking-wide truncate">{title}</h3>
+      </div>
+      {badge && (
+        <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border shrink-0 ${badgeClass}`}>{badge}</span>
+      )}
+    </div>
+  );
+}
+
+function niceCeil(v) {
+  if (v <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  const m = v / p;
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p;
+}
+
+/** West–east profile through the primary well, live scenario against the captured scenario. */
+function ProfileChart({ live, captured, quantityKey, thresholdDrawdown }) {
+  const q = QUANTITIES[quantityKey];
+  const W = 320, H = 150, L = 40, R = 10, T = 10, B = 26;
+  const yMax = niceCeil(Math.max(...live.map(p => p.value), ...captured.map(p => p.value), q.max * 0.02));
+  const sx = xKm => L + ((xKm + 1.6) / 3.2) * (W - L - R);
+  const sy = v => T + (1 - v / yMax) * (H - T - B);
+  const path = pts => pts.map((p, k) => `${k ? 'L' : 'M'}${sx(p.xKm).toFixed(1)},${sy(p.value).toFixed(1)}`).join(' ');
+  const yTicks = [0, yMax / 2, yMax];
+  const xTicks = [-1.6, -0.8, 0, 0.8, 1.6];
+  const showThreshold = quantityKey === 'drawdown' && thresholdDrawdown < yMax;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img"
+      aria-label={`${q.label} along the west–east line through the well. Maximum ${Math.max(...live.map(p => p.value)).toFixed(1)} ${q.unit}.`}>
+      {yTicks.map(t => (
+        <g key={t}>
+          <line x1={L} x2={W - R} y1={sy(t)} y2={sy(t)} stroke="rgba(148,163,184,0.15)" />
+          <text x={L - 5} y={sy(t) + 3.5} textAnchor="end" fontSize="10" fill="#94a3b8" fontFamily="JetBrains Mono, monospace">{+t.toFixed(1)}</text>
+        </g>
+      ))}
+      {xTicks.map(t => (
+        <text key={t} x={sx(t)} y={H - 12} textAnchor="middle" fontSize="10" fill="#94a3b8" fontFamily="JetBrains Mono, monospace">{t}</text>
+      ))}
+      <text x={(L + W - R) / 2} y={H - 1} textAnchor="middle" fontSize="10" fill="#94a3b8">Distance from domain centre, west to east (km)</text>
+      {showThreshold && (
+        <g>
+          <line x1={L} x2={W - R} y1={sy(thresholdDrawdown)} y2={sy(thresholdDrawdown)} stroke="#f59e0b" strokeDasharray="4 3" />
+          <text x={W - R - 2} y={sy(thresholdDrawdown) - 3} textAnchor="end" fontSize="9.5" fill="#f59e0b">Preconsolidation threshold</text>
+        </g>
+      )}
+      <path d={path(captured)} fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4 3" />
+      <path d={path(live)} fill="none" stroke="#22d3ee" strokeWidth="2.2" />
+    </svg>
+  );
+}
+
+function deltaText(now, ref) {
+  if (Math.abs(ref) < 1e-9) return now > 0 ? 'new' : '0%';
+  const pct = ((now - ref) / ref) * 100;
+  return `${pct > 0 ? '+' : ''}${pct.toFixed(0)}%`;
+}
+
+function downloadJSON(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj)], { type: 'application/geo+json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function BottomAnalyticsSuite({
   physicalState,
   params,
+  onSetParam,
   capturedScenario,
   hasUncapturedChanges = false,
   onOpenVerification,
-  onResetView,
+  onResetScenario,
   visualizationConfig,
   setVisualizationConfig,
   is3D = false
 }) {
   const [activeResultsTab, setActiveResultsTab] = useState('subsidence');
-  const canvasRef = useRef(null);
+  const captured = capturedScenario?.physicalState || physicalState;
 
-  // Live preview values calculated from active physicalState or parameters
-  const liveSubsidenceM = physicalState?.maxSubsidenceCm != null
-    ? (physicalState.maxSubsidenceCm / 100).toFixed(2)
-    : (0.28 * Math.pow((params.pumpingRate || 20000) / 20000, 0.4)).toFixed(2);
-  const liveHeadM = physicalState?.minHead != null
-    ? physicalState.minHead
-    : -Math.round(48 * Math.pow((params.pumpingRate || 20000) / 20000, 0.3));
+  const liveProfile = useMemo(() => profileThroughWell(physicalState, activeResultsTab), [physicalState, activeResultsTab]);
+  const capturedProfile = useMemo(() => profileThroughWell(captured, activeResultsTab), [captured, activeResultsTab]);
 
-  // Captured scenario values for formal comparative table
-  const capturedPhysical = capturedScenario?.physicalState || physicalState;
-  const capturedSubsidenceM = capturedPhysical?.maxSubsidenceCm != null
-    ? (capturedPhysical.maxSubsidenceCm / 100).toFixed(2)
-    : liveSubsidenceM;
-  const capturedPumping = capturedScenario?.params?.pumpingRate || params.pumpingRate || 12000;
-  
-  const baselineSubsidenceM = 0.30;
-  const subNum = parseFloat(capturedSubsidenceM);
-  const deltaPct = (((subNum - baselineSubsidenceM) / baselineSubsidenceM) * 100).toFixed(1);
-  const deltaLabel = Number(deltaPct) > 0 ? `+${deltaPct}%` : `${deltaPct}%`;
-  const isSubsidenceReduced = Number(deltaPct) <= 0;
+  const summary = (state) => ({
+    subsidence: quantityMax(state, 'subsidence'),
+    drawdown: state.maxDrawdown,
+    inelastic: quantityMax(state, 'inelastic')
+  });
+  const live = useMemo(() => summary(physicalState), [physicalState]);
+  const cap = useMemo(() => summary(captured), [captured]);
+  const base = useMemo(() => summary(BASELINE_STATE), []);
+  const thresholdDrawdown = HYDRO_PARAMS.initialHead - physicalState.preconsolidationHead;
 
-  const pRatio = (params.pumpingRate || 20000) / 20000;
+  const months = Math.max(1, Math.round((params.pumpingDays || 180) / 30));
 
-  // Render 2D Vertical Subsurface Cross-Section Heatmap matching card1_ref.png
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
-
-    ctx.clearRect(0, 0, width, height);
-
-    // Continuous colormap mesh
-    const imgData = ctx.createImageData(width, height);
-    const data = imgData.data;
-
-    // Peak center of compaction is at distance ~5.0 km (x = width * 0.5) and depth -40m (y = height * 0.20)
-    const cx = width * 0.50;
-    const cy = height * 0.20;
-
-    for (let py = 0; py < height; py++) {
-      for (let px = 0; px < width; px++) {
-        const dx = (px - cx) / (width * 0.32);
-        const dy = (py - cy) / (height * 0.22);
-        const distSq = dx * dx + dy * dy;
-
-        // Gaussian compaction plume in the clay aquitard
-        let val = Math.exp(-distSq * 1.5) * pRatio;
-        
-        // Surface background warmth
-        if (py < height * 0.25) {
-          val += Math.max(0, (1.0 - py / (height * 0.25))) * 0.25;
-        }
-
-        // Deep strata attenuation below -80m
-        if (py > height * 0.4) {
-          val *= Math.max(0, 1.0 - (py - height * 0.4) / (height * 0.6));
-        }
-
-        // Colormap: 0.0 -> blue, 0.25 -> cyan, 0.5 -> yellow, 0.75 -> orange, 1.0+ -> red/crimson
-        let r = 0, g = 0, b = 0;
-        const norm = Math.max(0, Math.min(1.0, val));
-
-        if (norm < 0.2) {
-          const t = norm / 0.2;
-          r = 0;
-          g = Math.floor(t * 180);
-          b = Math.floor(220 + t * 35);
-        } else if (norm < 0.45) {
-          const t = (norm - 0.2) / 0.25;
-          r = Math.floor(t * 220);
-          g = 220;
-          b = Math.floor((1 - t) * 220);
-        } else if (norm < 0.75) {
-          const t = (norm - 0.45) / 0.3;
-          r = 255;
-          g = Math.floor((1 - t * 0.6) * 220);
-          b = 0;
-        } else {
-          const t = (norm - 0.75) / 0.25;
-          r = Math.floor(240 - t * 80);
-          g = Math.floor(60 * (1 - t));
-          b = Math.floor(40 * t);
-        }
-
-        const pIdx = (py * width + px) * 4;
-        data[pIdx] = r;
-        data[pIdx + 1] = g;
-        data[pIdx + 2] = b;
-        data[pIdx + 3] = 255;
-      }
-    }
-
-    ctx.putImageData(imgData, 0, 0);
-
-    // Subtle strata boundary guide lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.setLineDash([3, 3]);
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, height * 0.25);
-    ctx.lineTo(width, height * 0.25);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, height * 0.50);
-    ctx.lineTo(width, height * 0.50);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }, [activeResultsTab, params.pumpingRate, pRatio]);
+  const comparisonRows = [
+    { label: 'Max subsidence', unit: 'cm', now: cap.subsidence, ref: base.subsidence, d: 1 },
+    { label: 'Max head drawdown', unit: 'm', now: cap.drawdown, ref: base.drawdown, d: 1 },
+    { label: 'Max permanent compaction', unit: 'cm', now: cap.inelastic, ref: base.inelastic, d: 1 },
+    { label: 'Total extraction', unit: 'm³/d', now: capturedScenario?.params?.pumpingRate ?? params.pumpingRate, ref: DEFAULT_PARAMS.pumpingRate, d: 0 },
+    { label: 'Pumping duration', unit: 'days', now: capturedScenario?.params?.pumpingDays ?? params.pumpingDays, ref: DEFAULT_PARAMS.pumpingDays, d: 0 }
+  ];
 
   return (
-    <section id="bottom-analytics-suite" className="min-h-72 bg-[#06111e] border-t border-[#122336] px-4 lg:px-6 py-4 shrink-0 z-20">
-      <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-[1920px] mx-auto">
-        
-        {/* CARD 1: Simulation Results */}
-        <div className="bg-[#071524] rounded-xl border border-[#13263b] p-4 flex flex-col justify-between shadow-xl">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-white/5 pb-2">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={16} className="text-[#0ea5e9]" />
-              <h3 className="text-xs font-bold text-white tracking-wide">
-                Simulation Results
-              </h3>
-            </div>
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono text-cyan-300 font-semibold bg-cyan-950/60 border border-cyan-500/30 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              LIVE PREVIEW
-            </span>
-          </div>
+    <section id="bottom-analytics-suite" className="bg-[#06111e] border-t border-[#122336] px-4 lg:px-6 py-4 scroll-mt-16">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 max-w-[1920px] mx-auto">
 
-          {/* Sub-Tabs */}
-          <div className="flex items-center gap-3.5 text-xs font-medium border-b border-[#13263b] pt-1.5">
-            <button
-              onClick={() => setActiveResultsTab('subsidence')}
-              className={`pb-1.5 transition-colors cursor-pointer ${
-                activeResultsTab === 'subsidence'
+        {/* CARD 1: Profile chart */}
+        <div className={PANEL}>
+          <PanelHeader icon={TrendingUp} title="Profile Through the Well" badge="LIVE" />
+          <div role="tablist" aria-label="Profile quantity" className="flex items-center gap-3 text-xs font-medium border-b border-[#13263b]">
+            {Object.entries(QUANTITIES).map(([key, q]) => (
+              <button
+                key={key}
+                role="tab"
+                aria-selected={activeResultsTab === key}
+                onClick={() => setActiveResultsTab(key)}
+                className={`pb-1.5 transition-colors cursor-pointer ${activeResultsTab === key
                   ? 'text-white border-b-2 border-[#0ea5e9] font-semibold'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Land Subsidence
-            </button>
-            <button
-              onClick={() => setActiveResultsTab('head')}
-              className={`pb-1.5 transition-colors cursor-pointer ${
-                activeResultsTab === 'head'
-                  ? 'text-white border-b-2 border-[#0ea5e9] font-semibold'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Groundwater Level
-            </button>
-            <button
-              onClick={() => setActiveResultsTab('compaction')}
-              className={`pb-1.5 transition-colors cursor-pointer ${
-                activeResultsTab === 'compaction'
-                  ? 'text-white border-b-2 border-[#0ea5e9] font-semibold'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Aquifer Compaction
-            </button>
+                  : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                {key === 'inelastic' ? 'Permanent' : q.label.replace('Land ', '').replace('Head ', '')}
+              </button>
+            ))}
           </div>
-
-          {/* Subtitle */}
-          <div className="text-[11px] font-medium text-slate-300 pt-1">
-            Land Subsidence (m) (Cross Section)
+          <div className="text-xs text-slate-300">
+            {QUANTITIES[activeResultsTab].label} ({QUANTITIES[activeResultsTab].unit})
           </div>
-
-          {/* Canvas Plot Frame with Axis & Vertical Colorbar */}
-          <div className="relative flex items-center justify-between gap-1 flex-1 my-1.5">
-            {/* Y-Axis (Depth) */}
-            <div className="flex items-center gap-1 shrink-0 h-full">
-              <span className="text-[9px] text-slate-400 font-medium -rotate-90 origin-center select-none w-3">
-                Depth (m)
-              </span>
-              <div className="flex flex-col justify-between h-full text-[9px] font-mono text-slate-400 pr-1 text-right w-7">
-                <span>0</span>
-                <span>-50</span>
-                <span>-100</span>
-                <span>-150</span>
-                <span>-200</span>
-              </div>
-            </div>
-
-            {/* Plot Canvas */}
-            <div className="relative flex-1 h-full min-h-24 rounded border border-[#224466] bg-black overflow-hidden">
-              <canvas
-                ref={canvasRef}
-                width={220}
-                height={100}
-                className="w-full h-full object-fill"
-              />
-            </div>
-
-            {/* Vertical Colorbar */}
-            <div className="flex flex-col items-center justify-between h-full pl-1.5 shrink-0">
-              <span className="text-[8.5px] text-slate-300 font-medium whitespace-nowrap">
-                Subsidence (m)
-              </span>
-              <div className="flex items-center gap-1.5 flex-1 py-0.5">
-                <div
-                  className="w-2.5 h-full rounded-xs border border-white/20"
-                  style={{ background: 'linear-gradient(to bottom, #d91e18, #f1c40f, #00c0ef, #0044ff)' }}
-                />
-                <div className="flex flex-col justify-between h-full text-[8.5px] font-mono text-slate-300 text-left">
-                  <span>0.30</span>
-                  <span>0.20</span>
-                  <span>0.10</span>
-                  <span>0.05</span>
-                  <span>0.00</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* X-Axis (Distance) */}
-          <div className="flex flex-col items-center pl-10 pr-12 pt-0.5">
-            <div className="flex justify-between w-full text-[9px] font-mono text-slate-400 px-1">
-              <span>0</span>
-              <span>2</span>
-              <span>4</span>
-              <span>6</span>
-              <span>8</span>
-              <span>10</span>
-            </div>
-            <span className="text-[9px] text-slate-400 font-medium">Distance (km)</span>
+          <ProfileChart live={liveProfile} captured={capturedProfile} quantityKey={activeResultsTab} thresholdDrawdown={thresholdDrawdown} />
+          <div className="flex items-center gap-4 text-[11px] text-slate-400">
+            <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-cyan-400 inline-block" /> Live scenario</span>
+            <span className="flex items-center gap-1.5"><span className="w-4 border-t border-dashed border-slate-400 inline-block" /> Captured scenario</span>
           </div>
         </div>
 
-        {/* CARD 2: Key Insights (Target Design Specifications) */}
-        <div className="bg-[#071524] rounded-xl border border-[#13263b] p-4 flex flex-col justify-between shadow-xl">
-          <div className="flex items-center justify-between border-b border-white/5 pb-2">
-            <div className="flex items-center gap-2">
-              <ShieldAlert size={16} className="text-[#0ea5e9]" />
-              <h3 className="text-xs font-bold text-white tracking-wide">
-                Key Insights
-              </h3>
-            </div>
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-              TARGET SPEC
-            </span>
+        {/* CARD 2: Live results and proposal targets */}
+        <div className={PANEL}>
+          <PanelHeader icon={Target} title="Scenario Results" badge="SIMPLIFIED MODEL" />
+          <div className="flex flex-col gap-2.5">
+            {[
+              { icon: ArrowDown, label: 'Maximum land subsidence', value: `${live.subsidence.toFixed(1)} cm` },
+              { icon: Droplet, label: 'Maximum head drawdown', value: `${live.drawdown.toFixed(1)} m` },
+              { icon: Lock, label: 'Maximum permanent compaction', value: `${live.inelastic.toFixed(1)} cm`,
+                note: physicalState.isPreconsolidationBreached ? 'Preconsolidation head breached' : 'Elastic range only' }
+            ].map(r => (
+              <div key={r.label} className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[#0a1e35] border border-[#164373] flex items-center justify-center text-[#38bdf8] shrink-0">
+                  <r.icon size={15} />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs text-slate-300">{r.label}</span>
+                  <span className="text-base font-bold text-white leading-tight font-mono">{r.value}</span>
+                </div>
+                {r.note && <span className="ml-auto text-[11px] text-slate-400 text-right">{r.note}</span>}
+              </div>
+            ))}
           </div>
-
-          <div className="flex flex-col gap-2.5 my-auto py-1">
-            {/* Row 1: Maximum Land Subsidence */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#0a1e35] border border-[#164373] flex items-center justify-center text-[#38bdf8] shrink-0">
-                  <ArrowDown size={15} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10.5px] font-medium text-slate-300">Maximum Land Subsidence</span>
-                  <span className="text-base font-bold text-white tracking-tight leading-none mt-0.5 font-mono">
-                    {liveSubsidenceM} m
-                  </span>
-                </div>
-              </div>
-              <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5 font-mono">
-                (Live Preview)
-              </span>
-            </div>
-
-            {/* Row 2: Lowest Groundwater Level */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#0a1e35] border border-[#164373] flex items-center justify-center text-[#38bdf8] shrink-0">
-                  <Droplet size={15} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10.5px] font-medium text-slate-300">Lowest Groundwater Level</span>
-                  <span className="text-base font-bold text-white tracking-tight leading-none mt-0.5 font-mono">
-                    {liveHeadM} m
-                  </span>
-                </div>
-              </div>
-              <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5 font-mono">
-                (Live Preview)
-              </span>
-            </div>
-
-            {/* Row 3: Target Runtime (PINO Spec) */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#0a1e35] border border-[#164373] flex items-center justify-center text-[#38bdf8] shrink-0">
-                  <Clock size={15} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10.5px] font-medium text-slate-300">Target PINO Latency (Spec)</span>
-                  <span className="text-base font-bold text-cyan-300 tracking-tight leading-none mt-0.5 font-mono">
-                    &lt; 250 ms
-                  </span>
-                </div>
-              </div>
-              <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5 font-mono">
-                (vs. 3-5 min baseline target)
-              </span>
-            </div>
-
-            {/* Row 4: Target Accuracy (Spec) */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#0a1e35] border border-[#164373] flex items-center justify-center text-[#38bdf8] shrink-0">
-                  <Target size={15} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10.5px] font-medium text-slate-300">Target Accuracy (L2 Relative Error)</span>
-                  <span className="text-base font-bold text-emerald-400 tracking-tight leading-none mt-0.5 font-mono">
-                    &le; 5.0%
-                  </span>
-                </div>
-              </div>
-              <span className="text-[10px] text-slate-400 font-medium self-end pb-0.5 font-mono">
-                (head and compaction)
-              </span>
-            </div>
-          </div>
-
-          <div className="text-[9px] text-slate-400 italic border-t border-white/5 pt-1.5 leading-tight">
-            *Illustrative design targets from proposal specification; not measured empirical findings.
+          <div className="border-t border-white/5 pt-2">
+            <div className="text-xs font-semibold text-slate-200 mb-1.5">Proposed acceptance criteria (not yet measured)</div>
+            <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-xs">
+              <dt className="text-slate-400">Surrogate response time</dt><dd className="font-mono text-cyan-300 text-right">&lt; 250 ms</dd>
+              <dt className="text-slate-400">Median speedup vs MODFLOW 6 CSUB</dt><dd className="font-mono text-cyan-300 text-right">&ge; 50×</dd>
+              <dt className="text-slate-400">Relative L₂ error (head, compaction)</dt><dd className="font-mono text-cyan-300 text-right">&le; 5%</dd>
+              <dt className="text-slate-400">MODFLOW 6 CSUB run time (pilot)</dt><dd className="font-mono text-slate-200 text-right">4.5–96 s</dd>
+            </dl>
           </div>
         </div>
 
-        {/* CARD 3: Scenario Comparison (Captured Scenario vs Baseline) */}
-        <div className="bg-[#071524] rounded-xl border border-[#13263b] p-4 flex flex-col justify-between shadow-xl">
-          <div className="flex items-center justify-between border-b border-white/5 pb-2">
-            <div className="flex items-center gap-2">
-              <FileText size={16} className="text-[#0ea5e9]" />
-              <h3 className="text-xs font-bold text-white tracking-wide">
-                Scenario Comparison
-              </h3>
-            </div>
-            <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${
-              hasUncapturedChanges 
-                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-            }`}>
-              {hasUncapturedChanges ? 'CAPTURED (UNSYNCED)' : 'CAPTURED SCENARIO'}
-            </span>
-          </div>
-
-          {/* Captured Scenario Metadata Pill */}
-          <div className="pt-1.5 pb-0.5">
-            <div className="flex items-center justify-between text-[10px] font-mono text-slate-300">
-              <span>Evaluating: <strong className="text-cyan-300">{capturedScenario?.preset || 'Baseline'}</strong></span>
-              <span className="text-slate-400">{capturedScenario?.capturedAt || 'Initial'}</span>
-            </div>
+        {/* CARD 3: Scenario Comparison */}
+        <div className={PANEL}>
+          <PanelHeader
+            icon={FileText}
+            title="Scenario Comparison"
+            badge={hasUncapturedChanges ? 'NOT CAPTURED' : 'CAPTURED'}
+            badgeClass={hasUncapturedChanges ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'}
+          />
+          <div className="text-xs text-slate-300">
+            Captured scenario <strong className="text-cyan-300">{capturedScenario?.preset || 'baseline'}</strong>
+            <span className="text-slate-400"> ({capturedScenario?.capturedAt || 'initial'})</span> against the baseline preset.
             {hasUncapturedChanges && (
-              <div className="text-[9px] text-amber-300/90 font-sans bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/25 mt-1">
-                Sliders modified. Click "Capture Scenario" in setup to sync.
+              <div className="text-[11px] text-amber-300/90 bg-amber-950/40 px-2 py-1 rounded border border-amber-500/25 mt-1.5">
+                The live scenario has changed. Use "Capture Scenario" to compare it.
               </div>
             )}
           </div>
-
-          {/* Table */}
-          <div className="my-auto overflow-hidden py-1">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-[#18344e] text-[10px] font-medium text-slate-300">
-                  <th className="pb-1 font-normal">Metric</th>
-                  <th className="pb-1 font-normal">Captured</th>
-                  <th className="pb-1 font-normal">Baseline</th>
-                  <th className="pb-1 font-normal text-right">Delta</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#13263b] text-[11px] font-mono">
-                <tr>
-                  <td className="py-1 text-slate-300 font-sans font-medium">Max Subsidence</td>
-                  <td className="py-1 text-white font-bold">{capturedSubsidenceM} m</td>
-                  <td className="py-1 text-slate-400">0.30 m</td>
-                  <td className={`py-1 text-right font-semibold ${isSubsidenceReduced ? 'text-[#10b981]' : 'text-rose-400'}`}>
-                    {deltaLabel}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-1 text-slate-300 font-sans font-medium">Pumping Rate</td>
-                  <td className="py-1 text-white">{Number(capturedPumping).toLocaleString()}</td>
-                  <td className="py-1 text-slate-400">12,000</td>
-                  <td className="py-1 text-right text-slate-300">
-                    {capturedPumping === 12000 ? '0%' : (capturedPumping > 12000 ? `+${Math.round(((capturedPumping - 12000)/12000)*100)}%` : `${Math.round(((capturedPumping - 12000)/12000)*100)}%`)}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-1 text-slate-300 font-sans font-medium">Target Rel. L₂ Error</td>
-                  <td className="py-1 text-white">&le; 5%</td>
-                  <td className="py-1 text-slate-400">Baseline</td>
-                  <td className="py-1 text-right text-cyan-400">Spec Goal</td>
-                </tr>
-                <tr>
-                  <td className="py-1 text-slate-300 font-sans font-medium">Inference Latency</td>
-                  <td className="py-1 text-white">&lt; 250 ms</td>
-                  <td className="py-1 text-slate-400">4.5-96 s (pilot)</td>
-                  <td className="py-1 text-right text-[#10b981] font-semibold">&ge; 50× (target)</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex flex-col gap-2 border-t border-white/5 pt-1.5">
-            <div className="text-[9px] text-slate-400 italic leading-tight">
-              *Candidate benchmark targets for proposal defense demonstration; not measured experimental findings.
-            </div>
-
-            {/* Verification Protocol Action Button */}
-            <button
-              onClick={onOpenVerification}
-              className="w-full h-9 px-3 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#164373] hover:border-cyan-500/50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-            >
-              <FileText size={14} className="text-cyan-400" />
-            </button>
-          </div>
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-[#18344e] text-[11px] text-slate-400">
+                <th className="pb-1 font-normal">Metric</th>
+                <th className="pb-1 font-normal text-right">Captured</th>
+                <th className="pb-1 font-normal text-right">Baseline</th>
+                <th className="pb-1 font-normal text-right">Change</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#13263b] font-mono">
+              {comparisonRows.map(r => {
+                const better = r.now <= r.ref;
+                return (
+                  <tr key={r.label}>
+                    <td className="py-1 text-slate-300 font-sans">{r.label} <span className="text-slate-500">({r.unit})</span></td>
+                    <td className="py-1 text-white text-right">{Number(r.now).toLocaleString(undefined, { maximumFractionDigits: r.d })}</td>
+                    <td className="py-1 text-slate-400 text-right">{Number(r.ref).toLocaleString(undefined, { maximumFractionDigits: r.d })}</td>
+                    <td className={`py-1 text-right ${r.unit === 'cm' || r.unit === 'm' ? (better ? 'text-emerald-400' : 'text-rose-400') : 'text-slate-300'}`}>
+                      {deltaText(r.now, r.ref)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <button
+            onClick={onOpenVerification}
+            className="mt-auto w-full h-9 px-3 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#164373] hover:border-cyan-500/50 transition-all flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-400"
+          >
+            <ShieldCheck size={14} className="text-cyan-400" />
+            <span>Planned MODFLOW 6 verification (demo)</span>
+          </button>
         </div>
 
         {/* CARD 4: Visualization Controls */}
-        <div className="bg-[#071524] rounded-xl border border-[#13263b] p-4 flex flex-col justify-between shadow-xl">
-          <div className="flex items-center justify-between border-b border-white/5 pb-2">
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal size={16} className="text-[#0ea5e9]" />
-              <h3 className="text-xs font-bold text-white tracking-wide">
-                {is3D ? '3D Viewport Controls' : 'Visualization Controls'}
-              </h3>
-            </div>
-            <span className="text-[10px] font-mono text-slate-400 font-medium">Renderer</span>
-          </div>
-
-          <div className="flex flex-col gap-2.5 my-auto text-xs py-1">
-            {/* Data Type */}
-            <div className="flex flex-col gap-1">
-              <span className="text-slate-300 font-medium">Data Type</span>
-              <div className="relative">
+        <div className={PANEL}>
+          <PanelHeader icon={SlidersHorizontal} title={is3D ? '3D View Controls' : 'Map Controls'} />
+          <div className="flex flex-col gap-3 text-xs">
+            <label className="flex flex-col gap-1">
+              <span className="text-slate-300 font-medium">Map layer</span>
+              <span className="relative">
                 <select
                   value={visualizationConfig.dataType}
                   onChange={(e) => setVisualizationConfig(prev => ({ ...prev, dataType: e.target.value }))}
-                  className="w-full bg-[#0a1c2e] text-slate-100 rounded-lg border border-[#18344e] px-3 py-1.5 appearance-none focus:outline-none focus:border-[#0ea5e9] cursor-pointer"
+                  className={SELECT}
+                  disabled={is3D}
                 >
-                  <option value="subsidence">Land Subsidence</option>
-                  <option value="head">Groundwater Level</option>
-                  <option value="compaction">Aquifer Compaction</option>
+                  {Object.entries(QUANTITIES).map(([key, q]) => <option key={key} value={key}>{q.label}</option>)}
                 </select>
                 <ChevronDown size={14} className="absolute right-2.5 top-2.5 text-slate-400 pointer-events-none" />
-              </div>
-            </div>
+              </span>
+            </label>
 
-            {/* Time Slice */}
-            <div className="flex flex-col gap-1">
-              <span className="text-slate-300 font-medium">Time Slice</span>
-              <div className="relative">
-                <select
-                  value={visualizationConfig.timeSlice}
-                  onChange={(e) => setVisualizationConfig(prev => ({ ...prev, timeSlice: e.target.value }))}
-                  className="w-full bg-[#0a1c2e] text-slate-100 rounded-lg border border-[#18344e] px-3 py-1.5 appearance-none focus:outline-none focus:border-[#0ea5e9] cursor-pointer"
-                >
-                  <option value="2050">2050 (Projection Horizon)</option>
-                  <option value="2040">2040 (Midterm Phase)</option>
-                  <option value="2030">2030 (Early Milestone)</option>
-                </select>
-                <ChevronDown size={14} className="absolute right-2.5 top-2.5 text-slate-400 pointer-events-none" />
-              </div>
-            </div>
+            <label className="flex flex-col gap-1">
+              <span className="flex justify-between text-slate-300 font-medium">
+                <span>Elapsed pumping time</span>
+                <span className="font-mono text-cyan-300">{months} {months === 1 ? 'month' : 'months'} ({months * 30} days)</span>
+              </span>
+              <input
+                type="range"
+                min="1"
+                max="12"
+                step="1"
+                value={months}
+                onChange={(e) => onSetParam('pumpingDays', Number(e.target.value) * 30)}
+                aria-valuetext={`${months} months`}
+                className="w-full cursor-pointer accent-[#0ea5e9]"
+              />
+            </label>
 
-            {/* Opacity Slider */}
-            <div className="flex items-center justify-between gap-3 pt-0.5">
-              <span className="text-slate-300 font-medium">Opacity</span>
+            <label className="flex flex-col gap-1">
+              <span className="flex justify-between text-slate-300 font-medium">
+                <span>Layer opacity</span>
+                <span className="font-mono text-slate-300">{visualizationConfig.opacity}%</span>
+              </span>
               <input
                 type="range"
                 min="10"
                 max="100"
-                value={visualizationConfig.opacity || 70}
+                value={visualizationConfig.opacity}
                 onChange={(e) => setVisualizationConfig(prev => ({ ...prev, opacity: Number(e.target.value) }))}
-                className="flex-1 h-1.5 bg-[#0d243b] rounded-lg appearance-none cursor-pointer accent-[#0ea5e9]"
+                className="w-full cursor-pointer accent-[#0ea5e9]"
+                disabled={is3D}
               />
-              <span className="font-mono text-slate-300 text-right w-8">
-                {visualizationConfig.opacity || 70}%
-              </span>
-            </div>
+            </label>
 
-            {/* Color Scale */}
-            <div className="flex flex-col gap-1">
-              <span className="text-slate-300 font-medium">Color Scale</span>
-              <div className="relative">
+            <label className="flex flex-col gap-1">
+              <span className="text-slate-300 font-medium">Color scale</span>
+              <span className="relative">
                 <select
                   value={visualizationConfig.colorScale}
                   onChange={(e) => setVisualizationConfig(prev => ({ ...prev, colorScale: e.target.value }))}
-                  className="w-full bg-[#0a1c2e] text-slate-100 rounded-lg border border-[#18344e] px-3 py-1.5 appearance-none focus:outline-none focus:border-[#0ea5e9] cursor-pointer"
+                  className={SELECT}
+                  disabled={is3D}
                 >
-                  <option value="Standard">Standard (Cyan to Crimson)</option>
-                  <option value="Jet">Jet / Turbo</option>
-                  <option value="Viridis">Viridis</option>
+                  {Object.entries(COLOR_SCALES).map(([key, s]) => <option key={key} value={key}>{s.label}</option>)}
                 </select>
                 <ChevronDown size={14} className="absolute right-2.5 top-2.5 text-slate-400 pointer-events-none" />
-              </div>
-            </div>
+              </span>
+            </label>
+            {is3D && <p className="text-[11px] text-slate-400">Map layer, opacity and colour scale apply to the 2D map.</p>}
           </div>
 
-          {/* Reset View Button */}
-          <button
-            onClick={onResetView}
-            className="w-full h-9 px-3 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#18344e] hover:border-cyan-500/50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs mt-1"
-          >
-            <RotateCcw size={14} className="text-cyan-400" />
-            <span>Reset View</span>
-          </button>
+          <div className="mt-auto grid grid-cols-2 gap-2">
+            <button
+              onClick={onResetScenario}
+              className="h-9 px-2 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#18344e] hover:border-cyan-500/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-400"
+            >
+              <RotateCcw size={14} className="text-cyan-400" />
+              <span>Reset scenario</span>
+            </button>
+            <button
+              onClick={() => downloadJSON(exportGeoJSON(physicalState, params), 'aquifera_synthetic_demo.geojson')}
+              className="h-9 px-2 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#18344e] hover:border-cyan-500/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-400"
+              title="Download the current result grid as GeoJSON (synthetic demonstration data)"
+            >
+              <Download size={14} className="text-cyan-400" />
+              <span>Export GeoJSON</span>
+            </button>
+          </div>
         </div>
 
       </div>

@@ -161,7 +161,10 @@ export function computeGroundwaterState(params, options = {}) {
     specificStorage = 0.0001,   // Ss in 1/m (prototype default 0.0001)
     wellX = 0,               // Well center X (meters)
     wellY = 0,               // Well center Y (meters)
-    wellCount = 1            // Secondary industrial well toggle
+    wellCount = 1,           // Secondary industrial well toggle
+    clayThickness = HYDRO_PARAMS.clayThickness,  // b0 of the compacting clay unit (m)
+    preconsolidationDrawdown = HYDRO_PARAMS.initialHead - HYDRO_PARAMS.preconsolidationHead, // m below h0
+    claySkv = HYDRO_PARAMS.claySkv               // inelastic skeletal specific storage (1/m)
   } = params;
 
   const res = DOMAIN.gridResolution;
@@ -173,8 +176,8 @@ export function computeGroundwaterState(params, options = {}) {
   // Dynamic Storativity S = Ss * aquifer_thickness (60m)
   const S = specificStorage ? Math.max(1e-5, specificStorage * 40) : HYDRO_PARAMS.sandStorativity;
   const h0 = HYDRO_PARAMS.initialHead;
-  const hPre = HYDRO_PARAMS.preconsolidationHead;
-  const bClay = HYDRO_PARAMS.clayThickness;
+  const hPre = h0 - preconsolidationDrawdown;
+  const bClay = clayThickness;
 
   // Resolve hysteresis buffer: explicit caller buffer > fresh isolated buffer
   const minHeadBuffer = (historyBuffer && historyBuffer.length === res * res)
@@ -198,6 +201,7 @@ export function computeGroundwaterState(params, options = {}) {
   const displacementGrid = new Float32Array(res * res);
   const headGrid = new Float32Array(res * res);
   const strainGrid = new Float32Array(res * res); // Compaction strain in clay
+  const inelasticGrid = new Float32Array(res * res); // Permanent (inelastic) part of compaction, m
 
   // Regional wellfield focal extraction scaling (illustrative assumption):
   // Models localized wellfield clustering (e.g. Mandurriao commercial corridor) where multiple extraction
@@ -256,7 +260,7 @@ export function computeGroundwaterState(params, options = {}) {
         pointsInelastic++;
         const deltaHInelastic = hPre - histMinHead;
         // 0.081 is an illustrative scaling factor for the demonstration; it is not calibrated to field data.
-        deltaBInelastic = bClay * HYDRO_PARAMS.claySkv * deltaHInelastic * 0.081;
+        deltaBInelastic = bClay * claySkv * deltaHInelastic * 0.081;
 
         // If current head has rebounded above historical min head, hysteresis is physically active
         if (headClay > histMinHead + 0.1) {
@@ -282,6 +286,7 @@ export function computeGroundwaterState(params, options = {}) {
       displacementGrid[idx] = totalCompactionM; // in meters
       headGrid[idx] = headLower;
       strainGrid[idx] = totalCompactionM / bClay; // Vertical strain
+      inelasticGrid[idx] = deltaBInelastic;
     }
   }
 
@@ -295,7 +300,9 @@ export function computeGroundwaterState(params, options = {}) {
     displacementGrid,
     headGrid,
     strainGrid,
+    inelasticGrid,
     resolution: res,
+    preconsolidationHead: hPre,
     minHead: parseFloat(minHead.toFixed(2)),
     maxDrawdown: parseFloat(maxDrawdown.toFixed(2)),
     maxSubsidenceCm: parseFloat(maxSubsidenceCm.toFixed(1)),
@@ -368,7 +375,8 @@ export function getPointHydrogeology(worldX, worldY, worldZ, physicalState) {
   const effectiveStressKPa = Math.max(0, totalOverburdenKPa - porePressureKPa);
 
   // Preconsolidation Status
-  const isYielding = localHeadM < HYDRO_PARAMS.preconsolidationHead && stratum.id === COMPACTING_LAYER_ID;
+  const hPre = physicalState.preconsolidationHead ?? HYDRO_PARAMS.preconsolidationHead;
+  const isYielding = localHeadM < hPre && stratum.id === COMPACTING_LAYER_ID;
 
   return {
     coordinates: {

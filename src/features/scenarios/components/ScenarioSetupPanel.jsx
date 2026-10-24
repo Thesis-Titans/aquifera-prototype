@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { 
-  Sliders, 
-  MapPin, 
-  Calendar, 
-  ChevronDown, 
+import {
+  Sliders,
+  MapPin,
+  ChevronDown,
   ChevronRight,
   Bookmark,
   CheckCircle2,
   Camera
 } from 'lucide-react';
+import { HYDRO_PARAMS } from '../../../physics/groundwaterPhysics';
 
 export default function ScenarioSetupPanel({
   params,
@@ -20,16 +20,14 @@ export default function ScenarioSetupPanel({
   activePreset: controlledPreset,
   onSelectPreset
 }) {
-  const [selectedLocation, setSelectedLocation] = useState('Metro Iloilo (City)');
-  const [simulationPeriod, setSimulationPeriod] = useState('2025 to 2050');
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [internalPreset, setInternalPreset] = useState('baseline');
   const activePreset = controlledPreset !== undefined ? controlledPreset : internalPreset;
 
-  // Advanced geotechnical parameters
-  const [clayThickness, setClayThickness] = useState(35);
-  const [preconsolidationThreshold, setPreconsolidationThreshold] = useState(15);
-  const [compressionIndex, setCompressionIndex] = useState(0.45);
+  // Clay parameters of the simplified model (Layer 4); defaults from HYDRO_PARAMS
+  const clayThickness = params.clayThickness ?? HYDRO_PARAMS.clayThickness;
+  const preconsolidationDrawdown = params.preconsolidationDrawdown ?? (HYDRO_PARAMS.initialHead - HYDRO_PARAMS.preconsolidationHead);
+  const claySkv = params.claySkv ?? HYDRO_PARAMS.claySkv;
 
   const applyPreset = (presetKey) => {
     setInternalPreset(presetKey);
@@ -95,11 +93,11 @@ export default function ScenarioSetupPanel({
               <h2 className="text-base font-bold text-white tracking-wide">
                 Scenario Setup
               </h2>
-              <span className="text-[10px] font-mono text-cyan-400 font-medium">Metro Iloilo Basin Model</span>
+              <span className="text-[11px] font-mono text-cyan-400 font-medium">Synthetic test domain</span>
             </div>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed font-normal pt-1">
-            Adjust illustrative extraction parameters to observe simulated groundwater head drawdown and skeletal compaction across Metro Iloilo.
+            Set pumping and aquifer parameters to see the simulated head drawdown and clay compaction. Results come from a simplified in-browser model, not MODFLOW 6 or the PINO surrogate.
           </p>
         </div>
 
@@ -160,53 +158,12 @@ export default function ScenarioSetupPanel({
           </div>
         </div>
 
-        {/* Group 2: Scope & Time Horizon Card */}
-        <div className="bg-slate-900/60 rounded-xl border border-white/8 p-3.5 flex flex-col gap-3 shadow-xs">
-          {/* Location Dropdown */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-              <MapPin size={13} className="text-cyan-400" />
-              <span>Target Focus Area</span>
-            </label>
-            <div className="relative">
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="w-full bg-[#0a1c2e] text-slate-100 text-xs rounded-lg border border-[#18344e] pr-8 py-2.5 appearance-none focus:outline-none focus:border-cyan-400 cursor-pointer font-medium"
-                style={{ paddingLeft: '34px' }}
-              >
-                <option value="Metro Iloilo (City)">Metro Iloilo Basin (All Sectors)</option>
-                <option value="Mandurriao Hub">Mandurriao Commercial Epicenter</option>
-                <option value="Iloilo City Proper">Iloilo City Proper & Port</option>
-                <option value="Jaro Basin">Jaro Floodplain & Estuary</option>
-                <option value="Leganes Coastal">Leganes Coastal Lowlands</option>
-              </select>
-              <MapPin size={14} className="absolute left-2.5 top-3 text-slate-400 pointer-events-none" />
-              <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Simulation Period Dropdown */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-              <Calendar size={13} className="text-cyan-400" />
-              <span>Scenario Time Horizon</span>
-            </label>
-            <div className="relative">
-              <select
-                value={simulationPeriod}
-                onChange={(e) => setSimulationPeriod(e.target.value)}
-                className="w-full bg-[#0a1c2e] text-slate-100 text-xs rounded-lg border border-[#18344e] pr-8 py-2.5 appearance-none focus:outline-none focus:border-cyan-400 cursor-pointer font-medium"
-                style={{ paddingLeft: '34px' }}
-              >
-                <option value="2025 to 2050">2025 to 2050 (25-Year Projection)</option>
-                <option value="2025 to 2035">2025 to 2035 (10-Year Midterm)</option>
-                <option value="2025 to 2060">2025 to 2060 (35-Year Long-Term)</option>
-              </select>
-              <Calendar size={14} className="absolute left-2.5 top-3 text-slate-400 pointer-events-none" />
-              <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
-            </div>
-          </div>
+        {/* Group 2: Study domain note */}
+        <div className="bg-slate-900/60 rounded-xl border border-white/8 p-3.5 flex gap-2.5 shadow-xs">
+          <MapPin size={15} className="text-cyan-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-slate-300 leading-relaxed">
+            <span className="font-semibold text-slate-100">Study domain:</span> generic 3.2 km × 3.2 km × 120 m test domain with five layers (proposal Fig. 6), shown over Iloilo City for context only.
+          </p>
         </div>
 
         {/* Group 3: Hydrological Input Variables Card */}
@@ -311,45 +268,57 @@ export default function ScenarioSetupPanel({
 
           {isAdvancedOpen && (
             <div className="p-3 bg-[#0a1c2e] rounded-lg border border-[#18344e] flex flex-col gap-3 mt-3 text-xs">
-              <div className="flex justify-between items-center text-slate-300">
-                <span className="font-medium">Clay Layer Thickness</span>
-                <span className="font-mono text-cyan-300 font-bold">{clayThickness} m</span>
-              </div>
-              <input
-                type="range"
-                min="10"
-                max="60"
-                value={clayThickness}
-                onChange={(e) => setClayThickness(Number(e.target.value))}
-                className="w-full h-1.5 bg-[#0d243b] rounded accent-cyan-400 cursor-pointer"
-              />
+              <label className="flex flex-col gap-1.5">
+                <span className="flex justify-between items-center text-slate-300">
+                  <span className="font-medium">Clay thickness (Layer 4)</span>
+                  <span className="font-mono text-cyan-300 font-bold">{clayThickness.toFixed(1)} m</span>
+                </span>
+                <input
+                  type="range"
+                  min="12.5"
+                  max="37.5"
+                  step="0.5"
+                  value={clayThickness}
+                  onChange={(e) => handleSliderChange(prev => ({ ...prev, clayThickness: Number(e.target.value) }))}
+                  className="w-full cursor-pointer accent-cyan-400"
+                />
+              </label>
 
-              <div className="flex justify-between items-center text-slate-300">
-                <span className="font-medium">Preconsolidation Head (h_pre)</span>
-                <span className="font-mono text-cyan-300 font-bold">-{preconsolidationThreshold} m</span>
-              </div>
-              <input
-                type="range"
-                min="5"
-                max="30"
-                value={preconsolidationThreshold}
-                onChange={(e) => setPreconsolidationThreshold(Number(e.target.value))}
-                className="w-full h-1.5 bg-[#0d243b] rounded accent-cyan-400 cursor-pointer"
-              />
+              <label className="flex flex-col gap-1.5">
+                <span className="flex justify-between items-center text-slate-300">
+                  <span className="font-medium">Preconsolidation threshold</span>
+                  <span className="font-mono text-cyan-300 font-bold">{preconsolidationDrawdown} m drawdown</span>
+                </span>
+                <input
+                  type="range"
+                  min="2"
+                  max="20"
+                  step="1"
+                  value={preconsolidationDrawdown}
+                  onChange={(e) => handleSliderChange(prev => ({ ...prev, preconsolidationDrawdown: Number(e.target.value) }))}
+                  className="w-full cursor-pointer accent-cyan-400"
+                />
+              </label>
 
-              <div className="flex justify-between items-center text-slate-300">
-                <span className="font-medium">Virgin Compression (Cc)</span>
-                <span className="font-mono text-cyan-300 font-bold">{compressionIndex}</span>
-              </div>
-              <input
-                type="range"
-                min="0.2"
-                max="0.8"
-                step="0.05"
-                value={compressionIndex}
-                onChange={(e) => setCompressionIndex(Number(e.target.value))}
-                className="w-full h-1.5 bg-[#0d243b] rounded accent-cyan-400 cursor-pointer"
-              />
+              <label className="flex flex-col gap-1.5">
+                <span className="flex justify-between items-center text-slate-300">
+                  <span className="font-medium">Inelastic specific storage (S<sub>skv</sub>)</span>
+                  <span className="font-mono text-cyan-300 font-bold">{claySkv.toExponential(1)} 1/m</span>
+                </span>
+                <input
+                  type="range"
+                  min="-4"
+                  max="-2"
+                  step="0.1"
+                  value={Math.log10(claySkv)}
+                  onChange={(e) => handleSliderChange(prev => ({ ...prev, claySkv: Number(Math.pow(10, Number(e.target.value)).toPrecision(2)) }))}
+                  aria-valuetext={`${claySkv.toExponential(1)} per metre`}
+                  className="w-full cursor-pointer accent-cyan-400"
+                />
+              </label>
+              <p className="text-[11px] text-slate-400 leading-snug">
+                Ranges follow the proposal (thickness ±50% of Fig. 6; S<sub>skv</sub> 10⁻⁴ to 10⁻² 1/m). Only the simplified model uses them; the 3D layers keep their Fig. 6 thicknesses.
+              </p>
             </div>
           )}
         </div>
