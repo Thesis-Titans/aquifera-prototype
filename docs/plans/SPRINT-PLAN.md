@@ -14,12 +14,12 @@ A comprehensive codebase audit by Claude Code identified key bugs and technical 
 
 | # | File & Location | Identified Defect | Architectural Fix | Status |
 |---|---|---|---|---|
-| **B1** | `Aquifer3DCanvas.jsx:541-563`<br>`CentralViewport.jsx:87-93` | 3D surface colormap is hardcoded (cyan→amber→red at 6 and 24 cm), completely ignoring `colorScale`, `dataType`, and `QUANTITIES.max`. `CentralViewport` does not pass `visualizationConfig` to `Aquifer3DCanvas`. | Pass `visualizationConfig` into `Aquifer3DCanvas` and bind vertex colors to the shared `fields.js` colormap and quantity definitions. | Sprint 1 (Task S1.0) |
-| **B2** | `Aquifer3DCanvas.jsx:605-607` | Rows and columns are inverted (`gi` from `wx`, `gj` from `wz` against `i*res+j` with `i=y`). | Correct index calculation so the second well's ground pad sits at the exact ground elevation. | Sprint 1 (Task S1.0) |
-| **B3** | `Aquifer3DCanvas.jsx:592-643` | Well meshes are re-instantiated on every physics update without disposing old geometries and materials, causing GPU memory leaks. | Reuse well mesh geometries and update position/scale transforms instead of re-allocating. | Sprint 1 (Task S1.0) |
-| **B4** | `CentralViewport.jsx:79-93` | Switching between 2D and 3D unmounts the inactive view, destroying/recreating WebGL contexts and tile connections. | Keep both viewports mounted and toggle visibility with CSS (`hidden` / `block`), or properly manage WebGL context lifecycle. | Sprint 1 (Task S1.0) |
-| **B5** | `Aquifer3DCanvas.jsx:512` | 3D canvas only resizes on window resize, unlike the Map which uses a `ResizeObserver`. | Add `ResizeObserver` to the 3D canvas container. | Sprint 1 (Task S1.0) |
-| **B6** | `App.jsx:63` | Screenshot export fails or exports blank canvas because `preserveDrawingBuffer` is not set on WebGL contexts. | Add `preserveDrawingBuffer: true` or capture during the post-render hook. | Sprint 1 (Task S1.0) |
+| **B1** | `Aquifer3DCanvas.jsx:541-563`<br>`CentralViewport.jsx:87-93` | 3D surface colormap is hardcoded (cyan→amber→red at 6 and 24 cm), completely ignoring `colorScale`, `dataType`, and `QUANTITIES.max`. `CentralViewport` does not pass `visualizationConfig` to `Aquifer3DCanvas`. | Pass `visualizationConfig` into `Aquifer3DCanvas` and bind vertex colors to the shared `fields.js` colormap and quantity definitions. | **Resolved** (`6a0d226`) |
+| **B2** | `Aquifer3DCanvas.jsx:605-607` | Rows and columns are inverted (`gi` from `wx`, `gj` from `wz` against `i*res+j` with `i=y`). | Correct index calculation so the second well's ground pad sits at the exact ground elevation. | **Resolved** (`6a0d226`) |
+| **B3** | `Aquifer3DCanvas.jsx:592-643` | Well meshes are re-instantiated on every physics update without disposing old geometries and materials, causing GPU memory leaks. | Reuse well mesh geometries and update position/scale transforms instead of re-allocating. | **Resolved** (`6a0d226`) |
+| **B4** | `CentralViewport.jsx:79-93` | Switching between 2D and 3D unmounts the inactive view, destroying/recreating WebGL contexts and tile connections. | Keep both viewports mounted and toggle visibility with CSS (`hidden` / `block`), or properly manage WebGL context lifecycle. | **Resolved** (`6a0d226`) |
+| **B5** | `Aquifer3DCanvas.jsx:512` | 3D canvas only resizes on window resize, unlike the Map which uses a `ResizeObserver`. | Add `ResizeObserver` to the 3D canvas container. | **Resolved** (`6a0d226`) |
+| **B6** | `App.jsx:63` | Screenshot export fails or exports blank canvas because `preserveDrawingBuffer` is not set on WebGL contexts. | Add `preserveDrawingBuffer: true` or capture during the post-render hook. | **Resolved** (`6a0d226`) |
 | **B7** | `useScenarioState.js:129` | `applyPreset` merges onto `prev` params instead of resetting to `DEFAULT_PARAMS`, leaking custom values into "Baseline". | Reset params cleanly to `{ ...DEFAULT_PARAMS, ...targetPreset.params }`. | **Resolved** (`add8299`) |
 | **B8** | Governance & Wording | `App.jsx:149`, `TopNavigation.jsx:79`, `VerificationModal.jsx:88`, `README.md` contained "capstone" and "ground-truth". | Purged prohibited lexicon, enforced strict BSIT thesis identity and honest modeling disclaimers. | **Resolved** (`add8299`) |
 | **B9** | `domain/scenarioDefaults.js` | Duplicate and obsolete preset definitions diverging from `useScenarioState.js`. | Consolidated `scenarioDefaults.js` as authoritative domain source, imported by `useScenarioState.js`. | **Resolved** (`add8299`) |
@@ -31,11 +31,11 @@ A comprehensive codebase audit by Claude Code identified key bugs and technical 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#ffffff', 'primaryTextColor': '#000000', 'primaryBorderColor': '#000000', 'lineColor': '#000000'}}}%%
 flowchart TD
-    subgraph SP1["Sprint 1: Core Hardening, Empirical Grounding & GIS Controls"]
-        T10["S1.0: Fix Critical Code Deficiencies (B1–B8)"]
-        T11["S1.1: Empirical Evidence Tab in Verification Modal"]
-        T12["S1.2: MapLibre GIS Layer & Basemap Toggles"]
-        T13["S1.3: Dual Export (GeoJSON + Profile CSV)"]
+    subgraph SP1["Sprint 1: Core Hardening, Empirical Grounding & GIS Controls (COMPLETED)"]
+        T10["S1.0: Fix Critical Code Deficiencies (B1–B8) ✓"]
+        T11["S1.1: Empirical Evidence Tab in Verification Modal ✓"]
+        T12["S1.2: MapLibre GIS Layer & Basemap Toggles ✓"]
+        T13["S1.3: Dual Export (GeoJSON + Profile CSV) ✓"]
     end
 
     subgraph SP2["Sprint 2: 2D/3D Well Picking & Colormap Sync"]
@@ -61,26 +61,30 @@ flowchart TD
 
 ---
 
-### Sprint 1: Core Hardening, Empirical Grounding & GIS Controls
+### Sprint 1: Core Hardening, Empirical Grounding & GIS Controls (COMPLETED)
 
-* **Task S1.0: Code Hardening & Governance Correction (B1–B8)**
-  - Correct `App.jsx:149` from "capstone defense" to "BSIT thesis".
-  - Correct `CentralViewport.jsx:72` to "WGS84 Web Mercator (Exports to PRS92 Zone 4)".
-  - Fix `useScenarioState.js:129` preset parameter leak.
-  - Implement canvas `preserveDrawingBuffer` for screenshot exports.
-  - Fix `Aquifer3DCanvas` well index row/col swap (Bug #2).
-  - Pass `visualizationConfig` into `Aquifer3DCanvas` (Bug #1).
-* **Task S1.1: Empirical Pilot Evidence Tab in `VerificationModal.jsx`**
-  - Add a dedicated **"Empirical Pilot Evidence"** tab featuring the October 23 benchmark findings:
+* [x] **Task S1.0: Code Hardening & Governance Correction (B1–B8)**
+  - Corrected `App.jsx:149` from "capstone defense" to "BSIT thesis".
+  - Corrected `CentralViewport.jsx:72` to "WGS84 Web Mercator (Exports to PRS92 Zone 4)".
+  - Fixed `useScenarioState.js:129` preset parameter leak.
+  - Implemented canvas `preserveDrawingBuffer` for screenshot exports.
+  - Fixed `Aquifer3DCanvas` well index row/col swap (Bug #2).
+  - Passed `visualizationConfig` into `Aquifer3DCanvas` and bound colors to shared `fields.js` (Bug #1).
+  - Maintained persistent 2D and 3D viewports in the DOM to avoid WebGL context loss (Bug #4).
+  - Added container `ResizeObserver` to 3D canvas (Bug #5).
+* [x] **Task S1.1: Empirical Pilot Evidence Tab in `VerificationModal.jsx`**
+  - Added dedicated **"Empirical Pilot Evidence"** tab featuring the October 23 benchmark findings:
     - USGS MODFLOW 6 runtime: 22.5 s ($64 \times 64 \times 5 = 20,480$ cells).
     - PINO forward inference: 38.6 ms ($580\times$ speedup) using 2.14 GB VRAM on NVIDIA RTX 4050.
     - Embedded visual summary of Attachment Fig. A1 (75.2 mm compaction bowl in PRS92 Zone 4).
-* **Task S1.2: MapLibre Satellite Basemap & Layer Controls in `MapLibreMap.jsx`**
-  - Add a floating layer controller:
+    - Added dedicated pilot benchmark CSV export button.
+* [x] **Task S1.2: MapLibre Satellite Basemap & Layer Controls in `MapLibreMap.jsx`**
+  - Added floating layer controller:
     - Basemap toggle: **ESRI Dark Canvas** ⇄ **ESRI World Imagery** (satellite aerial photo).
-    - Vector layer toggles: Barangay boundaries, City boundary, and simulation grid opacity slider.
-* **Task S1.3: Export Suite & Metadata Headers in `BottomAnalyticsSuite.jsx`**
-  - Wire dual export buttons: RFC 7946 GeoJSON and Cross-Section Profile CSV with research disclaimer headers.
+    - Vector layer toggles: Barangay boundaries (PSA/NAMRIA), City boundary, 3.2km domain outline, and Wells.
+    - Simulation grid opacity slider (0% to 100%).
+* [x] **Task S1.3: Export Suite & Metadata Headers in `BottomAnalyticsSuite.jsx`**
+  - Wired dual export buttons: RFC 7946 GeoJSON and Cross-Section Profile CSV with research disclaimer headers.
 
 ---
 
