@@ -12,16 +12,17 @@
 
 A comprehensive codebase audit by Claude Code identified key bugs and technical debt that must be resolved alongside Sprint 1:
 
-| # | File & Location | Identified Defect | Architectural Fix |
-|---|---|---|---|
-| **B1** | `Aquifer3DCanvas.jsx:541-563`<br>`CentralViewport.jsx:87-93` | 3D surface colormap is hardcoded (cyan→amber→red at 6 and 24 cm), completely ignoring `colorScale`, `dataType`, and `QUANTITIES.max`. `CentralViewport` does not pass `visualizationConfig` to `Aquifer3DCanvas`. | Pass `visualizationConfig` into `Aquifer3DCanvas` and bind vertex colors to the shared `fields.js` colormap and quantity definitions. |
-| **B2** | `Aquifer3DCanvas.jsx:605-607` | Rows and columns are inverted (`gi` from `wx`, `gj` from `wz` against `i*res+j` with `i=y`). | Correct index calculation so the second well's ground pad sits at the exact ground elevation. |
-| **B3** | `Aquifer3DCanvas.jsx:592-643` | Well meshes are re-instantiated on every physics update without disposing old geometries and materials, causing GPU memory leaks. | Reuse well mesh geometries and update position/scale transforms instead of re-allocating. |
-| **B4** | `CentralViewport.jsx:79-93` | Switching between 2D and 3D unmounts the inactive view, destroying/recreating WebGL contexts and tile connections. | Keep both viewports mounted and toggle visibility with CSS (`hidden` / `block`), or properly manage WebGL context lifecycle. |
-| **B5** | `Aquifer3DCanvas.jsx:512` | 3D canvas only resizes on window resize, unlike the Map which uses a `ResizeObserver`. | Add `ResizeObserver` to the 3D canvas container. |
-| **B6** | `App.jsx:63` | Screenshot export fails or exports blank canvas because `preserveDrawingBuffer` is not set on WebGL contexts. | Add `preserveDrawingBuffer: true` or capture during the post-render hook. |
-| **B7** | `useScenarioState.js:129` | `applyPreset` merges onto `prev` params instead of resetting to `DEFAULT_PARAMS`, leaking custom clay values into "Baseline". | Merge presets onto `DEFAULT_PARAMS`. |
-| **B8** | Governance & Wording | `App.jsx:149` says "capstone defense" (prohibited; this is a **BSIT Thesis**). `CentralViewport.jsx:72` says "PRS92 / WGS84" when frontend is WGS84. `groundwaterPhysics.js:4` claims MODFLOW 6 CSUB equivalence instead of Theis/Terzaghi approximation. | Correct governance wording to strict BSIT Thesis and honest modeling disclaimers. |
+| # | File & Location | Identified Defect | Architectural Fix | Status |
+|---|---|---|---|---|
+| **B1** | `Aquifer3DCanvas.jsx:541-563`<br>`CentralViewport.jsx:87-93` | 3D surface colormap is hardcoded (cyan→amber→red at 6 and 24 cm), completely ignoring `colorScale`, `dataType`, and `QUANTITIES.max`. `CentralViewport` does not pass `visualizationConfig` to `Aquifer3DCanvas`. | Pass `visualizationConfig` into `Aquifer3DCanvas` and bind vertex colors to the shared `fields.js` colormap and quantity definitions. | Sprint 1 (Task S1.0) |
+| **B2** | `Aquifer3DCanvas.jsx:605-607` | Rows and columns are inverted (`gi` from `wx`, `gj` from `wz` against `i*res+j` with `i=y`). | Correct index calculation so the second well's ground pad sits at the exact ground elevation. | Sprint 1 (Task S1.0) |
+| **B3** | `Aquifer3DCanvas.jsx:592-643` | Well meshes are re-instantiated on every physics update without disposing old geometries and materials, causing GPU memory leaks. | Reuse well mesh geometries and update position/scale transforms instead of re-allocating. | Sprint 1 (Task S1.0) |
+| **B4** | `CentralViewport.jsx:79-93` | Switching between 2D and 3D unmounts the inactive view, destroying/recreating WebGL contexts and tile connections. | Keep both viewports mounted and toggle visibility with CSS (`hidden` / `block`), or properly manage WebGL context lifecycle. | Sprint 1 (Task S1.0) |
+| **B5** | `Aquifer3DCanvas.jsx:512` | 3D canvas only resizes on window resize, unlike the Map which uses a `ResizeObserver`. | Add `ResizeObserver` to the 3D canvas container. | Sprint 1 (Task S1.0) |
+| **B6** | `App.jsx:63` | Screenshot export fails or exports blank canvas because `preserveDrawingBuffer` is not set on WebGL contexts. | Add `preserveDrawingBuffer: true` or capture during the post-render hook. | Sprint 1 (Task S1.0) |
+| **B7** | `useScenarioState.js:129` | `applyPreset` merges onto `prev` params instead of resetting to `DEFAULT_PARAMS`, leaking custom values into "Baseline". | Reset params cleanly to `{ ...DEFAULT_PARAMS, ...targetPreset.params }`. | **Resolved** (`add8299`) |
+| **B8** | Governance & Wording | `App.jsx:149`, `TopNavigation.jsx:79`, `VerificationModal.jsx:88`, `README.md` contained "capstone" and "ground-truth". | Purged prohibited lexicon, enforced strict BSIT thesis identity and honest modeling disclaimers. | **Resolved** (`add8299`) |
+| **B9** | `domain/scenarioDefaults.js` | Duplicate and obsolete preset definitions diverging from `useScenarioState.js`. | Consolidated `scenarioDefaults.js` as authoritative domain source, imported by `useScenarioState.js`. | **Resolved** (`add8299`) |
 
 ---
 
