@@ -25,7 +25,7 @@ export default function CentralViewport({
   const is3D = viewMode === '3D';
 
   return (
-    <div className="relative flex-1 h-full w-full min-h-[460px] bg-[#050e18] rounded-xl border border-[#122336] overflow-hidden flex flex-col shadow-2xl">
+    <div className="relative flex-1 h-full w-full min-h-115 bg-[#050e18] rounded-xl border border-[#122336] overflow-hidden flex flex-col shadow-2xl">
       
       {/* 1. Viewport Top HUD Toolbar */}
       <div className="h-12 bg-slate-950/90 backdrop-blur-md border-b border-white/10 px-4 flex items-center justify-between gap-3 shrink-0 z-20">
@@ -69,28 +69,39 @@ export default function CentralViewport({
         <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
           <span className="text-[11px] text-slate-300 font-sans font-semibold">
-            {is3D ? 'Three.js WebGL (Stratified)' : 'MapLibre GL (PRS92 / WGS84)'}
+            {is3D ? 'Three.js WebGL (Stratified)' : 'MapLibre GL: WGS84 Web Mercator (Exports to PRS92 Zone 4)'}
           </span>
         </div>
       </div>
 
-      {/* 2. Interactive Viewport Stage (2D MapLibre or 3D Three.js) */}
-      <div className="relative flex-1 min-h-0 w-full h-full overflow-hidden flex flex-col">
-        {!is3D ? (
+      {/* 2. Interactive Viewport Stage (2D MapLibre or 3D Three.js persistent panes) */}
+      <div className="relative flex-1 min-h-0 w-full h-full overflow-hidden">
+        <div
+          data-viewport-pane="2D"
+          aria-hidden={is3D}
+          className={`absolute inset-0 ${is3D ? 'hidden' : 'block'}`}
+        >
           <MapLibreMap
             physicalState={physicalState}
             params={params}
             visualizationConfig={visualizationConfig}
             onSelectDistrict={onSelectDistrict}
           />
-        ) : (
+        </div>
+
+        <div
+          data-viewport-pane="3D"
+          aria-hidden={!is3D}
+          className={`absolute inset-0 ${is3D ? 'block' : 'hidden'}`}
+        >
           <Aquifer3DCanvas
             physicalState={physicalState}
+            visualizationConfig={visualizationConfig}
             layerVisibilities={layerVisibilities}
             setLayerVisibilities={setLayerVisibilities}
             onMoveWell={onMoveWell}
           />
-        )}
+        </div>
 
         {/* 3. Dual-Engine Benchmark Target HUD Overlay */}
         <DualBenchmarkHUD physicalState={physicalState} />

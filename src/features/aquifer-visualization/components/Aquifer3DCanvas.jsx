@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Layers, Compass, Activity, Eye, Crosshair, X, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { DOMAIN, HYDRO_PARAMS, COMPACTING_LAYER_ID, getPointHydrogeology } from '../../../physics/groundwaterPhysics';
+import { QUANTITIES, COLOR_SCALES, cssGradient } from '../../../physics/fields';
 
 // Scene units: 1 unit = 10 m of depth; the 120 m domain spans 0 to -12 units.
 const LAYER_IDS = DOMAIN.layers.map(l => l.id);
@@ -10,7 +11,13 @@ const LAYER_MESH_COLORS = { layer1: 0xc89666, layer2: 0x7c2d12, layer3: 0x1e3a8a
 // Deep production well screen at the middle of Layer 5 (proposal Fig. 6: wells in Layers 3 and 5).
 const WELL_SCREEN_Y = -(DOMAIN.layers[4].top + DOMAIN.layers[4].bottom) / 20;
 
-export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setLayerVisibilities, onMoveWell }) {
+export default function Aquifer3DCanvas({
+  physicalState,
+  visualizationConfig = { colorScale: 'standard', dataType: 'subsidence' },
+  layerVisibilities,
+  setLayerVisibilities,
+  onMoveWell
+}) {
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -173,8 +180,8 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     scene.fog = new THREE.FogExp2(0x060c16, 0.014);
 
     // 2. Camera Setup
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    const width = Math.max(1, container.clientWidth || 1);
+    const height = Math.max(1, container.clientHeight || 1);
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     camera.position.set(22, 18, 26);
     cameraRef.current = camera;
@@ -500,22 +507,27 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     container.addEventListener('pointermove', handlePointerMove);
     container.addEventListener('pointerdown', handlePointerDown);
 
-    // Resize Handler
-    const handleResize = () => {
-      if (!container) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
+    // Resize Handler via ResizeObserver (Bug B5)
+    const handleResize = (w, h) => {
+      if (!w || !h || w <= 0 || h <= 0) return;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
-    window.addEventListener('resize', handleResize);
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width: w, height: h } = entry.contentRect;
+        handleResize(w, h);
+      }
+    });
+    resizeObserver.observe(container);
 
     return () => {
       cancelAnimationFrame(animationFrameId);
       container.removeEventListener('pointermove', handlePointerMove);
       container.removeEventListener('pointerdown', handlePointerDown);
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
@@ -534,30 +546,34 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     const res = physicalState.resolution;
     const grid = physicalState.displacementGrid;
 
-    // Realistic geotechnical subsidence colormap:
-    // 0 cm: Natural Earth/Cyan (Safe)
-    // 8-15 cm: Warning Amber (Elastic drawdown limit)
-    // >20 cm: Deep Red / Crimson (Inelastic matrix failure)
-    const colorSafe = new THREE.Color(0x38bdf8);
-    const colorMid = new THREE.Color(0xf59e0b);
-    const colorDanger = new THREE.Color(0xef4444);
+    // Bind 3D vertex colors to shared COLOR_SCALES and QUANTITIES (Bug B1)
+    const colorScaleKey = visualizationConfig?.colorScale || 'standard';
+    const dataTypeKey = visualizationConfig?.dataType || 'subsidence';
+    const quantityDef = QUANTITIES[dataTypeKey] || QUANTITIES.subsidence;
+    const scaleDef = COLOR_SCALES[colorScaleKey] || COLOR_SCALES.standard;
+    const hexColors = scaleDef.colors;
+    const threeColors = hexColors.map(c => new THREE.Color(c));
     const tempColor = new THREE.Color();
+    const numColors = threeColors.length;
 
     for (let i = 0; i < res; i++) {
       for (let j = 0; j < res; j++) {
         const idx = i * res + j;
         const subMeters = grid[idx];
         
-        // Deform Y coordinate downwards
+        // Deform Y coordinate downwards based on physical subsidence
         const dispY = -subMeters * (verticalExaggeration * 0.25);
         posAttr.setY(idx, dispY);
 
-        const subCm = subMeters * 100;
-        if (subCm < 6) {
-          tempColor.copy(colorSafe).lerp(colorMid, subCm / 6);
-        } else {
-          tempColor.copy(colorMid).lerp(colorDanger, Math.min(1.0, (subCm - 6) / 18));
-        }
+        // Compute normalized scalar value according to the active quantity
+        const val = quantityDef.value(physicalState, idx);
+        const norm = Math.max(0, Math.min(1.0, val / quantityDef.max));
+
+        // Interpolate across the active colormap palette (matching MapLibre 2D interpolation)
+        const scaled = norm * (numColors - 1);
+        const cIdx = Math.min(Math.floor(scaled), numColors - 2);
+        const frac = scaled - cIdx;
+        tempColor.copy(threeColors[cIdx]).lerp(threeColors[cIdx + 1], frac);
 
         colorAttr.setXYZ(idx, tempColor.r, tempColor.g, tempColor.b);
       }
@@ -589,8 +605,17 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
     // Reconstruct Well Assemblies
     if (wellMeshGroupRef.current && sceneRef.current) {
       const group = wellMeshGroupRef.current;
+      // Dispose geometries and materials before clearing children to eliminate WebGL memory leak (Bug B3)
       while (group.children.length > 0) {
-        group.remove(group.children[0]);
+        const child = group.children[0];
+        child.traverse((o) => {
+          if (o.geometry) o.geometry.dispose();
+          if (o.material) {
+            if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose());
+            else o.material.dispose();
+          }
+        });
+        group.remove(child);
       }
 
       const worldScale = 20 / DOMAIN.widthMeters;
@@ -601,9 +626,10 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         const wx = w.x * worldScale;
         const wz = w.y * worldScale;
 
-        // Calculate surface settlement at exact wellhead location
-        const gi = Math.max(0, Math.min(res - 1, Math.round(((wx + 10) / 20) * (res - 1))));
-        const gj = Math.max(0, Math.min(res - 1, Math.round(((wz + 10) / 20) * (res - 1))));
+        // Calculate surface settlement at exact wellhead location (Bug B2)
+        // wx corresponds to column gj (east/west), wz corresponds to row gi (north/south)
+        const gj = Math.max(0, Math.min(res - 1, Math.round(((wx + 10) / 20) * (res - 1))));
+        const gi = Math.max(0, Math.min(res - 1, Math.round(((wz + 10) / 20) * (res - 1))));
         const subMeters = grid ? grid[gi * res + gj] : 0;
         const surfaceY = -subMeters * (verticalExaggeration * 0.25);
 
@@ -656,7 +682,7 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
         cone.visible = showWaterTable;
       }
     }
-  }, [physicalState, verticalExaggeration, showWaterTable]);
+  }, [physicalState, verticalExaggeration, showWaterTable, visualizationConfig?.colorScale, visualizationConfig?.dataType]);
 
   // Handle Visibility and Viewport Toggles
   useEffect(() => {
@@ -1049,16 +1075,19 @@ export default function Aquifer3DCanvas({ physicalState, layerVisibilities, setL
           ))}
         </div>
 
-        {/* Subsidence Colormap Legend */}
+        {/* Dynamic Quantity & Colormap Legend (Bug B1) */}
         <div className="flex items-center gap-2.5 shrink-0">
           <span className="text-xs text-slate-400 font-medium">
-            Settlement (Δz):
+            {QUANTITIES[visualizationConfig?.dataType]?.label || 'Settlement'}:
           </span>
-          <div className="w-28 sm:w-36 h-2 rounded-full bg-linear-to-r from-[#38bdf8] via-[#f59e0b] to-[#ef4444] shadow-inner" />
+          <div
+            className="w-28 sm:w-36 h-2 rounded-full shadow-inner"
+            style={{ background: cssGradient(visualizationConfig?.colorScale || 'standard') }}
+          />
           <div className="flex gap-1.5 text-xs text-slate-400 font-mono tabular-nums font-medium">
-            <span>0cm</span>
+            <span>0 {QUANTITIES[visualizationConfig?.dataType]?.unit || 'cm'}</span>
             <span>→</span>
-            <span>≥25cm</span>
+            <span>≥{QUANTITIES[visualizationConfig?.dataType]?.max || 50} {QUANTITIES[visualizationConfig?.dataType]?.unit || 'cm'}</span>
           </div>
         </div>
 

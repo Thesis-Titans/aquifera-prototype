@@ -41,23 +41,25 @@ export default function App() {
 
   // Screenshot capture for defense slides
   const handleCaptureScreenshot = () => {
-    // Look for canvas inside the active viewport
-    const canvases = document.querySelectorAll('canvas');
-    if (!canvases || canvases.length === 0) {
-      alert('No active WebGL canvas detected for snapshot export.');
-      return;
-    }
-    
-    // Choose the largest canvas (main viewport)
-    let targetCanvas = canvases[0];
-    let maxArea = 0;
-    canvases.forEach(c => {
-      const area = c.width * c.height;
-      if (area > maxArea) {
-        maxArea = area;
-        targetCanvas = c;
+    // Select canvas from the currently active visible viewport pane
+    const activePane = document.querySelector(`[data-viewport-pane="${viewMode}"]`);
+    let targetCanvas = activePane?.querySelector('canvas');
+
+    if (!targetCanvas) {
+      const canvases = document.querySelectorAll('canvas');
+      if (!canvases || canvases.length === 0) {
+        alert('No active WebGL canvas detected for snapshot export.');
+        return;
       }
-    });
+      let maxArea = 0;
+      canvases.forEach(c => {
+        const area = c.width * c.height;
+        if (area > maxArea) {
+          maxArea = area;
+          targetCanvas = c;
+        }
+      });
+    }
 
     try {
       const dataUrl = targetCanvas.toDataURL('image/png');

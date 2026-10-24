@@ -120,7 +120,8 @@ export default function MapLibreMap({
       minZoom: 10,
       maxZoom: 17,
       cooperativeGestures: true,
-      attributionControl: true
+      attributionControl: true,
+      preserveDrawingBuffer: true
     });
 
     mapRef.current = map;
