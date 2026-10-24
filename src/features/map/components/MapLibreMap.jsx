@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Map, setWorkerUrl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Navigation, ZoomIn, ZoomOut, RotateCcw, Layers, Loader2, AlertTriangle, X } from 'lucide-react';
+import { Navigation, ZoomIn, ZoomOut, RotateCcw, Layers, Loader2, AlertTriangle, X, Sliders } from 'lucide-react';
 import {
   QUANTITIES,
   DOMAIN_BOUNDS,
@@ -21,8 +21,8 @@ if (typeof window !== 'undefined' && setWorkerUrl) {
   setWorkerUrl(fullUrl);
 }
 
-// Robust, high-contrast dark GIS basemap (ESRI World Dark Gray Canvas, no API key required)
-const ESRI_DARK_STYLE = {
+// Dual GIS Basemap Style Definition: ESRI Dark Canvas & ESRI World Imagery (No API key required)
+const GIS_BASEMAP_STYLE = {
   version: 8,
   sources: {
     'esri-dark-base': {
@@ -32,6 +32,14 @@ const ESRI_DARK_STYLE = {
       ],
       tileSize: 256,
       attribution: '&copy; <a href="https://www.esri.com" target="_blank" rel="noreferrer">Esri</a>, HERE, Garmin, FAO, NOAA, USGS, OpenStreetMap'
+    },
+    'esri-satellite-base': {
+      type: 'raster',
+      tiles: [
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+      ],
+      tileSize: 256,
+      attribution: '&copy; <a href="https://www.esri.com" target="_blank" rel="noreferrer">Esri</a>, Maxar, Earthstar Geographics'
     },
     'esri-dark-reference': {
       type: 'raster',
@@ -43,7 +51,7 @@ const ESRI_DARK_STYLE = {
   },
   layers: [
     {
-      id: 'esri-dark-background',
+      id: 'gis-background',
       type: 'background',
       paint: {
         'background-color': '#060e18'
@@ -54,7 +62,16 @@ const ESRI_DARK_STYLE = {
       type: 'raster',
       source: 'esri-dark-base',
       minzoom: 0,
-      maxzoom: 16
+      maxzoom: 16,
+      layout: { visibility: 'visible' }
+    },
+    {
+      id: 'esri-satellite-base-layer',
+      type: 'raster',
+      source: 'esri-satellite-base',
+      minzoom: 0,
+      maxzoom: 18,
+      layout: { visibility: 'none' }
     }
   ]
 };
@@ -85,9 +102,21 @@ export default function MapLibreMap({
   const [retryCount, setRetryCount] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState(null);
 
+  // Task S1.2: GIS Layer & Basemap Controller State
+  const [basemapType, setBasemapType] = useState('dark'); // 'dark' | 'satellite'
+  const [showLayersPanel, setShowLayersPanel] = useState(false);
+  const [layerVisibility, setLayerVisibility] = useState({
+    barangays: true,
+    cityBoundary: true,
+    domainOutline: true,
+    wells: true
+  });
+  const [gridOpacity, setGridOpacity] = useState(
+    visualizationConfig?.opacity ? visualizationConfig.opacity / 100 : 0.75
+  );
+
   const dataType = QUANTITIES[visualizationConfig?.dataType] ? visualizationConfig.dataType : 'subsidence';
   const colorScale = visualizationConfig?.colorScale || 'standard';
-  const opacity = (visualizationConfig?.opacity || 75) / 100;
   const quantity = QUANTITIES[dataType];
 
   // Slow-loading watchdog (flags if basemap takes longer than 7 seconds)
@@ -103,10 +132,10 @@ export default function MapLibreMap({
   const selected = selectedIdx != null && physicalState ? describeNode(physicalState, selectedIdx) : null;
 
   // Latest data for the one-time layer setup inside the map initialisation effect
-  const latestRef = useRef({ geojsonGrid, wellsData, colorScale, opacity });
+  const latestRef = useRef({ geojsonGrid, wellsData, colorScale, gridOpacity });
   useEffect(() => {
-    latestRef.current = { geojsonGrid, wellsData, colorScale, opacity };
-  }, [geojsonGrid, wellsData, colorScale, opacity]);
+    latestRef.current = { geojsonGrid, wellsData, colorScale, gridOpacity };
+  }, [geojsonGrid, wellsData, colorScale, gridOpacity]);
 
   // Initialize MapLibre GL Map
   useEffect(() => {
@@ -114,7 +143,7 @@ export default function MapLibreMap({
 
     const map = new Map({
       container: mapContainerRef.current,
-      style: ESRI_DARK_STYLE,
+      style: GIS_BASEMAP_STYLE,
       bounds: DOMAIN_LNGLAT_BOUNDS,
       fitBoundsOptions: FIT_OPTIONS,
       minZoom: 10,
@@ -184,13 +213,13 @@ export default function MapLibreMap({
         id: 'iloilo-barangays-line',
         type: 'line',
         source: 'iloilo-barangays',
-        paint: { 'line-color': 'rgba(148, 163, 184, 0.35)', 'line-width': 1 }
+        paint: { 'line-color': 'rgba(148, 163, 184, 0.45)', 'line-width': 1 }
       });
       map.addLayer({
         id: 'iloilo-city-boundary-line',
         type: 'line',
         source: 'iloilo-city-boundary',
-        paint: { 'line-color': '#f59e0b', 'line-width': 1.5, 'line-dasharray': [3, 2], 'line-opacity': 0.7 }
+        paint: { 'line-color': '#f59e0b', 'line-width': 1.5, 'line-dasharray': [3, 2], 'line-opacity': 0.8 }
       });
 
       // Synthetic result grid
@@ -200,7 +229,7 @@ export default function MapLibreMap({
         source: 'result-grid',
         paint: {
           'fill-color': fillColorExpression(latest.colorScale),
-          'fill-opacity': ['case', ['<', ['get', 'v'], 0.004], 0, latest.opacity]
+          'fill-opacity': ['case', ['<', ['get', 'v'], 0.004], 0, latest.gridOpacity]
         }
       });
       map.addLayer({
@@ -225,13 +254,13 @@ export default function MapLibreMap({
         paint: { 'raster-opacity': 0.85 }
       });
 
-      // Wells
+      // Production Wells
       map.addLayer({
         id: 'wells-circle',
         type: 'circle',
         source: 'wells',
         paint: {
-          'circle-radius': 6,
+          'circle-radius': 7,
           'circle-color': '#0f172a',
           'circle-stroke-color': '#38bdf8',
           'circle-stroke-width': 2.5
@@ -263,6 +292,44 @@ export default function MapLibreMap({
     };
   }, [retryCount]);
 
+  // Basemap switcher: toggle raster visibility without style re-fetching
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map) return;
+    if (map.getLayer('esri-dark-base-layer')) {
+      map.setLayoutProperty('esri-dark-base-layer', 'visibility', basemapType === 'dark' ? 'visible' : 'none');
+    }
+    if (map.getLayer('esri-satellite-base-layer')) {
+      map.setLayoutProperty('esri-satellite-base-layer', 'visibility', basemapType === 'satellite' ? 'visible' : 'none');
+    }
+  }, [basemapType, mapLoaded]);
+
+  // Vector layer visibility toggles
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map) return;
+    if (map.getLayer('iloilo-barangays-line')) {
+      map.setLayoutProperty('iloilo-barangays-line', 'visibility', layerVisibility.barangays ? 'visible' : 'none');
+    }
+    if (map.getLayer('iloilo-city-boundary-line')) {
+      map.setLayoutProperty('iloilo-city-boundary-line', 'visibility', layerVisibility.cityBoundary ? 'visible' : 'none');
+    }
+    if (map.getLayer('domain-outline-line')) {
+      map.setLayoutProperty('domain-outline-line', 'visibility', layerVisibility.domainOutline ? 'visible' : 'none');
+    }
+    if (map.getLayer('wells-circle')) {
+      map.setLayoutProperty('wells-circle', 'visibility', layerVisibility.wells ? 'visible' : 'none');
+    }
+  }, [layerVisibility, mapLoaded]);
+
+  // Simulation grid opacity & color scale sync
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map?.getLayer('result-fill')) return;
+    map.setPaintProperty('result-fill', 'fill-color', fillColorExpression(colorScale));
+    map.setPaintProperty('result-fill', 'fill-opacity', ['case', ['<', ['get', 'v'], 0.004], 0, gridOpacity]);
+  }, [colorScale, gridOpacity, mapLoaded]);
+
   // Genuine retry handler: tears down map and triggers full clean initialization
   const handleRetryBasemap = () => {
     setMapError(null);
@@ -271,7 +338,7 @@ export default function MapLibreMap({
     setRetryCount(c => c + 1);
   };
 
-  // Keep sources and paint properties in sync with the scenario and the visualization controls
+  // Keep sources in sync with physical simulation state
   useEffect(() => {
     if (!mapLoaded) return;
     mapRef.current?.getSource('result-grid')?.setData(geojsonGrid);
@@ -282,14 +349,7 @@ export default function MapLibreMap({
     mapRef.current?.getSource('wells')?.setData(wellsData);
   }, [wellsData, mapLoaded]);
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!mapLoaded || !map?.getLayer('result-fill')) return;
-    map.setPaintProperty('result-fill', 'fill-color', fillColorExpression(colorScale));
-    map.setPaintProperty('result-fill', 'fill-opacity', ['case', ['<', ['get', 'v'], 0.004], 0, opacity]);
-  }, [colorScale, opacity, mapLoaded]);
-
-  // Controls Handlers
+  // Navigation Handlers
   const handleZoomIn = () => mapRef.current?.zoomIn();
   const handleZoomOut = () => mapRef.current?.zoomOut();
   const handleResetExtent = () => mapRef.current?.fitBounds(DOMAIN_LNGLAT_BOUNDS, { ...FIT_OPTIONS, duration: 800 });
@@ -352,8 +412,21 @@ export default function MapLibreMap({
         </div>
       </div>
 
-      {/* 3. Map Navigation Controls (Top-Right) */}
+      {/* 3. Map Controls (Top-Right): Zoom, Reset, and Layer Controls */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+        <button
+          onClick={() => setShowLayersPanel(p => !p)}
+          aria-label="Toggle GIS Layers & Basemap"
+          title="GIS Layer Controls & Basemap Switcher"
+          className={`w-8 h-8 rounded-lg backdrop-blur-md border flex items-center justify-center transition-all shadow-md cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-400 ${
+            showLayersPanel
+              ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/50'
+              : 'bg-slate-950/85 text-slate-200 border-white/10 hover:border-cyan-400/50 hover:text-white'
+          }`}
+        >
+          <Layers size={15} />
+        </button>
+
         {[
           { onClick: handleZoomIn, label: 'Zoom in', icon: <ZoomIn size={15} /> },
           { onClick: handleZoomOut, label: 'Zoom out', icon: <ZoomOut size={15} /> },
@@ -371,7 +444,127 @@ export default function MapLibreMap({
         ))}
       </div>
 
-      {/* 4. Bottom-Left Map Legend */}
+      {/* 4. Floating Layer Controls Popover (Task S1.2) */}
+      {showLayersPanel && (
+        <div className="absolute top-4 right-14 z-20 w-68 bg-slate-950/95 backdrop-blur-xl border border-white/15 rounded-xl shadow-2xl p-3.5 flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+              <Layers size={14} className="text-cyan-400" />
+              <span>GIS Layer Controls</span>
+            </div>
+            <button
+              onClick={() => setShowLayersPanel(false)}
+              className="text-slate-400 hover:text-white p-0.5 rounded cursor-pointer hover:bg-white/10"
+              title="Close panel"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          {/* Basemap Selection */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-semibold text-slate-300">Basemap Imagery</span>
+            <div className="grid grid-cols-2 gap-1.5 bg-slate-900/80 p-1 rounded-lg border border-white/10">
+              <button
+                onClick={() => setBasemapType('dark')}
+                className={`py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
+                  basemapType === 'dark'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Dark Canvas
+              </button>
+              <button
+                onClick={() => setBasemapType('satellite')}
+                className={`py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
+                  basemapType === 'satellite'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                ESRI Satellite
+              </button>
+            </div>
+          </div>
+
+          {/* Vector Overlays */}
+          <div className="flex flex-col gap-2 border-t border-white/10 pt-2">
+            <span className="text-[11px] font-semibold text-slate-300">Vector Overlays</span>
+            
+            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer hover:text-white">
+              <span className="flex items-center gap-2">
+                <span className="w-2.5 h-0.5 bg-slate-400 rounded-full" />
+                Barangays (PSA/NAMRIA)
+              </span>
+              <input
+                type="checkbox"
+                checked={layerVisibility.barangays}
+                onChange={(e) => setLayerVisibility(v => ({ ...v, barangays: e.target.checked }))}
+                className="accent-cyan-400 rounded cursor-pointer"
+              />
+            </label>
+
+            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer hover:text-white">
+              <span className="flex items-center gap-2">
+                <span className="w-2.5 h-0.5 border-t border-dashed border-amber-400" />
+                Iloilo City Boundary
+              </span>
+              <input
+                type="checkbox"
+                checked={layerVisibility.cityBoundary}
+                onChange={(e) => setLayerVisibility(v => ({ ...v, cityBoundary: e.target.checked }))}
+                className="accent-cyan-400 rounded cursor-pointer"
+              />
+            </label>
+
+            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer hover:text-white">
+              <span className="flex items-center gap-2">
+                <span className="w-2.5 h-0.5 border-t border-dashed border-cyan-400" />
+                Synthetic 3.2km Domain
+              </span>
+              <input
+                type="checkbox"
+                checked={layerVisibility.domainOutline}
+                onChange={(e) => setLayerVisibility(v => ({ ...v, domainOutline: e.target.checked }))}
+                className="accent-cyan-400 rounded cursor-pointer"
+              />
+            </label>
+
+            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer hover:text-white">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full border border-cyan-400 bg-slate-900" />
+                Production Wells
+              </span>
+              <input
+                type="checkbox"
+                checked={layerVisibility.wells}
+                onChange={(e) => setLayerVisibility(v => ({ ...v, wells: e.target.checked }))}
+                className="accent-cyan-400 rounded cursor-pointer"
+              />
+            </label>
+          </div>
+
+          {/* Simulation Grid Opacity Slider */}
+          <div className="flex flex-col gap-1.5 border-t border-white/10 pt-2">
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="font-semibold text-slate-300">Grid Opacity</span>
+              <span className="font-mono text-cyan-400 font-bold">{Math.round(gridOpacity * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={gridOpacity}
+              onChange={(e) => setGridOpacity(parseFloat(e.target.value))}
+              className="w-full accent-cyan-400 cursor-pointer"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 5. Bottom-Left Map Legend */}
       <div className="absolute bottom-4 left-4 z-10 bg-slate-950/90 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-xl w-72">
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-1.5">
@@ -393,7 +586,7 @@ export default function MapLibreMap({
         </div>
       </div>
 
-      {/* 5. Selected Cell Inspector */}
+      {/* 6. Selected Cell Inspector */}
       {selected && (
         <div className="absolute bottom-4 right-4 z-10 bg-slate-950/95 backdrop-blur-md p-3.5 rounded-xl border border-cyan-400/40 shadow-2xl w-64 text-xs">
           <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2">
