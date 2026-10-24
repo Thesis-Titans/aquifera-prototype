@@ -207,7 +207,7 @@ export function exportGeoJSON(state, params) {
     metadata: {
       generator: 'Aquifera prototype (in-browser simplified analytical model)',
       disclaimer: 'Synthetic demonstration output on a generic 3.2 km test domain placed over Iloilo City for context. Not a subsidence forecast for Iloilo City; not MODFLOW 6 or PINO output.',
-      coordinate_system: 'WGS 84 (EPSG:4326). The study uses PRS92 Zone 4 (EPSG:3124) for GIS work.',
+      coordinate_system: 'WGS 84 (EPSG:4326). The study uses PRS92 Zone 4 (EPSG:3123) for GIS work.',
       scenario: params
     },
     features

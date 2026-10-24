@@ -134,6 +134,32 @@ export default function BottomAnalyticsSuite({
     { label: 'Pumping duration', unit: 'days', now: capturedScenario?.params?.pumpingDays ?? params.pumpingDays, ref: DEFAULT_PARAMS.pumpingDays, d: 0 }
   ];
 
+  // Task S1.3: Dual Export suite - Cross-Section Profile CSV with metadata
+  const handleExportProfileCSV = () => {
+    const q = QUANTITIES[activeResultsTab];
+    let csv = '# AQUIFERA BSIT THESIS RESEARCH PROTOTYPE\n';
+    csv += '# Content: West-to-East Cross-Section Subsidence Profile Data\n';
+    csv += '# Disclaimer: Synthetic analytical demonstration output (not USGS MODFLOW 6 or PINO output)\n';
+    csv += `# Scenario Extraction Rate: ${params.pumpingRate} m3/d\n`;
+    csv += `# Pumping Duration: ${params.pumpingDays} days\n`;
+    csv += `# Hydraulic Conductivity: ${params.hydraulicConductivity} m/d\n`;
+    csv += `# Selected Quantity: ${q.label} (${q.unit})\n`;
+    csv += `# Export Timestamp: ${new Date().toISOString()}\n`;
+    csv += 'Distance_km,Distance_m,Live_Scenario_Value,Captured_Baseline_Value,Unit\n';
+    liveProfile.forEach((p, idx) => {
+      const capVal = capturedProfile[idx]?.value ?? 0;
+      csv += `${p.xKm},${(p.xKm * 1000).toFixed(0)},${p.value.toFixed(3)},${capVal.toFixed(3)},${q.unit}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aquifera_profile_${activeResultsTab}_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <section id="bottom-analytics-suite" className="bg-[#06111e] border-t border-[#122336] px-4 lg:px-6 py-4 scroll-mt-16">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 max-w-[1920px] mx-auto">
@@ -160,9 +186,18 @@ export default function BottomAnalyticsSuite({
             {QUANTITIES[activeResultsTab].label} ({QUANTITIES[activeResultsTab].unit})
           </div>
           <ProfileChart live={liveProfile} captured={capturedProfile} quantityKey={activeResultsTab} thresholdDrawdown={thresholdDrawdown} />
-          <div className="flex items-center gap-4 text-[11px] text-slate-400">
-            <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-cyan-400 inline-block" /> Live scenario</span>
-            <span className="flex items-center gap-1.5"><span className="w-4 border-t border-dashed border-slate-400 inline-block" /> Captured scenario</span>
+          <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-cyan-400 inline-block" /> Live scenario</span>
+              <span className="flex items-center gap-1.5"><span className="w-4 border-t border-dashed border-slate-400 inline-block" /> Captured scenario</span>
+            </div>
+            <button
+              onClick={handleExportProfileCSV}
+              className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono text-[10px] cursor-pointer hover:underline"
+              title="Export profile cross-section as CSV"
+            >
+              <Download size={11} /> CSV
+            </button>
           </div>
         </div>
 
@@ -319,21 +354,31 @@ export default function BottomAnalyticsSuite({
             {is3D && <p className="text-[11px] text-slate-400">Map layer, opacity and colour scale apply to the 2D map.</p>}
           </div>
 
-          <div className="mt-auto grid grid-cols-2 gap-2">
-            <button
-              onClick={onResetScenario}
-              className="h-9 px-2 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#18344e] hover:border-cyan-500/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-400"
-            >
-              <RotateCcw size={14} className="text-cyan-400" />
-              <span>Reset scenario</span>
-            </button>
+          <div className="mt-auto flex flex-col gap-2">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={onResetScenario}
+                className="h-9 px-2 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#18344e] hover:border-cyan-500/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-400"
+              >
+                <RotateCcw size={14} className="text-cyan-400" />
+                <span>Reset scenario</span>
+              </button>
+              <button
+                onClick={handleExportProfileCSV}
+                className="h-9 px-2 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#18344e] hover:border-cyan-500/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-400"
+                title="Download cross-section profile data as CSV"
+              >
+                <Download size={14} className="text-amber-400" />
+                <span>Profile CSV</span>
+              </button>
+            </div>
             <button
               onClick={() => downloadJSON(exportGeoJSON(physicalState, params), 'aquifera_synthetic_demo.geojson')}
-              className="h-9 px-2 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#18344e] hover:border-cyan-500/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-400"
-              title="Download the current result grid as GeoJSON (synthetic demonstration data)"
+              className="h-9 px-2 rounded-lg text-xs font-semibold text-white bg-[#08182b] hover:bg-[#0c223c] border border-[#18344e] hover:border-cyan-500/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-400 w-full"
+              title="Download full 3D simulation result grid as RFC 7946 GeoJSON"
             >
               <Download size={14} className="text-cyan-400" />
-              <span>Export GeoJSON</span>
+              <span>Export Full Field GeoJSON</span>
             </button>
           </div>
         </div>
