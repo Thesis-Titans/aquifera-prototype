@@ -88,26 +88,43 @@ flowchart TD
 
 ---
 
-### Sprint 2: Dynamic 2D/3D Well Picking & Colormap Sync
+### Sprint 2: HCI, Component Harmonization & Dynamic Well Picking (COMPLETED)
 
-* **Task S2.1: Click-to-Place Well Repositioning in `MapLibreMap.jsx`**
-  - Enable clicking on the 2D map to move Well 1 or Well 2, calling `setParams(p => ({ ...p, wellX, wellY }))` atomically.
-* **Task S2.2: Colormap Unification (`colormap.js`)**
-  - Create a shared `src/physics/colormap.js` module.
-  - Bind Three.js surface vertex colors to `visualizationConfig.colorScale` (`standard`, `viridis`, `turbo`) and `visualizationConfig.dataType` (`subsidence`, `drawdown`, `inelastic`) so 2D and 3D always display identical colors.
-* **Task S2.3: Three.js Mesh Disposal & Memory Optimization**
-  - Reuse well mesh geometries and clean up event listeners to eliminate WebGL memory leaks during slider adjustments.
+* [x] **Task S2.1: HCI & Layout Harmonization (Tailwind Design System)**
+  - Standardized all panels on Tailwind slate/cyan tokens (`slate-950`, `slate-900`, `slate-800`, `cyan-400`).
+  - Streamlined `TopNavigation.jsx` to `h-14` (56px) with Global Research Integrity Status Pill.
+  - Overhauled `ScenarioSetupPanel.jsx` into 4 distinct, color-coded preset cards with clear `Theis + Terzaghi (Analytical)` attribution.
+  - Replaced amber disclaimer banners with clean, professional geodetic coordinate HUD and research pills.
+  - Implemented collapsible **Analytical Suite Telemetry Dock** (`BottomAnalyticsSuite.jsx`) fitting 100dvh laptops.
+  - Hardened `VerificationModal.jsx` with accessible dialog containment (`max-h-[min(90dvh,52rem)]`, Escape key listener, scrollable body).
+* [x] **Task S2.2: Interactive Wellhead Picking & Conflict Resolution**
+  - Added dedicated Well Relocation mode toggle in `MapLibreMap.jsx` (`Crosshair` tool) and instant `Shift + Click` modifier.
+  - Resolved click conflicts between cell inspection and wellhead movement (Claude Code audit H1).
+  - Bound atomic parameter updates `setParams(p => ({ ...p, wellX, wellY }))` in `App.jsx` (audit H4).
+* [x] **Task S2.3: Geodetic PRS92 Zone 4 (EPSG:3124) Integration & Test Suite**
+  - Corrected geodetic projection to PRS92 Zone 4 (EPSG:3124, Central Meridian 123° E, False Easting 500,000 m).
+  - Aligned anchor coordinates (`451,800 m E`, `1,187,000 m N`) with the verified `smoke_test_mf6_prs92.py` domain center.
+  - Throttled mousemove coordinates via `requestAnimationFrame` and cleared on mouseout (audit H2).
+  - Added full test suite `tests/physics/geodesy.test.js` validating invertibility and control points.
 
 ---
 
-### Sprint 3: NIST AI RMF 1.0 Residual-Gated Safe Fallback Simulator
+### Sprint 3: Multi-Engine Verification & NIST AI RMF 1.0 Residual-Gated Fallback Pipeline
 
-* **Task S3.1: In-Browser Physics Residual Evaluator in `groundwaterPhysics.js`**
-  - Implement local PDE residual calculation checking mass conservation and Terzaghi effective stress continuity. Returns $\eta \in [0.0, 1.0]$.
-* **Task S3.2: Dynamic Residual Trust Gauge in `DualBenchmarkHUD.jsx`**
-  - Display active trust score $\eta$ with color-coded safety badges (Green: $\eta \le 0.15$ `SURROGATE ACTIVE`; Amber/Red: $\eta > 0.15$ `SAFE FALLBACK ENGAGED`).
-* **Task S3.3: Automated Fallback Notification in `App.jsx`**
-  - Trigger an animated NIST AI RMF 1.0 notification banner under extreme pumping stresses ($Q > 18,000\text{ m}^3/\text{d}$).
+* **Task S3.0: Unified Multi-Engine Contract (`src/engines/`)**
+  - Implement unified `evaluate(params) -> { fields, meta: { engine, version, runtimeMs, provenance } }`.
+  - Provide `analyticalEngine` (in-browser closed-form), `referenceEngine` (pre-computed MODFLOW 6 CSUB LHS runs), and `pinoEngine` (surrogate probe).
+* **Task S3.1: Discrete PDE Mass-Balance & Terzaghi Residual Evaluator (`physics/residual.js`)**
+  - Calculate discrete finite-difference mass-balance residual on the 64×64 grid and 1-D Terzaghi effective stress consistency on surrogate outputs.
+  - Return normalized trust metric $\eta \in [0.0, 1.0]$.
+  - Add unit tests verifying $\eta \approx 0$ on MODFLOW 6 reference tensors and $\eta \gg 0$ on perturbed fields.
+* **Task S3.2: NIST AI RMF 1.0 Residual Trust Gauge & Gated Fallback**
+  - Implement `gate(η, τ=0.15) -> 'SURROGATE' | 'FALLBACK'` (replacing arbitrary pumping thresholds).
+  - On `FALLBACK`, automatically substitute nearest verified MODFLOW 6 LHS reference run with transparent provenance notification.
+  - Display active engine and dynamic trust gauge in `DualBenchmarkHUD.jsx`.
+* **Task S3.3: Live Verification Metrics & Benchmark Fixtures**
+  - Compute relative $L_2$ error ($\le 5\%$), $R^2$, and peak absolute displacement residuals dynamically against `referenceEngine`.
+  - Generate pilot benchmark CSV directly from structured test fixtures.
 
 ---
 

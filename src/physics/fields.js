@@ -22,6 +22,24 @@ export function lngLatToMeters(lng, lat) {
   return [(lng - DOMAIN_ANCHOR.lng) * M_PER_DEG_LNG, (DOMAIN_ANCHOR.lat - lat) * M_PER_DEG_LAT];
 }
 
+// PRS92 Zone 4 (EPSG:3124) local projected coordinate conversions (Central Meridian 123° E)
+// Anchor aligned with smoke_test_mf6_prs92.py domain: SW corner (450200, 1185400), center (+1600 m) = (451800, 1187000)
+export const PRS92_ANCHOR = { easting: 451800, northing: 1187000 };
+
+export function metersToPRS92(x, y) {
+  return {
+    easting: Math.round(PRS92_ANCHOR.easting + x),
+    northing: Math.round(PRS92_ANCHOR.northing - y)
+  };
+}
+
+export function prs92ToMeters(easting, northing) {
+  return {
+    x: easting - PRS92_ANCHOR.easting,
+    y: PRS92_ANCHOR.northing - northing
+  };
+}
+
 export const DOMAIN_BOUNDS = (() => {
   const half = DOMAIN.widthMeters / 2;
   const [west, north] = metersToLngLat(-half, -half);
@@ -207,7 +225,7 @@ export function exportGeoJSON(state, params) {
     metadata: {
       generator: 'Aquifera prototype (in-browser simplified analytical model)',
       disclaimer: 'Synthetic demonstration output on a generic 3.2 km test domain placed over Iloilo City for context. Not a subsidence forecast for Iloilo City; not MODFLOW 6 or PINO output.',
-      coordinate_system: 'WGS 84 (EPSG:4326). The study uses PRS92 Zone 4 (EPSG:3123) for GIS work.',
+      coordinate_system: 'WGS 84 (EPSG:4326). The study uses PRS92 Zone 4 (EPSG:3124) for GIS work.',
       scenario: params
     },
     features

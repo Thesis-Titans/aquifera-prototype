@@ -5,12 +5,14 @@ export default function GuideModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="w-165 max-w-[calc(100vw-32px)] max-h-[88vh] rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-white/15 shadow-[0_24px_70px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 w-screen h-screen bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="w-full max-w-2xl max-h-[88vh] rounded-2xl bg-slate-950 border border-slate-800 shadow-[0_24px_70px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="p-4 px-6 border-b border-white/10 flex items-center justify-between bg-slate-950/90 shrink-0">
+        <div className="p-4 px-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 shrink-0">
           <div className="flex items-center gap-2.5">
-            <BookOpen size={18} className="text-primary" />
+            <div className="w-8 h-8 rounded-lg bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+              <BookOpen size={16} />
+            </div>
             <div>
               <h3 className="text-sm font-bold text-white tracking-tight">
                 Aquifera Technical & Hydrogeological Guide
@@ -22,19 +24,19 @@ export default function GuideModal({ isOpen, onClose }) {
           </div>
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center transition-colors cursor-pointer"
             title="Close Guide"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
         {/* Scrollable Body */}
-        <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-3.5 text-xs text-slate-300 leading-relaxed">
+        <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-3.5 text-xs text-slate-300 leading-relaxed custom-scrollbar">
           
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-white/10 shadow-xs">
-            <h4 className="text-primary font-bold mb-1.5 text-sm flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_hsl(187,92%,48%)]" />
+          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 shadow-xs">
+            <h4 className="text-cyan-300 font-bold mb-1.5 text-sm flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_hsl(187,92%,48%)]" />
               1. The Hydrogeological Problem
             </h4>
             <p>
@@ -42,7 +44,7 @@ export default function GuideModal({ isOpen, onClose }) {
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-white/10 shadow-xs">
+          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 shadow-xs">
             <h4 className="text-amber-400 font-bold mb-1.5 text-sm flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
               2. Elastic vs. Inelastic Clay Compaction (Terzaghi Theory)
@@ -53,17 +55,17 @@ export default function GuideModal({ isOpen, onClose }) {
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-white/10 shadow-xs">
+          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 shadow-xs">
             <h4 className="text-cyan-300 font-bold mb-1.5 text-sm flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.6)]" />
               3. The Computing Breakthrough (PINO Surrogate)
             </h4>
             <p>
-              Numerical simulators such as USGS MODFLOW 6 with CSUB took from about 5 to 96 seconds per run on our synthetic test grid, and comparing many pumping scenarios multiplies that cost. Aquifera trains a <strong className="text-white">Physics-Informed Neural Operator (PINO)</strong> offline to approximate the governing flow and Terzaghi consolidation PDEs with a <strong className="text-primary font-mono font-bold">target under 250 milliseconds</strong>.
+              Numerical simulators such as USGS MODFLOW 6 with CSUB took from about 5 to 96 seconds per run on our synthetic test grid, and comparing many pumping scenarios multiplies that cost. Aquifera trains a <strong className="text-white">Physics-Informed Neural Operator (PINO)</strong> offline to approximate the governing flow and Terzaghi consolidation PDEs with a <strong className="text-cyan-400 font-mono font-bold">target under 250 milliseconds</strong>.
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-white/10 shadow-xs">
+          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 shadow-xs">
             <h4 className="text-emerald-400 font-bold mb-1.5 text-sm flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
               4. Verification Architecture (Tier 4 Fallback)
@@ -76,9 +78,9 @@ export default function GuideModal({ isOpen, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 px-6 border-t border-white/10 bg-slate-950/90 flex items-center justify-end shrink-0">
+        <div className="p-4 px-6 border-t border-slate-800 bg-slate-900/60 flex items-center justify-end shrink-0">
           <button 
-            className="aquifera-btn-primary py-2! px-5! text-xs font-bold"
+            className="aquifera-btn-primary py-2 px-5 text-xs font-bold cursor-pointer"
             onClick={onClose}
           >
             Got it, Return to Simulation

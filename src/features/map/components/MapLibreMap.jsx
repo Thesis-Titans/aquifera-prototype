@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Map, setWorkerUrl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Navigation, ZoomIn, ZoomOut, RotateCcw, Layers, Loader2, AlertTriangle, X, Sliders } from 'lucide-react';
+import { Navigation, ZoomIn, ZoomOut, RotateCcw, Layers, Loader2, AlertTriangle, X, Sliders, Crosshair } from 'lucide-react';
 import {
   QUANTITIES,
   DOMAIN_BOUNDS,
@@ -10,8 +10,11 @@ import {
   fillColorExpression,
   cssGradient,
   describeNode,
-  metersToLngLat
+  metersToLngLat,
+  lngLatToMeters,
+  metersToPRS92
 } from '../../../physics/fields';
+import { DOMAIN } from '../../../physics/groundwaterPhysics';
 
 // Configure MapLibre background worker for Vite environment
 if (typeof window !== 'undefined' && setWorkerUrl) {
@@ -92,7 +95,11 @@ function wellsGeoJSON(physicalState) {
 
 export default function MapLibreMap({
   physicalState,
-  visualizationConfig
+  params,
+  visualizationConfig,
+  onSelectDistrict,
+  onMoveWell,
+  onCursorMove
 }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -130,6 +137,18 @@ export default function MapLibreMap({
   const geojsonGrid = useMemo(() => buildGridGeoJSON(physicalState, dataType), [physicalState, dataType]);
   const wellsData = useMemo(() => wellsGeoJSON(physicalState), [physicalState]);
   const selected = selectedIdx != null && physicalState ? describeNode(physicalState, selectedIdx) : null;
+
+  const [isWellPlacingMode, setIsWellPlacingMode] = useState(false);
+
+  // Stable callback refs to prevent stale closure bugs in map event handlers (Claude Code audit H3)
+  const onMoveWellRef = useRef(onMoveWell);
+  const onCursorMoveRef = useRef(onCursorMove);
+  const isWellPlacingModeRef = useRef(isWellPlacingMode);
+  useEffect(() => {
+    onMoveWellRef.current = onMoveWell;
+    onCursorMoveRef.current = onCursorMove;
+    isWellPlacingModeRef.current = isWellPlacingMode;
+  });
 
   // Latest data for the one-time layer setup inside the map initialisation effect
   const latestRef = useRef({ geojsonGrid, wellsData, colorScale, gridOpacity });
@@ -267,9 +286,51 @@ export default function MapLibreMap({
         }
       });
 
+      // Named domain bounds margin for well placement (Claude Code audit H5)
+      const MAX_DOMAIN_OFFSET = DOMAIN.widthMeters / 2 - 50;
+
+      // Throttled mousemove via requestAnimationFrame to eliminate render storms on CentralViewport (Claude Code audit H2)
+      let animFrameId = null;
+      map.on('mousemove', (e) => {
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        animFrameId = requestAnimationFrame(() => {
+          if (onCursorMoveRef.current) {
+            const [x, y] = lngLatToMeters(e.lngLat.lng, e.lngLat.lat);
+            const prs = metersToPRS92(x, y);
+            onCursorMoveRef.current({
+              easting: prs.easting,
+              northing: prs.northing,
+              x: Math.round(x),
+              y: Math.round(y),
+              lng: e.lngLat.lng,
+              lat: e.lngLat.lat
+            });
+          }
+        });
+      });
+
+      // Clear cursor readout when cursor leaves map canvas
+      map.on('mouseout', () => {
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        if (onCursorMoveRef.current) {
+          onCursorMoveRef.current(null);
+        }
+      });
+
+      // Global click handler: places well when well placing mode is active or Shift key held
+      map.on('click', (e) => {
+        if (isWellPlacingModeRef.current || e.originalEvent?.shiftKey) {
+          const [x, y] = lngLatToMeters(e.lngLat.lng, e.lngLat.lat);
+          if (Math.abs(x) <= MAX_DOMAIN_OFFSET && Math.abs(y) <= MAX_DOMAIN_OFFSET && onMoveWellRef.current) {
+            onMoveWellRef.current(x, y);
+            setIsWellPlacingMode(false);
+          }
+        }
+      });
+
       map.on('mousemove', 'result-fill', (e) => {
         if (e.features?.length) {
-          map.getCanvas().style.cursor = 'pointer';
+          map.getCanvas().style.cursor = (isWellPlacingModeRef.current || e.originalEvent?.shiftKey) ? 'crosshair' : 'pointer';
           map.setFilter('result-highlight', ['==', ['get', 'idx'], e.features[0].properties.idx]);
         }
       });
@@ -277,7 +338,17 @@ export default function MapLibreMap({
         map.getCanvas().style.cursor = '';
         map.setFilter('result-highlight', ['==', ['get', 'idx'], -1]);
       });
+
+      // Cell click handler: inspects cell by default; relocates well ONLY if well placing mode or Shift is active (Claude Code audit H1)
       map.on('click', 'result-fill', (e) => {
+        if (isWellPlacingModeRef.current || e.originalEvent?.shiftKey) {
+          const [x, y] = lngLatToMeters(e.lngLat.lng, e.lngLat.lat);
+          if (Math.abs(x) <= MAX_DOMAIN_OFFSET && Math.abs(y) <= MAX_DOMAIN_OFFSET && onMoveWellRef.current) {
+            onMoveWellRef.current(x, y);
+            setIsWellPlacingMode(false);
+          }
+          return;
+        }
         if (e.features?.length) setSelectedIdx(e.features[0].properties.idx);
       });
     };
@@ -357,13 +428,28 @@ export default function MapLibreMap({
   const fmt = (v, q) => `${v.toFixed(QUANTITIES[q].decimals)} ${QUANTITIES[q].unit}`;
 
   return (
-    <div className="relative w-full h-full flex-1 bg-[#050e18] overflow-hidden select-none">
+    <div className="relative w-full h-full flex-1 bg-slate-950 overflow-hidden select-none">
       {/* 1. MapLibre GL Canvas Container (Enforced absolute geometry prevents height collapse) */}
       <div ref={mapContainerRef} className="aquifera-maplibre-container absolute inset-0 w-full h-full" />
 
+      {/* Wellhead Relocation Interactive Active Guidance Pill */}
+      {isWellPlacingMode && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-cyan-950/95 backdrop-blur-md text-cyan-200 border border-cyan-400/60 px-4 py-2 rounded-full text-xs font-semibold shadow-2xl flex items-center gap-2.5 animate-in fade-in slide-in-from-top-2">
+          <Crosshair size={14} className="text-cyan-400" />
+          <span>Click anywhere in 3.2km domain to relocate Well 1</span>
+          <button
+            onClick={() => setIsWellPlacingMode(false)}
+            className="ml-1 text-slate-400 hover:text-white cursor-pointer p-0.5 rounded hover:bg-slate-800"
+            title="Cancel placement mode"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
+
       {/* Fatal Error Overlay */}
       {mapError && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#050e18]/95 backdrop-blur-sm p-6 text-center select-text">
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-sm p-6 text-center select-text">
           <div className="p-3 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 mb-3 shadow-lg">
             <AlertTriangle size={24} />
           </div>
@@ -382,7 +468,7 @@ export default function MapLibreMap({
 
       {/* Loading & Slow-Loading Floating Indicator */}
       {!mapLoaded && !mapError && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#050e18]/60 backdrop-blur-xs z-10 gap-2 text-slate-300 p-4 text-center pointer-events-none">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-xs z-10 gap-2 text-slate-300 p-4 text-center pointer-events-none">
           <div className="bg-slate-950/90 border border-cyan-500/30 px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5">
             <Loader2 size={18} className="animate-spin text-cyan-400" />
             <span className="text-xs font-mono text-slate-200">Loading basemap...</span>
@@ -412,7 +498,7 @@ export default function MapLibreMap({
         </div>
       </div>
 
-      {/* 3. Map Controls (Top-Right): Zoom, Reset, and Layer Controls */}
+      {/* 3. Map Controls (Top-Right): Zoom, Reset, Well Placement, and Layer Controls */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         <button
           onClick={() => setShowLayersPanel(p => !p)}
@@ -425,6 +511,19 @@ export default function MapLibreMap({
           }`}
         >
           <Layers size={15} />
+        </button>
+
+        <button
+          onClick={() => setIsWellPlacingMode(p => !p)}
+          aria-label="Toggle Well Relocation Mode"
+          title={isWellPlacingMode ? 'Cancel Well Relocation' : 'Relocate Primary Well (Click map or Shift+Click)'}
+          className={`w-8 h-8 rounded-lg backdrop-blur-md border flex items-center justify-center transition-all shadow-md cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-400 ${
+            isWellPlacingMode
+              ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-cyan-500/30'
+              : 'bg-slate-950/85 text-slate-200 border-white/10 hover:border-cyan-400/50 hover:text-white'
+          }`}
+        >
+          <Crosshair size={15} />
         </button>
 
         {[
@@ -565,54 +664,57 @@ export default function MapLibreMap({
       )}
 
       {/* 5. Bottom-Left Map Legend */}
-      <div className="absolute bottom-4 left-4 z-10 bg-slate-950/90 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-xl w-72">
+      <div className="absolute bottom-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md p-3.5 rounded-xl border border-slate-800 shadow-2xl w-72 text-xs">
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-1.5">
             <Layers size={13} className="text-cyan-400" />
-            <span className="text-xs font-bold text-slate-100">{quantity.label} ({quantity.unit})</span>
+            <span className="font-bold text-white">{quantity.label} ({quantity.unit})</span>
           </div>
-          <span className="text-[10px] font-mono text-amber-300 font-semibold px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-500/30">
-            SYNTHETIC DEMO
+          <span className="text-[10px] font-mono text-cyan-300 font-semibold px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/30">
+            {dataType.toUpperCase()}
           </span>
         </div>
-        <div className="w-full h-2 rounded mb-1 border border-white/10" style={{ background: cssGradient(colorScale) }} />
+        <div className="w-full h-2.5 rounded-full mb-1.5 border border-slate-800" style={{ background: cssGradient(colorScale) }} />
         <div className="flex justify-between text-[10px] font-mono text-slate-300">
           <span>0</span>
-          <span>{quantity.max / 2}</span>
-          <span>&ge; {quantity.max}</span>
+          <span>{(quantity.max / 2).toFixed(0)}</span>
+          <span>&ge; {quantity.max} {quantity.unit}</span>
         </div>
-        <div className="mt-2 text-[11px] text-slate-400 leading-snug border-t border-white/5 pt-1.5">
-          After {physicalState?.pumpingDays ?? 0} days of pumping. Simplified analytical model, not MODFLOW 6 or PINO output. Click a cell to inspect it.
+        <div className="mt-2 text-[11px] text-slate-400 leading-snug border-t border-slate-800 pt-1.5 flex items-center justify-between">
+          <span>Pumping: {physicalState?.pumpingDays ?? 0} days</span>
+          <span className="text-cyan-400 font-medium">Shift+Click or tool to move well</span>
         </div>
       </div>
 
       {/* 6. Selected Cell Inspector */}
       {selected && (
-        <div className="absolute bottom-4 right-4 z-10 bg-slate-950/95 backdrop-blur-md p-3.5 rounded-xl border border-cyan-400/40 shadow-2xl w-64 text-xs">
-          <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2">
-            <span className="font-bold text-cyan-300">Grid cell</span>
+        <div className="absolute bottom-4 right-4 z-10 bg-slate-900/95 backdrop-blur-md p-3.5 rounded-xl border border-cyan-400/50 shadow-2xl w-68 text-xs animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-2">
+            <span className="font-bold text-cyan-300 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-cyan-400" /> Inspected Cell
+            </span>
             <button
               onClick={() => setSelectedIdx(null)}
               aria-label="Close cell inspector"
-              className="text-slate-400 hover:text-white cursor-pointer p-0.5 rounded hover:bg-white/10"
+              className="text-slate-400 hover:text-white cursor-pointer p-0.5 rounded hover:bg-slate-800"
             >
               <X size={14} />
             </button>
           </div>
-          <div className="space-y-1.5 text-[12px]">
-            <div className="flex justify-between">
-              <span className="text-slate-400">Offset from domain centre</span>
+          <div className="space-y-1.5 text-[11px]">
+            <div className="flex justify-between text-slate-400">
+              <span>Domain Offset</span>
               <span className="font-mono text-slate-200">{selected.x} m E, {-selected.y} m N</span>
             </div>
             {Object.keys(QUANTITIES).map(q => (
               <div key={q} className="flex justify-between gap-2">
                 <span className={q === dataType ? 'text-white font-semibold' : 'text-slate-400'}>{QUANTITIES[q].label}</span>
-                <span className="font-mono text-slate-100 shrink-0">{fmt(selected[q], q)}</span>
+                <span className="font-mono text-cyan-300 font-bold shrink-0">{fmt(selected[q], q)}</span>
               </div>
             ))}
-          </div>
-          <div className="mt-2 text-[11px] text-slate-400 border-t border-white/5 pt-1.5">
-            Synthetic demonstration value; not an Iloilo forecast.
+            <div className="text-[10px] text-slate-400 border-t border-slate-800 pt-1.5 mt-2 italic">
+              Analytical preview. Not an empirical ground forecast.
+            </div>
           </div>
         </div>
       )}

@@ -87,17 +87,18 @@ export default function App() {
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col bg-[#070d17] text-slate-100 font-sans">
+    <div className="w-full min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans">
       {/* 1. Top Header Navigation */}
       <TopNavigation
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
         onOpenGuide={() => setIsGuideOpen(true)}
         onCaptureScreenshot={handleCaptureScreenshot}
+        onOpenVerification={() => setIsVerificationOpen(true)}
       />
 
       {/* 2. Middle Interactive Stage (Left Sidebar + Central Dual Viewport) */}
-      <main className="flex-1 flex flex-col md:flex-row gap-4 px-4 pt-3 pb-2 min-h-[460px] max-w-[1920px] w-full mx-auto">
+      <main className="h-[calc(100dvh-9rem)] min-h-115 flex flex-col md:flex-row gap-4 px-4 pt-3 pb-2 max-w-[1920px] w-full mx-auto">
         
         {/* Left: Scenario Setup Panel Sidebar */}
         <ScenarioSetupPanel
@@ -117,7 +118,8 @@ export default function App() {
           visualizationConfig={visualizationConfig}
           viewMode={viewMode}
           setViewMode={setViewMode}
-          onMoveWell={(x, y) => setParam('wellX', Math.round(x)) || setParam('wellY', Math.round(y))}
+          onMoveWell={(x, y) => setParams(prev => ({ ...prev, wellX: Math.round(x), wellY: Math.round(y) }))}
+          onOpenVerification={() => setIsVerificationOpen(true)}
         />
 
       </main>
@@ -139,16 +141,16 @@ export default function App() {
       </div>
 
       {/* 4. Footer Bar */}
-      <footer className="h-8 bg-[#040b13] border-t border-[#0e1d2c] px-6 flex items-center justify-between text-[11px] text-slate-400 font-normal shrink-0 z-20">
+      <footer className="h-8 bg-slate-950 border-t border-slate-800/80 px-6 flex items-center justify-between text-[11px] text-slate-400 font-normal shrink-0 z-20">
         <div className="flex items-center gap-3">
           <span className="font-bold text-white tracking-wider">AQUIFERA</span>
-          <span className="text-slate-500">|</span>
-          <span>Research Prototype v0.2</span>
-          <span className="text-slate-500">|</span>
-          <span className="font-mono text-cyan-400">MapLibre + Three.js Engine</span>
+          <span className="text-slate-600">|</span>
+          <span>BSIT Thesis Prototype</span>
+          <span className="text-slate-600">|</span>
+          <span className="font-mono text-cyan-400">MapLibre GL + Three.js Engine</span>
         </div>
-        <div className="text-[11px] text-slate-400 font-normal">
-          Note: This is a research demonstration prototype. Outputs are synthetic demonstration data for BSIT thesis defense.
+        <div className="text-[11px] text-slate-400 font-normal hidden sm:block">
+          Outputs: Analytical preview (Theis + Terzaghi); USGS MODFLOW 6 CSUB pilot run (2026-10-23) is numerical reference only.
         </div>
       </footer>
 
