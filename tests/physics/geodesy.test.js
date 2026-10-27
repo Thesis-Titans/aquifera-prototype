@@ -5,7 +5,8 @@ import {
   metersToPRS92,
   prs92ToMeters,
   metersToLngLat,
-  lngLatToMeters
+  lngLatToMeters,
+  insarBaselineGeoJSON
 } from '../../src/physics/fields.js';
 
 describe('AQUIFERA Geodesy & PRS92 Zone 4 (EPSG:3124) Spatial Contracts', () => {
@@ -55,5 +56,20 @@ describe('AQUIFERA Geodesy & PRS92 Zone 4 (EPSG:3124) Spatial Contracts', () => 
     const [rx, ry] = lngLatToMeters(lng, lat);
     assert.ok(Math.abs(rx - x) < 1e-4, `Expected rx ~ ${x}, got ${rx}`);
     assert.ok(Math.abs(ry - y) < 1e-4, `Expected ry ~ ${y}, got ${ry}`);
+  });
+
+  test('insarBaselineGeoJSON produces valid GeoJSON polygons matching Sulapas 2024 bounds', () => {
+    const insar = insarBaselineGeoJSON();
+    assert.strictEqual(insar.type, 'FeatureCollection');
+    assert.strictEqual(insar.metadata.source, 'Sulapas et al. (2024)');
+    assert.strictEqual(insar.metadata.maxVelocityMmYear, -9.0);
+    assert.strictEqual(insar.features.length, 2);
+
+    for (const f of insar.features) {
+      assert.strictEqual(f.type, 'Feature');
+      assert.strictEqual(f.geometry.type, 'Polygon');
+      assert.ok(f.geometry.coordinates[0].length >= 4);
+      assert.ok(f.properties.rate.includes('mm/yr'));
+    }
   });
 });

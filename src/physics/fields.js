@@ -147,6 +147,65 @@ export function domainOutlineGeoJSON() {
   };
 }
 
+/**
+ * Historical Sentinel-1 InSAR ground settlement reference contours for Metro Iloilo.
+ * Source: Sulapas et al. (2024), International Journal of Applied Earth Observation and Geoinformation.
+ * Measures 2014-2020 multi-temporal satellite interferometry with up to -9.0 mm/year subsidence in Mandurriao-Molo.
+ */
+export function insarBaselineGeoJSON() {
+  return {
+    type: 'FeatureCollection',
+    metadata: {
+      source: 'Sulapas et al. (2024)',
+      sensor: 'Copernicus Sentinel-1 C-band SAR',
+      timeframe: '2014-2020',
+      maxVelocityMmYear: -9.0
+    },
+    features: [
+      {
+        type: 'Feature',
+        properties: {
+          zone: 'Moderate Subsidence Belt',
+          rate: '-3 to -6 mm/yr',
+          color: 'rgba(168, 85, 247, 0.45)',
+          fillColor: 'rgba(168, 85, 247, 0.18)'
+        },
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[
+            [122.535, 10.730],
+            [122.565, 10.732],
+            [122.575, 10.710],
+            [122.560, 10.690],
+            [122.530, 10.698],
+            [122.535, 10.730]
+          ]]
+        }
+      },
+      {
+        type: 'Feature',
+        properties: {
+          zone: 'Critical Settlement Hotspot (Mandurriao-Molo)',
+          rate: '-6 to -9 mm/yr',
+          color: 'rgba(244, 63, 94, 0.75)',
+          fillColor: 'rgba(244, 63, 94, 0.32)'
+        },
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[
+            [122.542, 10.722],
+            [122.556, 10.724],
+            [122.562, 10.708],
+            [122.548, 10.698],
+            [122.538, 10.706],
+            [122.542, 10.722]
+          ]]
+        }
+      }
+    ]
+  };
+}
+
 /** Static 64x64 finite difference grid wireframe mesh lines (50.8 m cell footprint). */
 export function buildGridWireframeGeoJSON(res = DOMAIN.gridResolution) {
   const step = DOMAIN.widthMeters / (res - 1);

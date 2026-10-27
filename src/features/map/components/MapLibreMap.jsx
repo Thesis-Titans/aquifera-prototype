@@ -6,6 +6,7 @@ import {
   QUANTITIES,
   DOMAIN_BOUNDS,
   domainOutlineGeoJSON,
+  insarBaselineGeoJSON,
   fillColorExpression,
   cssGradient,
   describeNode,
@@ -131,7 +132,8 @@ export default function MapLibreMap({
     cityBoundary: true,
     domainOutline: true,
     wells: true,
-    gridMesh: false
+    gridMesh: false,
+    insarBaseline: false
   });
   const [gridOpacity, setGridOpacity] = useState(
     visualizationConfig?.opacity ? visualizationConfig.opacity / 100 : 0.75
@@ -248,6 +250,7 @@ export default function MapLibreMap({
       map.addSource('grid-mesh', { type: 'geojson', data: latest.wireframeData });
       map.addSource('cell-highlight', { type: 'geojson', data: latest.cellHighlightData });
       map.addSource('domain-outline', { type: 'geojson', data: domainOutlineGeoJSON() });
+      map.addSource('insar-baseline', { type: 'geojson', data: insarBaselineGeoJSON() });
       map.addSource('wells', { type: 'geojson', data: latest.wellsData });
 
       // Barangay outlines and the city boundary give geographic context only
@@ -305,6 +308,43 @@ export default function MapLibreMap({
         type: 'line',
         source: 'domain-outline',
         paint: { 'line-color': '#22d3ee', 'line-width': 2, 'line-dasharray': [2, 1.5] }
+      });
+
+      // Sentinel-1 InSAR Historical Ground Settlement Overlay (Sulapas et al., 2024)
+      map.addLayer({
+        id: 'insar-baseline-fill',
+        type: 'fill',
+        source: 'insar-baseline',
+        layout: {
+          'visibility': latest.layerVisibility.insarBaseline ? 'visible' : 'none'
+        },
+        paint: {
+          'fill-color': [
+            'match',
+            ['get', 'rate'],
+            '-6 to -9 mm/yr', 'rgba(244, 63, 94, 0.35)',
+            'rgba(168, 85, 247, 0.22)'
+          ],
+          'fill-opacity': 0.85
+        }
+      });
+      map.addLayer({
+        id: 'insar-baseline-line',
+        type: 'line',
+        source: 'insar-baseline',
+        layout: {
+          'visibility': latest.layerVisibility.insarBaseline ? 'visible' : 'none'
+        },
+        paint: {
+          'line-color': [
+            'match',
+            ['get', 'rate'],
+            '-6 to -9 mm/yr', '#f43f5e',
+            '#a855f7'
+          ],
+          'line-width': 1.75,
+          'line-dasharray': [3, 2]
+        }
       });
 
       // Place-name reference tiles above the result grid
@@ -436,6 +476,12 @@ export default function MapLibreMap({
     }
     if (map.getLayer('grid-mesh-line')) {
       map.setLayoutProperty('grid-mesh-line', 'visibility', layerVisibility.gridMesh ? 'visible' : 'none');
+    }
+    if (map.getLayer('insar-baseline-fill')) {
+      map.setLayoutProperty('insar-baseline-fill', 'visibility', layerVisibility.insarBaseline ? 'visible' : 'none');
+    }
+    if (map.getLayer('insar-baseline-line')) {
+      map.setLayoutProperty('insar-baseline-line', 'visibility', layerVisibility.insarBaseline ? 'visible' : 'none');
     }
   }, [layerVisibility, mapLoaded]);
 
@@ -689,6 +735,19 @@ export default function MapLibreMap({
                 checked={layerVisibility.domainOutline}
                 onChange={(e) => setLayerVisibility(v => ({ ...v, domainOutline: e.target.checked }))}
                 className="accent-cyan-400 rounded cursor-pointer"
+              />
+            </label>
+
+            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer hover:text-white">
+              <span className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded border border-rose-400 bg-rose-500/30" />
+                <span>InSAR Geodesy (Sulapas 2024)</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={layerVisibility.insarBaseline}
+                onChange={(e) => setLayerVisibility(v => ({ ...v, insarBaseline: e.target.checked }))}
+                className="accent-rose-500 rounded cursor-pointer"
               />
             </label>
 
