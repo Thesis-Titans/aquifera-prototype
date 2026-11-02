@@ -328,12 +328,12 @@ export default function BottomAnalyticsSuite({
         {/* CARD 1: Cross-Section Profile & Climatological Hydrograph */}
         <div className={PANEL}>
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5 gap-2">
-            <div className="flex items-center gap-1.5 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+            <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 shadow-inner">
               <button
                 onClick={() => setCard1Mode('profile')}
-                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
                   card1Mode === 'profile'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-xs'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 shadow-xs'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -341,9 +341,9 @@ export default function BottomAnalyticsSuite({
               </button>
               <button
                 onClick={() => setCard1Mode('hydrograph')}
-                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
                   card1Mode === 'hydrograph'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-xs'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 shadow-xs'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >

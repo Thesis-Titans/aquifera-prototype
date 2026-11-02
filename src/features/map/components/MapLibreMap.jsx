@@ -983,8 +983,14 @@ export default function MapLibreMap({
           </div>
           <div className="space-y-1.5 text-[11px]">
             <div className="flex justify-between text-slate-400">
+              <span>PRS92 Zone 4</span>
+              <span className="font-mono text-cyan-300 font-medium">
+                {metersToPRS92(selected.x, selected.y).easting.toLocaleString()} m E, {metersToPRS92(selected.x, selected.y).northing.toLocaleString()} m N
+              </span>
+            </div>
+            <div className="flex justify-between text-slate-400">
               <span>Domain Offset</span>
-              <span className="font-mono text-slate-200">{selected.x} m E, {-selected.y} m N</span>
+              <span className="font-mono text-slate-300">{selected.x >= 0 ? '+' : ''}{selected.x} m E, {-selected.y >= 0 ? '+' : ''}{-selected.y} m N</span>
             </div>
             {Object.keys(QUANTITIES).map(q => (
               <div key={q} className="flex justify-between gap-2">

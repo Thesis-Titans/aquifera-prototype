@@ -115,7 +115,7 @@ input[type="range"] {
   appearance: none;
   width: 100%;
   height: 6px;
-  background: hsla(217, 33%, 24%, 0.85);
+  background: hsla(217, 33%, 22%, 0.85);
   border-radius: 9999px;
   outline: none;
   transition: all 0.2s ease;
@@ -133,6 +133,7 @@ input[type="range"]::-webkit-slider-thumb {
   height: 16px;
   border-radius: 50%;
   background: var(--color-primary);
+  border: 2.5px solid #09111e;
   cursor: pointer;
   box-shadow: 0 0 10px var(--color-primary-glow);
   transition: transform 0.15s ease, background-color 0.15s ease;
@@ -141,6 +142,38 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.2);
   background: hsl(187, 95%, 60%);
+  box-shadow: 0 0 14px var(--color-primary);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2.5px solid #09111e;
+  cursor: pointer;
+  box-shadow: 0 0 10px var(--color-primary-glow);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  background: hsl(187, 95%, 60%);
+  box-shadow: 0 0 14px var(--color-primary);
+}
+
+input[type="range"]::-moz-range-thumb:active {
+  transform: scale(0.95);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: hsla(217, 33%, 22%, 0.85);
+  border-radius: 9999px;
 }
 
 /* Touch Ergonomics & Coarse Pointers */

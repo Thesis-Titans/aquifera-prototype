@@ -271,26 +271,35 @@ export default function ScenarioSetupPanel({
                 {params.zoningClass ? `${params.zoningClass} (α=${(params.imperviousnessAlpha ?? CLUP_ZONING_FRACTIONS[params.zoningClass]?.alpha ?? 0).toFixed(2)})` : 'Baseline (α=0.0)'}
               </span>
             </div>
-            <select
-              value={params.zoningClass || ''}
-              onChange={(e) => {
-                const zKey = e.target.value;
-                if (!zKey) {
-                  handleSliderChange(prev => ({ ...prev, zoningClass: undefined, imperviousnessAlpha: undefined }));
-                } else {
-                  const z = CLUP_ZONING_FRACTIONS[zKey];
-                  handleSliderChange(prev => ({ ...prev, zoningClass: zKey, imperviousnessAlpha: z.alpha }));
-                }
-              }}
-              className="w-full bg-slate-950 text-slate-200 text-xs rounded-xl border border-slate-800 px-2 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer"
-            >
-              <option value="">Default Baseline (Unzoned, 100% Infiltration)</option>
-              {Object.entries(CLUP_ZONING_FRACTIONS).map(([key, z]) => (
-                <option key={key} value={key}>
-                  {key}: {z.name.split('(')[0].trim()} (α = {z.alpha.toFixed(2)})
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={params.zoningClass || ''}
+                onChange={(e) => {
+                  const zKey = e.target.value;
+                  if (!zKey) {
+                    handleSliderChange(prev => ({ ...prev, zoningClass: undefined, imperviousnessAlpha: undefined }));
+                  } else {
+                    const z = CLUP_ZONING_FRACTIONS[zKey];
+                    handleSliderChange(prev => ({ ...prev, zoningClass: zKey, imperviousnessAlpha: z.alpha }));
+                  }
+                }}
+                className="w-full bg-slate-950 text-slate-200 text-xs rounded-xl border border-slate-800 px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-cyan-400 cursor-pointer shadow-xs"
+              >
+                <option value="">Default Baseline (Unzoned, 100% Infiltration)</option>
+                {Object.entries(CLUP_ZONING_FRACTIONS).map(([key, z]) => (
+                  <option key={key} value={key}>
+                    {key}: {z.name.split('(')[0].trim()} (α = {z.alpha.toFixed(2)})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-2.5 text-slate-400 pointer-events-none" />
+            </div>
+            {params.zoningClass && (
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 px-0.5">
+                <span>Infiltration: <strong className="text-cyan-300">{((1 - (params.imperviousnessAlpha ?? CLUP_ZONING_FRACTIONS[params.zoningClass]?.alpha ?? 0)) * 100).toFixed(0)}%</strong></span>
+                <span>Runoff loss: <strong className="text-amber-400">{((params.imperviousnessAlpha ?? CLUP_ZONING_FRACTIONS[params.zoningClass]?.alpha ?? 0) * 100).toFixed(0)}%</strong></span>
+              </div>
+            )}
           </div>
         </div>
 
