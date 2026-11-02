@@ -765,7 +765,7 @@ export default function MapLibreMap({
 
       {/* 4. Floating Layer Controls Popover (Task S1.2) */}
       {showLayersPanel && (
-        <div className="absolute top-4 right-14 z-20 w-68 bg-slate-950/95 backdrop-blur-xl border border-white/15 rounded-xl shadow-2xl p-3.5 flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute top-4 right-14 z-20 w-68 aquifera-hud-card p-3.5 flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-150">
           <div className="flex items-center justify-between border-b border-white/10 pb-2">
             <div className="flex items-center gap-1.5 text-xs font-bold text-white">
               <Layers size={14} className="text-cyan-400" />
@@ -936,13 +936,13 @@ export default function MapLibreMap({
       )}
 
       {/* 5. Bottom-Left Map Legend */}
-      <div className="absolute bottom-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md p-3.5 rounded-xl border border-slate-800 shadow-2xl w-72 text-xs">
+      <div className="absolute bottom-4 left-4 z-10 aquifera-hud-card p-3.5 w-72 text-xs">
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-1.5">
             <Layers size={13} className="text-cyan-400" />
             <span className="font-bold text-white">{quantity.label} ({quantity.unit})</span>
           </div>
-          <span className="text-[10px] font-mono text-cyan-300 font-semibold px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/30">
+          <span className="aquifera-badge bg-cyan-950/80 border-cyan-500/30 text-cyan-300">
             {dataType.toUpperCase()}
           </span>
         </div>
@@ -968,7 +968,7 @@ export default function MapLibreMap({
 
       {/* 6. Selected Cell Inspector */}
       {selected && (
-        <div className="absolute bottom-4 right-4 z-10 bg-slate-900/95 backdrop-blur-md p-3.5 rounded-xl border border-cyan-400/50 shadow-2xl w-68 text-xs animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute bottom-4 right-4 z-10 aquifera-hud-card border-cyan-400/50 p-3.5 w-68 text-xs animate-in fade-in zoom-in-95 duration-150">
           <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-2">
             <span className="font-bold text-cyan-300 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-400" /> Inspected Cell
@@ -1021,7 +1021,7 @@ export default function MapLibreMap({
 
       {/* 7. Inspected Benchmark / Waterway Feature Overlay */}
       {inspectedFeature && (
-        <div className="absolute bottom-4 right-4 z-10 bg-slate-900/95 backdrop-blur-md p-3.5 rounded-xl border border-sky-400/50 shadow-2xl w-72 text-xs animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute bottom-4 right-4 z-10 aquifera-hud-card border-sky-400/50 p-3.5 w-72 text-xs animate-in fade-in zoom-in-95 duration-150">
           <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-2">
             <span className="font-bold text-sky-300 flex items-center gap-1.5 truncate">
               <span className={`w-2 h-2 rounded-full ${inspectedFeature.kind === 'benchmark' ? 'bg-rose-400' : 'bg-sky-400'}`} />

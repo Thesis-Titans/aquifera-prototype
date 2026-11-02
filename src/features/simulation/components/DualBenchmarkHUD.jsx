@@ -40,7 +40,7 @@ export default function DualBenchmarkHUD({
   if (isCollapsed) {
     return (
       <div 
-        className="benchmark-hud-container absolute top-3 right-3 h-8.5 px-3 z-15 flex items-center gap-2 rounded-xl cursor-pointer bg-slate-950/90 backdrop-blur-xl border border-slate-800 hover:border-cyan-400/50 shadow-2xl transition-all select-none"
+        className="benchmark-hud-container aquifera-hud-pill absolute top-3 right-3 z-15"
         onClick={() => setIsCollapsed(false)}
         title="Click to view Multi-Engine Benchmark & NIST AI RMF Trust Telemetry"
       >
@@ -59,7 +59,7 @@ export default function DualBenchmarkHUD({
           </span>
         )}
 
-        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+        <span className="aquifera-badge bg-cyan-500/15 text-cyan-300 border-cyan-500/30">
           η = {displayEta.toFixed(3)}
         </span>
         <ChevronDown size={14} className="text-slate-400" />
@@ -68,7 +68,7 @@ export default function DualBenchmarkHUD({
   }
 
   return (
-    <div className="benchmark-hud-container absolute top-3 right-3 w-84 sm:w-92 max-w-[calc(100vw-32px)] p-4 z-15 flex flex-col gap-3.5 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-slate-800 shadow-2xl transition-all">
+    <div className="benchmark-hud-container aquifera-hud-card absolute top-3 right-3 w-84 sm:w-92 max-w-[calc(100vw-32px)] z-15 flex flex-col gap-3.5 transition-all">
       {/* HUD Header */}
       <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
         <div className="flex items-center gap-2">
@@ -79,11 +79,11 @@ export default function DualBenchmarkHUD({
         </div>
         <div className="flex items-center gap-2">
           {fallbackEngaged ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse">
+            <span className="aquifera-badge bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse">
               <ShieldAlert size={11} /> SAFE FALLBACK
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            <span className="aquifera-badge bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
               <ShieldCheck size={11} /> TRUSTED (η &le; 0.15)
             </span>
           )}
@@ -104,7 +104,7 @@ export default function DualBenchmarkHUD({
             <span>Simulation Engine:</span>
             <span className="text-[10px] text-slate-500 font-mono">Active: {meta.engineId ?? selectedEngineId}</span>
           </span>
-          <div className="grid grid-cols-3 gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+          <div className="grid grid-cols-3 gap-1 aquifera-card-inset p-1">
             <button
               onClick={() => onSelectEngine('analytical')}
               className={`px-2 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer truncate ${
@@ -143,7 +143,7 @@ export default function DualBenchmarkHUD({
       )}
 
       {/* Physics-Informed Residual Trust Gauge */}
-      <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800 flex flex-col gap-2.5 shadow-xs">
+      <div className="aquifera-card-inset p-3 flex flex-col gap-2.5 shadow-xs">
         <div className="flex justify-between items-center text-xs">
           <span className="text-slate-300 flex items-center gap-1.5 font-medium">
             <Activity size={13} className="text-cyan-400" />
@@ -198,7 +198,7 @@ export default function DualBenchmarkHUD({
       </div>
 
       {/* Latency & Hardware Card */}
-      <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800 flex flex-col gap-2.5 shadow-xs">
+      <div className="aquifera-card-inset p-3 flex flex-col gap-2.5 shadow-xs">
         <div className="flex justify-between items-baseline">
           <span className="text-xs text-slate-300 flex items-center gap-1.5 font-medium">
             <Zap size={14} className="text-cyan-400" /> Active Latency:
@@ -225,11 +225,11 @@ export default function DualBenchmarkHUD({
 
       {/* Numerical Verification Criteria (ISO/IEC 25010) */}
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+        <div className="aquifera-card-inset p-2.5">
           <span className="text-[10px] text-slate-400 block">Target Rel. L₂:</span>
           <span className="font-mono text-emerald-400 font-bold block mt-0.5">&le; 5.0%</span>
         </div>
-        <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+        <div className="aquifera-card-inset p-2.5">
           <span className="text-[10px] text-slate-400 block">MF6 Pilot Compaction:</span>
           <span className="font-mono text-cyan-300 font-bold block mt-0.5">75.2 mm (Δb)</span>
         </div>

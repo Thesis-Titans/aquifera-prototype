@@ -986,7 +986,7 @@ export default function Aquifer3DCanvas({
 
       {/* Interactive Subsurface Hydrogeological Probe HUD Card */}
       {probedData && isProbeActive && (
-        <div className="probe-hud-card absolute bottom-24 left-4 z-20 w-85 max-w-[calc(100vw-32px)] p-4 rounded-2xl bg-slate-950/90 backdrop-blur-2xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-150">
+        <div className="probe-hud-card absolute bottom-24 left-4 z-20 w-85 max-w-[calc(100vw-32px)] aquifera-hud-card flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-150">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
             <div className="flex items-center gap-2.5">
@@ -1001,7 +1001,7 @@ export default function Aquifer3DCanvas({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shadow-xs ${
+              <span className={`aquifera-badge ${
                 isProbePinned 
                   ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/35' 
                   : 'bg-white/5 text-slate-400 border-white/10'
@@ -1023,7 +1023,7 @@ export default function Aquifer3DCanvas({
           </div>
 
           {/* Stratum Tag Card */}
-          <div className="flex items-center gap-2.5 p-2.5 px-3 rounded-xl bg-slate-900/60 border border-white/8 text-xs">
+          <div className="aquifera-card-inset p-2.5 px-3 flex items-center gap-2.5 text-xs">
             <div className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: probedData.stratum.color }} />
             <div className="flex-1 min-w-0">
               <strong className="text-white block font-semibold truncate">{probedData.stratum.name}</strong>
@@ -1033,7 +1033,7 @@ export default function Aquifer3DCanvas({
 
           {/* 3-Column Hydrogeological Metrics */}
           <div className="grid grid-cols-3 gap-2">
-            <div className="p-2.5 rounded-xl bg-slate-900/40 border border-white/8 flex flex-col justify-between">
+            <div className="aquifera-card-inset p-2.5 flex flex-col justify-between">
               <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Head (h)</span>
               <div className="mt-1 flex items-baseline gap-1">
                 <span className="font-mono text-sm font-bold text-sky-400">
@@ -1042,7 +1042,7 @@ export default function Aquifer3DCanvas({
                 <span className="text-[10px] text-slate-400">m</span>
               </div>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-900/40 border border-white/8 flex flex-col justify-between">
+            <div className="aquifera-card-inset p-2.5 flex flex-col justify-between">
               <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Settlement</span>
               <div className="mt-1 flex items-baseline gap-1">
                 <span className={`font-mono text-sm font-bold ${probedData.settlementCm > 15 ? 'text-rose-400' : 'text-primary'}`}>
@@ -1051,7 +1051,7 @@ export default function Aquifer3DCanvas({
                 <span className="text-[10px] text-slate-400">cm</span>
               </div>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-900/40 border border-white/8 flex flex-col justify-between">
+            <div className="aquifera-card-inset p-2.5 flex flex-col justify-between">
               <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Eff. Stress</span>
               <div className="mt-1 flex items-baseline gap-1">
                 <span className="font-mono text-sm font-bold text-amber-400">
@@ -1077,7 +1077,7 @@ export default function Aquifer3DCanvas({
       {/* Interactive 3D Spatial Orientation Gizmo HUD Widget */}
       <div className="spatial-gizmo-widget absolute bottom-24 right-4 z-15 flex flex-col items-end gap-2 select-none">
         {isGizmoOpen ? (
-          <div className="p-3.5 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-white/15 shadow-2xl flex flex-col gap-2.5 w-60 animate-in fade-in zoom-in-95 duration-150">
+          <div className="aquifera-hud-card p-3.5 flex flex-col gap-2.5 w-60 animate-in fade-in zoom-in-95 duration-150">
             {/* Header with Title and Minimize */}
             <div className="flex items-center justify-between border-b border-white/10 pb-2">
               <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">

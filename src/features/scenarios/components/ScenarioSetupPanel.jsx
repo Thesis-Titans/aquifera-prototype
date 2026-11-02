@@ -79,7 +79,7 @@ export default function ScenarioSetupPanel({
   return (
     <aside 
       id="scenario-setup-panel" 
-      className="w-80 lg:w-88 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl p-4 lg:p-5 flex flex-col justify-between overflow-y-auto shrink-0 custom-scrollbar shadow-2xl space-y-4"
+      className="w-80 lg:w-88 aquifera-panel overflow-y-auto shrink-0 custom-scrollbar shadow-2xl space-y-4"
     >
       <div className="flex flex-col gap-4">
         
@@ -102,7 +102,7 @@ export default function ScenarioSetupPanel({
         </div>
 
         {/* Group 1: Demonstration Presets Card */}
-        <div className="bg-slate-950/80 rounded-xl border border-slate-800/80 p-3.5 flex flex-col gap-2.5 shadow-xs">
+        <div className="aquifera-card-inset p-3.5 flex flex-col gap-2.5 shadow-xs">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-200">
             <span className="flex items-center gap-1.5">
               <Bookmark size={13} className="text-cyan-400" />
@@ -167,19 +167,19 @@ export default function ScenarioSetupPanel({
         </div>
 
         {/* Group 2: Compact Domain & Well Coordinates Status Pill */}
-        <div className="bg-slate-950/60 rounded-xl border border-slate-800/80 px-3 py-2 flex items-center justify-between text-[11px] text-slate-300">
+        <div className="aquifera-card-inset px-3 py-2 flex items-center justify-between text-[11px] text-slate-300">
           <div className="flex items-center gap-1.5">
             <MapPin size={13} className="text-cyan-400 shrink-0" />
             <span className="text-slate-400">Domain:</span>
             <span className="font-mono text-slate-200 font-semibold">3.2 × 3.2 km (5L)</span>
           </div>
-          <div className="font-mono text-cyan-300 text-[10px] bg-slate-900 px-2 py-0.5 rounded border border-slate-800" title="Primary well offset from domain center (East, North)">
+          <div className="aquifera-number-pill text-[10px] py-0.5" title="Primary well offset from domain center (East, North)">
             Well: {params.wellX >= 0 ? '+' : ''}{params.wellX || 0}m E, {-params.wellY >= 0 ? '+' : ''}{-params.wellY || 0}m N
           </div>
         </div>
 
         {/* Group 3: Hydrological Input Variables Card */}
-        <div className="bg-slate-950/80 rounded-xl border border-slate-800/80 p-3.5 flex flex-col gap-3.5 shadow-xs">
+        <div className="aquifera-card-inset p-3.5 flex flex-col gap-3.5 shadow-xs">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
             <h3 className="text-xs font-bold text-white tracking-wide uppercase">
               Hydrological Variables
@@ -191,7 +191,7 @@ export default function ScenarioSetupPanel({
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="font-medium text-slate-300">Extraction Rate (Q)</span>
-              <span className="font-mono text-cyan-300 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800">{params.pumpingRate.toLocaleString()} m³/d</span>
+              <span className="aquifera-number-pill">{params.pumpingRate.toLocaleString()} m³/d</span>
             </div>
             <input
               type="range"
@@ -202,7 +202,7 @@ export default function ScenarioSetupPanel({
               onChange={(e) => {
                 handleSliderChange(prev => ({ ...prev, pumpingRate: Number(e.target.value) }));
               }}
-              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+              className="w-full cursor-pointer accent-cyan-400"
             />
           </div>
 
@@ -210,7 +210,7 @@ export default function ScenarioSetupPanel({
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="font-medium text-slate-300">Conductivity (K)</span>
-              <span className="font-mono text-cyan-300 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800">{params.hydraulicConductivity || 15} m/d</span>
+              <span className="aquifera-number-pill">{params.hydraulicConductivity || 15} m/d</span>
             </div>
             <input
               type="range"
@@ -221,7 +221,7 @@ export default function ScenarioSetupPanel({
               onChange={(e) => {
                 handleSliderChange(prev => ({ ...prev, hydraulicConductivity: Number(e.target.value) }));
               }}
-              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+              className="w-full cursor-pointer accent-cyan-400"
             />
           </div>
 
@@ -229,7 +229,7 @@ export default function ScenarioSetupPanel({
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="font-medium text-slate-300">Elastic Storage (S<sub>s</sub>)</span>
-              <span className="font-mono text-cyan-300 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800">{(params.specificStorage || 0.0001).toFixed(5)} m⁻¹</span>
+              <span className="aquifera-number-pill">{(params.specificStorage || 0.0001).toFixed(5)} m⁻¹</span>
             </div>
             <input
               type="range"
@@ -240,7 +240,7 @@ export default function ScenarioSetupPanel({
               onChange={(e) => {
                 handleSliderChange(prev => ({ ...prev, specificStorage: Number(e.target.value) }));
               }}
-              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+              className="w-full cursor-pointer accent-cyan-400"
             />
           </div>
 
@@ -248,7 +248,7 @@ export default function ScenarioSetupPanel({
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="font-medium text-slate-300">Natural Recharge (R)</span>
-              <span className="font-mono text-cyan-300 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800">{params.rechargeRateMmYear || 150} mm/yr</span>
+              <span className="aquifera-number-pill">{params.rechargeRateMmYear || 150} mm/yr</span>
             </div>
             <input
               type="range"
@@ -259,7 +259,7 @@ export default function ScenarioSetupPanel({
               onChange={(e) => {
                 handleSliderChange(prev => ({ ...prev, rechargeRateMmYear: Number(e.target.value) }));
               }}
-              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+              className="w-full cursor-pointer accent-cyan-400"
             />
           </div>
 
@@ -267,7 +267,7 @@ export default function ScenarioSetupPanel({
           <div className="flex flex-col gap-1.5 pt-1 border-t border-slate-800/80">
             <div className="flex justify-between items-center text-xs">
               <span className="font-medium text-slate-300">CLUP 2021–2029 Zoning</span>
-              <span className="font-mono text-cyan-300 text-[10px] font-bold bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 truncate max-w-28 text-right" title="CLUP Zone Code & Imperviousness">
+              <span className="aquifera-number-pill text-[10px] truncate max-w-28 text-right" title="CLUP Zone Code & Imperviousness">
                 {params.zoningClass ? `${params.zoningClass} (α=${(params.imperviousnessAlpha ?? CLUP_ZONING_FRACTIONS[params.zoningClass]?.alpha ?? 0).toFixed(2)})` : 'Baseline (α=0.0)'}
               </span>
             </div>
@@ -283,7 +283,7 @@ export default function ScenarioSetupPanel({
                     handleSliderChange(prev => ({ ...prev, zoningClass: zKey, imperviousnessAlpha: z.alpha }));
                   }
                 }}
-                className="w-full bg-slate-950 text-slate-200 text-xs rounded-xl border border-slate-800 px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-cyan-400 cursor-pointer shadow-xs"
+                className="aquifera-select"
               >
                 <option value="">Default Baseline (Unzoned, 100% Infiltration)</option>
                 {Object.entries(CLUP_ZONING_FRACTIONS).map(([key, z]) => (
@@ -304,7 +304,7 @@ export default function ScenarioSetupPanel({
         </div>
 
         {/* Group 4: Collapsible Advanced Geotechnical Options Card */}
-        <div className="bg-slate-950/80 rounded-xl border border-slate-800/80 p-3.5 shadow-xs">
+        <div className="aquifera-card-inset p-3.5 shadow-xs">
           <button
             type="button"
             onClick={() => setIsAdvancedOpen(prev => !prev)}
@@ -318,11 +318,11 @@ export default function ScenarioSetupPanel({
           </button>
 
           {isAdvancedOpen && (
-            <div className="p-3 bg-slate-900/90 rounded-lg border border-slate-800 flex flex-col gap-3 mt-3 text-xs">
+            <div className="p-3 aquifera-card-inset flex flex-col gap-3 mt-3 text-xs">
               <label className="flex flex-col gap-1.5">
                 <span className="flex justify-between items-center text-slate-300">
                   <span className="font-medium">Clay thickness (Layer 4)</span>
-                  <span className="font-mono text-cyan-300 font-bold">{clayThickness.toFixed(1)} m</span>
+                  <span className="aquifera-number-pill">{clayThickness.toFixed(1)} m</span>
                 </span>
                 <input
                   type="range"
@@ -338,7 +338,7 @@ export default function ScenarioSetupPanel({
               <label className="flex flex-col gap-1.5">
                 <span className="flex justify-between items-center text-slate-300">
                   <span className="font-medium">Preconsolidation threshold</span>
-                  <span className="font-mono text-cyan-300 font-bold">{preconsolidationDrawdown} m</span>
+                  <span className="aquifera-number-pill">{preconsolidationDrawdown} m</span>
                 </span>
                 <input
                   type="range"
@@ -354,7 +354,7 @@ export default function ScenarioSetupPanel({
               <label className="flex flex-col gap-1.5">
                 <span className="flex justify-between items-center text-slate-300">
                   <span className="font-medium">Inelastic storage (S<sub>skv</sub>)</span>
-                  <span className="font-mono text-cyan-300 font-bold">{claySkv.toExponential(1)} m⁻¹</span>
+                  <span className="aquifera-number-pill">{claySkv.toExponential(1)} m⁻¹</span>
                 </span>
                 <input
                   type="range"

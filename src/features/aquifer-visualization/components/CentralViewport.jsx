@@ -112,7 +112,7 @@ export default function CentralViewport({
         </div>
 
         {/* Center: Live Geodetic Coordinate Readout (Task S2.3) */}
-        <div className="hidden lg:flex items-center gap-3 text-xs font-mono text-slate-300 bg-slate-900/60 px-3 py-1 rounded-lg border border-slate-800/80">
+        <div className="hidden lg:flex items-center gap-3 text-xs font-mono text-slate-300 aquifera-card-inset px-3 py-1">
           <div className="flex items-center gap-1.5 text-cyan-400">
             <Compass size={14} />
             <span className="text-[11px] font-semibold text-slate-400">CRS: PRS92 Zone 4</span>
@@ -131,7 +131,7 @@ export default function CentralViewport({
 
         {/* Right: Active Spatial Projection Tag & Mode Info */}
         <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
-          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-900 border border-slate-800 text-slate-300 hidden xl:inline-block">
+          <span className="aquifera-badge bg-slate-900 border-slate-800 text-slate-300 hidden xl:inline-block">
             {physicalState?.meta?.engineName || 'Theis + Terzaghi (Analytical)'}
           </span>
           <span className={`w-2 h-2 rounded-full ${isFallbackEngaged ? 'bg-amber-400 animate-ping' : 'bg-cyan-400 animate-pulse'} shadow-[0_0_8px_hsl(187,92%,48%)]`} />

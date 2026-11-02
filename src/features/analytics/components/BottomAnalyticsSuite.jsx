@@ -22,8 +22,8 @@ import { DEFAULT_PARAMS } from '../../scenarios/hooks/useScenarioState';
 // Reference run for the comparison table: the baseline preset, computed with the same model.
 const BASELINE_STATE = computeGroundwaterState(DEFAULT_PARAMS);
 
-const PANEL = 'bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 p-4 lg:p-5 flex flex-col justify-between gap-3.5 shadow-xl min-w-0';
-const SELECT = 'w-full bg-slate-950 text-slate-100 text-xs rounded-xl border border-slate-800 px-3 py-2 appearance-none focus:outline-none focus:border-cyan-400 cursor-pointer shadow-xs';
+const PANEL = 'aquifera-panel';
+const SELECT = 'aquifera-select';
 
 function PanelHeader({ icon: Icon, title, badge, badgeClass = 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' }) {
   return (
@@ -33,7 +33,7 @@ function PanelHeader({ icon: Icon, title, badge, badgeClass = 'bg-cyan-500/15 te
         <h3 className="text-xs font-bold text-white tracking-wide uppercase truncate">{title}</h3>
       </div>
       {badge && (
-        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border shrink-0 ${badgeClass}`}>{badge}</span>
+        <span className={`aquifera-badge ${badgeClass}`}>{badge}</span>
       )}
     </div>
   );
@@ -375,7 +375,7 @@ export default function BottomAnalyticsSuite({
               <div className="text-xs text-slate-300 font-medium">
                 {QUANTITIES[activeResultsTab].label} ({QUANTITIES[activeResultsTab].unit})
               </div>
-              <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+              <div className="aquifera-card-inset p-2">
                 <ProfileChart live={liveProfile} captured={capturedProfile} quantityKey={activeResultsTab} thresholdDrawdown={thresholdDrawdown} />
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
@@ -398,7 +398,7 @@ export default function BottomAnalyticsSuite({
                 <span>DOST-PAGASA Station 614 Seasonality</span>
                 <span className="text-[10px] font-mono text-cyan-400">1991–2020 Normals</span>
               </div>
-              <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+              <div className="aquifera-card-inset p-2">
                 <HydrographChart timeSeries={pagasaSeries} thresholdDrawdown={thresholdDrawdown} />
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
@@ -429,7 +429,7 @@ export default function BottomAnalyticsSuite({
               { icon: Lock, label: 'Permanent Inelastic Compaction', value: `${live.inelastic.toFixed(1)} cm`,
                 note: physicalState.isPreconsolidationBreached ? 'Preconsolidation breached' : 'Elastic range' }
             ].map(r => (
-              <div key={r.label} className="flex items-center gap-3 p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <div key={r.label} className="aquifera-card-inset p-2.5 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
                   <r.icon size={15} />
                 </div>
@@ -448,7 +448,7 @@ export default function BottomAnalyticsSuite({
             ))}
           </div>
 
-          <div className="mt-auto border-t border-slate-800/80 pt-2">
+          <div className="aquifera-card-inset p-2.5 mt-auto">
             <div className="text-[11px] font-semibold text-slate-300 mb-1.5">Proposed Acceptance Criteria (Proposal Table 1)</div>
             <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-[11px]">
               <dt className="text-slate-400">Surrogate response time</dt><dd className="font-mono text-cyan-300 text-right font-bold">&lt; 250 ms</dd>
@@ -471,7 +471,7 @@ export default function BottomAnalyticsSuite({
             <span className="text-slate-400"> ({capturedScenario?.capturedAt || 'initial'})</span> vs baseline.
           </div>
 
-          <div className="bg-slate-950/60 rounded-xl border border-slate-800 p-2 overflow-x-auto">
+          <div className="aquifera-card-inset p-2.5 overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 text-[11px] text-slate-400 font-medium">

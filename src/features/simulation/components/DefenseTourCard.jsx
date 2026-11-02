@@ -132,18 +132,18 @@ export default function DefenseTourCard({
                 {step.title}
               </h3>
               <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${step.badgeColor}`}
+                className={`aquifera-badge shrink-0 ${step.badgeColor}`}
               >
                 {step.badge}
               </span>
             </div>
-            <span className="text-[10px] font-mono text-cyan-300 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">
+            <span className="aquifera-number-pill shrink-0">
               {step.subtitle}
             </span>
           </div>
 
           {/* Academic Physical Rationale */}
-          <p className="text-slate-300 leading-relaxed text-[12px] bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+          <p className="text-slate-300 leading-relaxed text-[12px] aquifera-card-inset p-3">
             {step.narrative}
           </p>
 
@@ -151,7 +151,7 @@ export default function DefenseTourCard({
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/60">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono text-slate-400">Target State:</span>
-              <span className="text-[10px] font-mono font-medium text-emerald-300 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/20">
+              <span className="aquifera-badge bg-emerald-950/40 text-emerald-300 border-emerald-500/20 font-medium">
                 {step.stateBadge}
               </span>
             </div>
