@@ -8,7 +8,7 @@ import {
   CheckCircle2,
   Camera
 } from 'lucide-react';
-import { HYDRO_PARAMS } from '../../../physics/groundwaterPhysics';
+import { HYDRO_PARAMS, CLUP_ZONING_FRACTIONS } from '../../../physics/groundwaterPhysics';
 
 export default function ScenarioSetupPanel({
   params,
@@ -261,6 +261,36 @@ export default function ScenarioSetupPanel({
               }}
               className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
             />
+          </div>
+
+          {/* 5. CLUP 2021-2029 Statutory Zoning Classification */}
+          <div className="flex flex-col gap-1.5 pt-1 border-t border-slate-800/80">
+            <div className="flex justify-between items-center text-xs">
+              <span className="font-medium text-slate-300">CLUP 2021–2029 Zoning</span>
+              <span className="font-mono text-cyan-300 text-[10px] font-bold bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 truncate max-w-28 text-right" title="CLUP Zone Code & Imperviousness">
+                {params.zoningClass ? `${params.zoningClass} (α=${(params.imperviousnessAlpha ?? CLUP_ZONING_FRACTIONS[params.zoningClass]?.alpha ?? 0).toFixed(2)})` : 'Baseline (α=0.0)'}
+              </span>
+            </div>
+            <select
+              value={params.zoningClass || ''}
+              onChange={(e) => {
+                const zKey = e.target.value;
+                if (!zKey) {
+                  handleSliderChange(prev => ({ ...prev, zoningClass: undefined, imperviousnessAlpha: undefined }));
+                } else {
+                  const z = CLUP_ZONING_FRACTIONS[zKey];
+                  handleSliderChange(prev => ({ ...prev, zoningClass: zKey, imperviousnessAlpha: z.alpha }));
+                }
+              }}
+              className="w-full bg-slate-950 text-slate-200 text-xs rounded-xl border border-slate-800 px-2 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer"
+            >
+              <option value="">Default Baseline (Unzoned, 100% Infiltration)</option>
+              {Object.entries(CLUP_ZONING_FRACTIONS).map(([key, z]) => (
+                <option key={key} value={key}>
+                  {key}: {z.name.split('(')[0].trim()} (α = {z.alpha.toFixed(2)})
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

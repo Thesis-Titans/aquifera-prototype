@@ -69,17 +69,31 @@ export const QUANTITIES = {
     max: 50,
     decimals: 1,
     value: (state, idx) => state.inelasticGrid[idx] * 100
+  },
+  diff_subsidence: {
+    label: 'Scenario Delta: Subsidence (Live − Captured)',
+    unit: 'cm',
+    max: 20,
+    decimals: 1,
+    isDiverging: true,
+    value: (state, idx, capturedState) => {
+      const live = state.displacementGrid[idx] * 100;
+      const captured = (capturedState && capturedState.displacementGrid) ? capturedState.displacementGrid[idx] * 100 : 0;
+      return live - captured;
+    }
   }
 };
 
 export const COLOR_SCALES = {
   standard: { label: 'Standard (cyan to crimson)', colors: ['#0e7490', '#10b981', '#eab308', '#f97316', '#dc2626'] },
   viridis: { label: 'Viridis (color-blind safe)', colors: ['#440154', '#3b528b', '#21918c', '#5ec962', '#fde725'] },
-  turbo: { label: 'Turbo', colors: ['#30123b', '#4686fb', '#1ae4b6', '#faba39', '#7a0403'] }
+  turbo: { label: 'Turbo', colors: ['#30123b', '#4686fb', '#1ae4b6', '#faba39', '#7a0403'] },
+  diverging: { label: 'Diverging Delta (Blue: Recovery, Red: Compaction)', colors: ['#2563eb', '#38bdf8', '#0f172a', '#f97316', '#dc2626'] }
 };
 
-export function quantityAt(state, key, idx) {
-  return QUANTITIES[key].value(state, idx);
+export function quantityAt(state, key, idx, capturedState = null) {
+  const q = QUANTITIES[key] || QUANTITIES.subsidence;
+  return q.value(state, idx, capturedState);
 }
 
 /** Largest value of a quantity over the grid. */
@@ -269,19 +283,25 @@ export function cellPolygonGeoJSON(state, idx) {
 }
 
 /** Values at one node, with its offset from the domain centre. */
-export function describeNode(state, idx) {
+export function describeNode(state, idx, capturedState = null) {
   const res = state.resolution;
   const step = DOMAIN.widthMeters / (res - 1);
   const half = DOMAIN.widthMeters / 2;
   const i = Math.floor(idx / res);
   const j = idx % res;
+  const liveSub = quantityAt(state, 'subsidence', idx);
+  const capSub = capturedState ? quantityAt(capturedState, 'subsidence', idx) : null;
+  const diffSub = capSub != null ? liveSub - capSub : liveSub;
   return {
     idx,
     x: Math.round(-half + j * step),
     y: Math.round(-half + i * step),
-    subsidence: quantityAt(state, 'subsidence', idx),
+    subsidence: liveSub,
     drawdown: quantityAt(state, 'drawdown', idx),
-    inelastic: quantityAt(state, 'inelastic', idx)
+    inelastic: quantityAt(state, 'inelastic', idx),
+    diff_subsidence: diffSub,
+    capturedSubsidence: capSub,
+    diffSubsidence: diffSub
   };
 }
 
@@ -297,7 +317,7 @@ export function nodeAtMeters(state, x, y) {
 }
 
 /** West–east profile through the primary well: [{ xKm, value }]. */
-export function profileThroughWell(state, key) {
+export function profileThroughWell(state, key, capturedState = null) {
   const res = state.resolution;
   const step = DOMAIN.widthMeters / (res - 1);
   const half = DOMAIN.widthMeters / 2;
@@ -305,7 +325,7 @@ export function profileThroughWell(state, key) {
   const i = Math.max(0, Math.min(res - 1, Math.round((wellY + half) / step)));
   const points = [];
   for (let j = 0; j < res; j++) {
-    points.push({ xKm: (-half + j * step) / 1000, value: quantityAt(state, key, i * res + j) });
+    points.push({ xKm: (-half + j * step) / 1000, value: quantityAt(state, key, i * res + j, capturedState) });
   }
   return points;
 }

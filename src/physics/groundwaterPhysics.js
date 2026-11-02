@@ -63,6 +63,78 @@ export const HYDRO_PARAMS = {
   clayTimeLagDays: 30.0       // Hydrodynamic lag tau
 };
 
+/**
+ * City Government of Iloilo Comprehensive Land Use Plan (CLUP 2021–2029)
+ * Official Zoning Classifications & Surface Imperviousness Parameters.
+ * Impervious surface fraction alpha modulates surface precipitation infiltration:
+ * W_eff = W * (1.0 - alpha)
+ */
+export const CLUP_ZONING_FRACTIONS = {
+  'C-3': {
+    code: 'C-3',
+    name: 'Metropolitan Commercial Zone (Mandurriao Hub / Iloilo Business Park)',
+    alpha: 0.90,
+    retentionFactor: 0.10,
+    domesticSinkMmYear: 0.0
+  },
+  'C-2': {
+    code: 'C-2',
+    name: 'High-Density Commercial (City Proper Downtown / Calle Real)',
+    alpha: 0.85,
+    retentionFactor: 0.15,
+    domesticSinkMmYear: 5.0
+  },
+  'C-1': {
+    code: 'C-1',
+    name: 'Medium-Density Commercial (District Commercial Centers)',
+    alpha: 0.75,
+    retentionFactor: 0.25,
+    domesticSinkMmYear: 8.0
+  },
+  'R-3': {
+    code: 'R-3',
+    name: 'High-Density Residential (Molo / La Paz / Jaro)',
+    alpha: 0.70,
+    retentionFactor: 0.30,
+    domesticSinkMmYear: 18.0
+  },
+  'R-2': {
+    code: 'R-2',
+    name: 'Medium-Density Residential (Villa Arevalo / Mandurriao Outer)',
+    alpha: 0.55,
+    retentionFactor: 0.45,
+    domesticSinkMmYear: 12.0
+  },
+  'R-1': {
+    code: 'R-1',
+    name: 'Low-Density Residential (Suburban Single-Family)',
+    alpha: 0.35,
+    retentionFactor: 0.65,
+    domesticSinkMmYear: 6.0
+  },
+  'I-2': {
+    code: 'I-2',
+    name: 'Medium Industrial (Lapuz Port & Shipping Terminals)',
+    alpha: 0.80,
+    retentionFactor: 0.20,
+    domesticSinkMmYear: 0.0
+  },
+  'AG': {
+    code: 'AG',
+    name: 'Agricultural & Fishpond (Coastal Tidal Mudflats / Leganes Border)',
+    alpha: 0.15,
+    retentionFactor: 0.85,
+    domesticSinkMmYear: 2.0
+  },
+  'OS': {
+    code: 'OS',
+    name: 'Open Space & Parks (Managed Infiltration / Esplanade)',
+    alpha: 0.10,
+    retentionFactor: 0.90,
+    domesticSinkMmYear: 0.0
+  }
+};
+
 // Clay interbed head attenuation factor (calibrated to MODFLOW 6 delay interbed drainage)
 export const CLAY_INTERBED_ATTENUATION = 0.081;
 
@@ -252,6 +324,8 @@ export function computeGroundwaterState(params, options = {}) {
     pumpingDays = 180,       // Duration t in days
     rechargeRateMmDay,       // Optional mm/day
     rechargeRateMmYear = 150,// Natural recharge R in mm/year (prototype default 150)
+    imperviousnessAlpha,     // CLUP 2021-2029 Impervious surface fraction alpha in [0.0, 1.0]
+    zoningClass,             // CLUP 2021-2029 Zone Code (e.g. 'C-3', 'C-2', 'R-3', 'R-2', 'R-1', 'AG', 'OS')
     hydraulicConductivity = 15, // K in m/day (prototype default 15)
     specificStorage = 0.0001,   // Ss in 1/m (prototype default 0.0001)
     wellX = 0,               // Well center X (meters)
@@ -279,8 +353,14 @@ export function computeGroundwaterState(params, options = {}) {
     ? historyBuffer
     : createHysteresisBuffer(res, h0);
 
-  // Effective daily recharge
-  const effRechargeMmDay = rechargeRateMmDay !== undefined ? rechargeRateMmDay : (rechargeRateMmYear / 365.0);
+  // Effective daily recharge factoring CLUP surface imperviousness retention
+  const alpha = imperviousnessAlpha !== undefined
+    ? Math.max(0.0, Math.min(0.95, Number(imperviousnessAlpha)))
+    : (zoningClass && CLUP_ZONING_FRACTIONS[zoningClass] ? CLUP_ZONING_FRACTIONS[zoningClass].alpha : 0.0);
+  const retentionFactor = Number((1.0 - alpha).toFixed(4));
+
+  const rawRechargeMmDay = rechargeRateMmDay !== undefined ? rechargeRateMmDay : (rechargeRateMmYear / 365.0);
+  const effRechargeMmDay = rawRechargeMmDay * retentionFactor;
   const rechargeMDay = effRechargeMmDay / 1000.0;
   const rechargeHeadBoost = Math.min(4.5, (rechargeMDay * pumpingDays * 0.25));
 
@@ -375,6 +455,10 @@ export function computeGroundwaterState(params, options = {}) {
     pumpingRate,
     pumpingDays,
     rechargeRateMmDay,
+    rechargeRateMmYear,
+    imperviousnessAlpha: alpha,
+    zoningClass: zoningClass || null,
+    retentionFactor,
     wells,
     historyBuffer: minHeadBuffer
   };
@@ -453,4 +537,97 @@ export function getPointHydrogeology(worldX, worldY, worldZ, physicalState) {
       ? 'Critical: Preconsolidation Breached (Plastic Compaction Active)'
       : 'Elastic: Normal Hydromechanical Equilibrium'
   };
+}
+
+/**
+ * 30-Year Climatological Normals (1991–2020) for Iloilo City Synoptic Station 614
+ * Source: Philippine Atmospheric, Geophysical and Astronomical Services Administration (DOST-PAGASA)
+ */
+export const PAGASA_CLIMATOLOGICAL_NORMALS = [
+  { monthIndex: 1, monthName: 'Jan', rainfallMm: 45.2, netRechargeRateMmDay: 0.60 },
+  { monthIndex: 2, monthName: 'Feb', rainfallMm: 31.8, netRechargeRateMmDay: 0.50 },
+  { monthIndex: 3, monthName: 'Mar', rainfallMm: 38.6, netRechargeRateMmDay: 0.55 },
+  { monthIndex: 4, monthName: 'Apr', rainfallMm: 52.4, netRechargeRateMmDay: 0.70 },
+  { monthIndex: 5, monthName: 'May', rainfallMm: 145.8, netRechargeRateMmDay: 1.20 },
+  { monthIndex: 6, monthName: 'Jun', rainfallMm: 268.4, netRechargeRateMmDay: 1.85 },
+  { monthIndex: 7, monthName: 'Jul', rainfallMm: 312.5, netRechargeRateMmDay: 2.00 },
+  { monthIndex: 8, monthName: 'Aug', rainfallMm: 335.2, netRechargeRateMmDay: 2.00 },
+  { monthIndex: 9, monthName: 'Sep', rainfallMm: 284.1, netRechargeRateMmDay: 1.90 },
+  { monthIndex: 10, monthName: 'Oct', rainfallMm: 242.6, netRechargeRateMmDay: 1.60 },
+  { monthIndex: 11, monthName: 'Nov', rainfallMm: 168.3, netRechargeRateMmDay: 1.10 },
+  { monthIndex: 12, monthName: 'Dec', rainfallMm: 98.5, netRechargeRateMmDay: 0.80 }
+];
+
+/**
+ * Computes a 12-month transient hydrograph at the primary well centroid
+ * parameterized by DOST-PAGASA Station 614 seasonal normals and CLUP zoning retention.
+ * @param {Object} params Scenario parameters
+ * @returns {Array<Object>} 12 monthly time series records
+ */
+export function computePAGASATimeSeries(params = {}) {
+  const {
+    pumpingRate = 15000,
+    hydraulicConductivity = 15,
+    specificStorage = 0.0001,
+    imperviousnessAlpha,
+    zoningClass
+  } = params;
+
+  const alpha = imperviousnessAlpha !== undefined
+    ? Math.max(0.0, Math.min(0.95, Number(imperviousnessAlpha)))
+    : (zoningClass && CLUP_ZONING_FRACTIONS[zoningClass] ? CLUP_ZONING_FRACTIONS[zoningClass].alpha : 0.0);
+  const retentionFactor = Number((1.0 - alpha).toFixed(4));
+
+  const T = Math.max(50, (hydraulicConductivity || 15) * 30);
+  const S = Math.max(1e-5, (specificStorage || 0.0001) * 40);
+  const h0 = HYDRO_PARAMS.initialHead;
+  const sPre = HYDRO_PARAMS.initialHead - HYDRO_PARAMS.preconsolidationHead; // 7.0 m
+  const bClay = HYDRO_PARAMS.clayThickness;
+  const ske = HYDRO_PARAMS.claySke;
+  const skv = HYDRO_PARAMS.claySkv;
+
+  const r = 1.0; // Well radius (m)
+  let cumulativeRechargeBoost = 0;
+  let maxHistoricalDrawdown = 0;
+
+  return PAGASA_CLIMATOLOGICAL_NORMALS.map((norm, mIdx) => {
+    const monthNumber = mIdx + 1;
+    const tDays = monthNumber * 30;
+
+    // Monthly recharge boost factoring CLUP zoning retention
+    const monthlyRechargeMDay = (norm.netRechargeRateMmDay / 1000.0) * retentionFactor;
+    cumulativeRechargeBoost += monthlyRechargeMDay * 30 * 0.25;
+
+    // Theis gross drawdown at well radius
+    const u = (r * r * S) / (4 * T * tDays);
+    const sGross = (pumpingRate / (4 * Math.PI * T)) * wellFunctionW(u);
+
+    // Net drawdown at well
+    const sNet = Math.max(0, sGross - Math.min(4.5, cumulativeRechargeBoost));
+    const head = h0 - sNet;
+
+    if (sNet > maxHistoricalDrawdown) {
+      maxHistoricalDrawdown = sNet;
+    }
+
+    // Terzaghi consolidation strain partitioning
+    const elasticDrawdown = Math.min(sNet, sPre);
+    const inelasticDrawdown = Math.max(0, sNet - sPre);
+
+    const deltaBElasticM = bClay * ske * elasticDrawdown;
+    const deltaBInelasticM = bClay * skv * inelasticDrawdown;
+    const totalSubsidenceM = deltaBElasticM + deltaBInelasticM;
+
+    return {
+      monthIndex: norm.monthIndex,
+      monthName: norm.monthName,
+      days: tDays,
+      rainfallMm: norm.rainfallMm,
+      headM: parseFloat(head.toFixed(2)),
+      drawdownM: parseFloat(sNet.toFixed(2)),
+      subsidenceMm: parseFloat((totalSubsidenceM * 1000).toFixed(1)),
+      inelasticMm: parseFloat((deltaBInelasticM * 1000).toFixed(1)),
+      isPreconsolidationBreached: sNet >= sPre
+    };
+  });
 }

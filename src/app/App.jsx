@@ -141,6 +141,7 @@ export default function App() {
         {/* Central: Dual-Mode Viewport (2D MapLibre GIS ⇄ 3D Three.js Subsurface) */}
         <CentralViewport
           physicalState={physicalState}
+          capturedScenario={capturedScenario}
           params={params}
           visualizationConfig={visualizationConfig}
           viewMode={viewMode}

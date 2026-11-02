@@ -15,7 +15,7 @@ import {
   BarChart3,
   Minimize2
 } from 'lucide-react';
-import { computeGroundwaterState, HYDRO_PARAMS } from '../../../physics/groundwaterPhysics';
+import { computeGroundwaterState, HYDRO_PARAMS, computePAGASATimeSeries } from '../../../physics/groundwaterPhysics';
 import { QUANTITIES, COLOR_SCALES, profileThroughWell, quantityMax, exportGeoJSON } from '../../../physics/fields';
 import { DEFAULT_PARAMS } from '../../scenarios/hooks/useScenarioState';
 
@@ -83,6 +83,77 @@ function ProfileChart({ live, captured, quantityKey, thresholdDrawdown }) {
   );
 }
 
+/** 12-Month Transient Hydrograph driven by DOST-PAGASA Station 614 Climatological Normals */
+function HydrographChart({ timeSeries, thresholdDrawdown }) {
+  const W = 340, H = 155, L = 42, R = 15, T = 12, B = 28;
+  const maxDrawdown = Math.max(...timeSeries.map(p => p.drawdownM), 10.0);
+  const maxRain = Math.max(...timeSeries.map(p => p.rainfallMm), 350.0);
+  const yMax = niceCeil(maxDrawdown);
+
+  const sx = idx => L + (idx / 11) * (W - L - R);
+  const sy = v => T + (1 - v / yMax) * (H - T - B);
+  const sRainH = mm => (mm / maxRain) * (H - T - B) * 0.75;
+
+  const path = pts => pts.map((p, k) => `${k ? 'L' : 'M'}${sx(k).toFixed(1)},${sy(p.drawdownM).toFixed(1)}`).join(' ');
+  const yTicks = [0, yMax / 2, yMax];
+  const showThreshold = thresholdDrawdown < yMax;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img"
+      aria-label="12-month transient drawdown and seasonal precipitation from PAGASA Station 614">
+      {/* Rainfall Bars (Background) */}
+      {timeSeries.map((p, k) => {
+        const barW = 14;
+        const x = sx(k) - barW / 2;
+        const h = sRainH(p.rainfallMm);
+        const y = (H - B) - h;
+        return (
+          <g key={p.monthName}>
+            <rect x={x} y={y} width={barW} height={h} fill="rgba(14, 165, 233, 0.22)" rx="2" />
+          </g>
+        );
+      })}
+
+      {yTicks.map(t => (
+        <g key={t}>
+          <line x1={L} x2={W - R} y1={sy(t)} y2={sy(t)} stroke="rgba(148,163,184,0.12)" />
+          <text x={L - 5} y={sy(t) + 3.5} textAnchor="end" fontSize="10" fill="#94a3b8" fontFamily="JetBrains Mono, monospace">{+t.toFixed(1)}</text>
+        </g>
+      ))}
+
+      {timeSeries.map((p, k) => (
+        <text key={p.monthName} x={sx(k)} y={H - 12} textAnchor="middle" fontSize="9" fill="#94a3b8" fontFamily="JetBrains Mono, monospace">
+          {p.monthName}
+        </text>
+      ))}
+      <text x={(L + W - R) / 2} y={H - 1} textAnchor="middle" fontSize="9.5" fill="#64748b">Month (1991–2020 PAGASA Normals)</text>
+
+      {showThreshold && (
+        <g>
+          <line x1={L} x2={W - R} y1={sy(thresholdDrawdown)} y2={sy(thresholdDrawdown)} stroke="#f59e0b" strokeDasharray="4 3" />
+          <text x={W - R - 2} y={sy(thresholdDrawdown) - 3} textAnchor="end" fontSize="9" fill="#f59e0b">Preconsolidation threshold</text>
+        </g>
+      )}
+
+      {/* Transient Drawdown Curve */}
+      <path d={path(timeSeries)} fill="none" stroke="#22d3ee" strokeWidth="2.2" />
+
+      {/* Data Points */}
+      {timeSeries.map((p, k) => (
+        <circle
+          key={k}
+          cx={sx(k)}
+          cy={sy(p.drawdownM)}
+          r={p.isPreconsolidationBreached ? 3.5 : 2.5}
+          fill={p.isPreconsolidationBreached ? '#f43f5e' : '#22d3ee'}
+          stroke="#0f172a"
+          strokeWidth="1.5"
+        />
+      ))}
+    </svg>
+  );
+}
+
 function deltaText(now, ref) {
   if (Math.abs(ref) < 1e-9) return now > 0 ? 'new' : '0%';
   const pct = ((now - ref) / ref) * 100;
@@ -113,6 +184,7 @@ export default function BottomAnalyticsSuite({
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeResultsTab, setActiveResultsTab] = useState('subsidence');
+  const [card1Mode, setCard1Mode] = useState('profile'); // 'profile' | 'hydrograph'
   const sectionRef = useRef(null);
   const captured = capturedScenario?.physicalState || physicalState;
 
@@ -125,6 +197,7 @@ export default function BottomAnalyticsSuite({
 
   const liveProfile = useMemo(() => profileThroughWell(physicalState, activeResultsTab), [physicalState, activeResultsTab]);
   const capturedProfile = useMemo(() => profileThroughWell(captured, activeResultsTab), [captured, activeResultsTab]);
+  const pagasaSeries = useMemo(() => computePAGASATimeSeries(params), [params]);
 
   const summary = (state) => ({
     subsidence: quantityMax(state, 'subsidence'),
@@ -168,6 +241,30 @@ export default function BottomAnalyticsSuite({
     const a = document.createElement('a');
     a.href = url;
     a.download = `aquifera_profile_${activeResultsTab}_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Task F4.2: Climatological Transient Hydrograph CSV Export
+  const handleExportHydrographCSV = () => {
+    let csv = '# AQUIFERA BSIT THESIS RESEARCH PROTOTYPE\n';
+    csv += '# Content: DOST-PAGASA Station 614 Transient 12-Month Hydrograph Data\n';
+    csv += '# Climatological Normals: 1991-2020 Iloilo Synoptic Station 614 (Type I Climate)\n';
+    csv += `# Extraction Rate: ${params.pumpingRate} m3/d\n`;
+    csv += `# Hydraulic Conductivity: ${params.hydraulicConductivity} m/d\n`;
+    csv += `# Specific Storage: ${params.specificStorage || 0.0001} 1/m\n`;
+    csv += `# Statutory CLUP Zoning: ${params.zoningClass || 'None'} (alpha = ${params.imperviousnessAlpha ?? 0})\n`;
+    csv += `# Export Timestamp: ${new Date().toISOString()}\n`;
+    csv += 'Month,Month_Index,Cumulative_Days,Rainfall_mm,Head_m,Drawdown_m,Subsidence_mm,Inelastic_Compaction_mm,Preconsolidation_Breached\n';
+    pagasaSeries.forEach(p => {
+      csv += `${p.monthName},${p.monthIndex},${p.days},${p.rainfallMm},${p.headM},${p.drawdownM},${p.subsidenceMm},${p.inelasticMm},${p.isPreconsolidationBreached}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aquifera_pagasa_hydrograph_${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -228,43 +325,98 @@ export default function BottomAnalyticsSuite({
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
 
-        {/* CARD 1: Profile chart */}
+        {/* CARD 1: Cross-Section Profile & Climatological Hydrograph */}
         <div className={PANEL}>
-          <PanelHeader icon={TrendingUp} title="Profile Through Well" badge="LIVE" />
-          <div role="tablist" aria-label="Profile quantity" className="flex items-center gap-3 text-xs font-medium border-b border-slate-800/80">
-            {Object.entries(QUANTITIES).map(([key, q]) => (
+          <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5 gap-2">
+            <div className="flex items-center gap-1.5 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
               <button
-                key={key}
-                role="tab"
-                aria-selected={activeResultsTab === key}
-                onClick={() => setActiveResultsTab(key)}
-                className={`pb-1.5 transition-colors cursor-pointer ${activeResultsTab === key
-                  ? 'text-white border-b-2 border-cyan-400 font-semibold'
-                  : 'text-slate-400 hover:text-slate-200'}`}
+                onClick={() => setCard1Mode('profile')}
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                  card1Mode === 'profile'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
               >
-                {key === 'inelastic' ? 'Permanent' : q.label.replace('Land ', '').replace('Head ', '')}
+                Cross-Section (W–E)
               </button>
-            ))}
-          </div>
-          <div className="text-xs text-slate-300 font-medium">
-            {QUANTITIES[activeResultsTab].label} ({QUANTITIES[activeResultsTab].unit})
-          </div>
-          <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
-            <ProfileChart live={liveProfile} captured={capturedProfile} quantityKey={activeResultsTab} thresholdDrawdown={thresholdDrawdown} />
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5"><span className="w-3.5 h-0.5 bg-cyan-400 inline-block" /> Live</span>
-              <span className="flex items-center gap-1.5"><span className="w-3.5 border-t border-dashed border-slate-400 inline-block" /> Captured</span>
+              <button
+                onClick={() => setCard1Mode('hydrograph')}
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                  card1Mode === 'hydrograph'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                12-Mo PAGASA Hydrograph
+              </button>
             </div>
-            <button
-              onClick={handleExportProfileCSV}
-              className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono text-[11px] cursor-pointer hover:underline"
-              title="Export profile cross-section as CSV"
-            >
-              <Download size={12} /> CSV
-            </button>
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold border shrink-0 bg-cyan-500/15 text-cyan-300 border-cyan-500/30">
+              {card1Mode === 'profile' ? 'SPATIAL' : 'STATION 614'}
+            </span>
           </div>
+
+          {card1Mode === 'profile' ? (
+            <>
+              <div role="tablist" aria-label="Profile quantity" className="flex items-center gap-3 text-xs font-medium border-b border-slate-800/80">
+                {Object.entries(QUANTITIES).filter(([k]) => k !== 'diff_subsidence').map(([key, q]) => (
+                  <button
+                    key={key}
+                    role="tab"
+                    aria-selected={activeResultsTab === key}
+                    onClick={() => setActiveResultsTab(key)}
+                    className={`pb-1.5 transition-colors cursor-pointer ${activeResultsTab === key
+                      ? 'text-white border-b-2 border-cyan-400 font-semibold'
+                      : 'text-slate-400 hover:text-slate-200'}`}
+                  >
+                    {key === 'inelastic' ? 'Permanent' : q.label.replace('Land ', '').replace('Head ', '')}
+                  </button>
+                ))}
+              </div>
+              <div className="text-xs text-slate-300 font-medium">
+                {QUANTITIES[activeResultsTab].label} ({QUANTITIES[activeResultsTab].unit})
+              </div>
+              <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+                <ProfileChart live={liveProfile} captured={capturedProfile} quantityKey={activeResultsTab} thresholdDrawdown={thresholdDrawdown} />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                <div className="flex items-center gap-4">
+                  <span className="flex items-center gap-1.5"><span className="w-3.5 h-0.5 bg-cyan-400 inline-block" /> Live</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3.5 border-t border-dashed border-slate-400 inline-block" /> Captured</span>
+                </div>
+                <button
+                  onClick={handleExportProfileCSV}
+                  className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono text-[11px] cursor-pointer hover:underline"
+                  title="Export profile cross-section as CSV"
+                >
+                  <Download size={12} /> CSV
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-xs text-slate-300 font-medium">
+                <span>DOST-PAGASA Station 614 Seasonality</span>
+                <span className="text-[10px] font-mono text-cyan-400">1991–2020 Normals</span>
+              </div>
+              <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+                <HydrographChart timeSeries={pagasaSeries} thresholdDrawdown={thresholdDrawdown} />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-xs bg-sky-500/40 inline-block" /> Rain</span>
+                  <span className="flex items-center gap-1"><span className="w-3.5 h-0.5 bg-cyan-400 inline-block" /> Drawdown</span>
+                  <span className="flex items-center gap-1"><span className="w-3.5 border-t border-dashed border-amber-400 inline-block" /> Threshold</span>
+                </div>
+                <button
+                  onClick={handleExportHydrographCSV}
+                  className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono text-[11px] cursor-pointer hover:underline"
+                  title="Export 12-month PAGASA transient hydrograph as CSV"
+                >
+                  <Download size={12} /> CSV
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* CARD 2: Live results and proposal targets */}
@@ -347,13 +499,34 @@ export default function BottomAnalyticsSuite({
             </table>
           </div>
 
-          <button
-            onClick={onOpenVerification}
-            className="mt-auto w-full h-9 px-3 rounded-xl text-xs font-semibold text-white bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-cyan-400/50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-          >
-            <ShieldCheck size={14} className="text-cyan-400" />
-            <span>Planned MODFLOW 6 Verification</span>
-          </button>
+          <div className="mt-auto flex flex-col gap-2 pt-1">
+            <button
+              onClick={() => {
+                setVisualizationConfig(prev => ({
+                  ...prev,
+                  dataType: prev.dataType === 'diff_subsidence' ? 'subsidence' : 'diff_subsidence',
+                  colorScale: prev.dataType === 'diff_subsidence' ? 'standard' : 'diverging'
+                }));
+              }}
+              className={`w-full h-8 px-3 rounded-xl text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
+                visualizationConfig.dataType === 'diff_subsidence'
+                  ? 'bg-cyan-500/20 text-cyan-200 border-cyan-400/50'
+                  : 'bg-slate-950 hover:bg-slate-900 text-slate-300 border-slate-800 hover:border-cyan-400/30'
+              }`}
+              title="Toggle spatial difference raster (Live minus Captured) on the geographic basemap"
+            >
+              <SlidersHorizontal size={13} className="text-cyan-400" />
+              <span>{visualizationConfig.dataType === 'diff_subsidence' ? 'Spatial Delta Active on Map' : 'Map Spatial Delta (\u0394s)'}</span>
+            </button>
+
+            <button
+              onClick={onOpenVerification}
+              className="w-full h-8.5 px-3 rounded-xl text-xs font-semibold text-white bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-cyan-400/50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            >
+              <ShieldCheck size={14} className="text-cyan-400" />
+              <span>Planned MODFLOW 6 Verification</span>
+            </button>
+          </div>
         </div>
 
         {/* CARD 4: Visualization Controls */}

@@ -6,7 +6,10 @@ import {
   createHysteresisBuffer,
   resetHysteresisState,
   HYDRO_PARAMS,
-  DOMAIN
+  DOMAIN,
+  CLUP_ZONING_FRACTIONS,
+  PAGASA_CLIMATOLOGICAL_NORMALS,
+  computePAGASATimeSeries
 } from '../../src/physics/groundwaterPhysics.js';
 
 describe('AQUIFERA Physics Engine: Well Function W(u) Tests', () => {
@@ -150,5 +153,83 @@ describe('AQUIFERA Physics Engine: Simulation Determinism and State Isolation', 
     assert.doesNotThrow(() => {
       resetHysteresisState();
     });
+  });
+
+  test('CLUP 2021-2029 zoning classes correctly modulate effective recharge and drawdown', () => {
+    // Under identical extraction and precipitation, commercial zone (C-3, alpha=0.90) throttles recharge
+    const commercialC3 = computeGroundwaterState({
+      ...baseParams,
+      rechargeRateMmYear: 300,
+      zoningClass: 'C-3'
+    });
+
+    // Open space / agricultural zone (OS, alpha=0.10) retains 90% of recharge
+    const openSpaceOS = computeGroundwaterState({
+      ...baseParams,
+      rechargeRateMmYear: 300,
+      zoningClass: 'OS'
+    });
+
+    assert.equal(commercialC3.zoningClass, 'C-3');
+    assert.equal(commercialC3.imperviousnessAlpha, 0.90);
+    assert.equal(openSpaceOS.zoningClass, 'OS');
+    assert.equal(openSpaceOS.imperviousnessAlpha, 0.10);
+
+    // C-3 must experience higher net drawdown because only 10% of recharge infiltrates
+    assert.ok(
+      commercialC3.maxDrawdown > openSpaceOS.maxDrawdown,
+      `C-3 drawdown (${commercialC3.maxDrawdown}) must exceed OS drawdown (${openSpaceOS.maxDrawdown})`
+    );
+    assert.ok(
+      commercialC3.maxSubsidenceCm >= openSpaceOS.maxSubsidenceCm,
+      'C-3 subsidence must be greater than or equal to OS subsidence'
+    );
+  });
+
+  test('explicit imperviousnessAlpha parameter overrides zoningClass preset cleanly', () => {
+    const customAlpha = computeGroundwaterState({
+      ...baseParams,
+      rechargeRateMmYear: 250,
+      zoningClass: 'OS',
+      imperviousnessAlpha: 0.85
+    });
+
+    assert.equal(customAlpha.imperviousnessAlpha, 0.85);
+    assert.equal(customAlpha.retentionFactor, 0.15);
+  });
+
+  test('computePAGASATimeSeries produces physically valid 12-month seasonal hydrograph', () => {
+    assert.equal(PAGASA_CLIMATOLOGICAL_NORMALS.length, 12);
+
+    const series = computePAGASATimeSeries({
+      pumpingRate: 15000,
+      hydraulicConductivity: 15,
+      specificStorage: 0.0001,
+      zoningClass: 'R-2'
+    });
+
+    assert.equal(series.length, 12, 'Must contain exactly 12 monthly steps');
+
+    for (let m = 0; m < 12; m++) {
+      const step = series[m];
+      assert.equal(step.monthIndex, m + 1);
+      assert.ok(typeof step.monthName === 'string');
+      assert.ok(step.rainfallMm > 0, 'Rainfall must be positive');
+      assert.ok(step.drawdownM >= 0, 'Drawdown must be non-negative');
+      assert.ok(step.subsidenceMm >= 0, 'Subsidence must be non-negative');
+      assert.ok(step.headM <= HYDRO_PARAMS.initialHead, 'Head cannot exceed h0');
+    }
+
+    // Heavy extraction breaches preconsolidation
+    const heavySeries = computePAGASATimeSeries({
+      pumpingRate: 28000,
+      hydraulicConductivity: 12,
+      specificStorage: 0.0001,
+      zoningClass: 'C-3'
+    });
+
+    const month12 = heavySeries[11];
+    assert.equal(month12.isPreconsolidationBreached, true, 'Severe pumping must breach preconsolidation threshold');
+    assert.ok(month12.inelasticMm > 0, 'Permanent compaction must accumulate');
   });
 });

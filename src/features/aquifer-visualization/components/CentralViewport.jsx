@@ -9,6 +9,7 @@ const SPLIT_MIN_PX = 960;
 
 export default function CentralViewport({
   physicalState,
+  capturedScenario = null,
   params,
   visualizationConfig,
   viewMode = '2D',
@@ -180,6 +181,7 @@ export default function CentralViewport({
         >
           <MapLibreMap
             physicalState={physicalState}
+            capturedPhysicalState={capturedScenario?.physicalState}
             params={params}
             visualizationConfig={visualizationConfig}
             onSelectDistrict={onSelectDistrict}

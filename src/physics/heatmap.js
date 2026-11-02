@@ -54,26 +54,35 @@ export function buildColorLUT(scaleKey = 'standard') {
  * pixel buffer using bilinear interpolation with smooth alpha boundary gating.
  * 
  * @param {Object} physicalState - Simulation state containing physical grids
- * @param {string} dataType - 'subsidence' | 'drawdown' | 'inelastic'
- * @param {string} scaleKey - 'standard' | 'viridis' | 'turbo'
+ * @param {string} dataType - 'subsidence' | 'drawdown' | 'inelastic' | 'diff_subsidence'
+ * @param {string} scaleKey - 'standard' | 'viridis' | 'turbo' | 'diverging'
  * @param {number} size - Output pixel resolution (e.g. 256x256)
  * @param {number} cutoff - Lower normalized threshold below which opacity ramps to 0
+ * @param {Object|null} capturedState - Captured scenario state for spatial difference calculation
  * @returns {{ pixels: Uint8ClampedArray, width: number, height: number }}
  */
-export function rasterizeField(physicalState, dataType = 'subsidence', scaleKey = 'standard', size = 256, cutoff = 0.004) {
+export function rasterizeField(physicalState, dataType = 'subsidence', scaleKey = 'standard', size = 256, cutoff = 0.004, capturedState = null) {
   const res = physicalState.resolution;
   const quantityDef = QUANTITIES[dataType] || QUANTITIES.subsidence;
   const maxVal = quantityDef.max;
+  const isDiverging = Boolean(quantityDef.isDiverging);
 
-  // Pre-normalize the grid nodes to [0, 1]
+  // Pre-normalize the grid nodes
   const numNodes = res * res;
   const normalized = new Float32Array(numNodes);
   for (let k = 0; k < numNodes; k++) {
-    const raw = quantityDef.value(physicalState, k);
-    normalized[k] = Math.max(0, Math.min(1.0, raw / maxVal));
+    const raw = quantityDef.value(physicalState, k, capturedState);
+    if (isDiverging) {
+      // Diverging field: clamp to [-maxVal, +maxVal], map to [0, 1] where 0.5 is zero diff
+      const clamped = Math.max(-maxVal, Math.min(maxVal, raw));
+      normalized[k] = 0.5 + 0.5 * (clamped / maxVal);
+    } else {
+      normalized[k] = Math.max(0, Math.min(1.0, raw / maxVal));
+    }
   }
 
-  const lut = buildColorLUT(scaleKey);
+  const effectiveScale = isDiverging && scaleKey === 'standard' ? 'diverging' : scaleKey;
+  const lut = buildColorLUT(effectiveScale);
   const pixels = new Uint8ClampedArray(size * size * 4);
 
   // Bilinear interpolation loop
@@ -109,12 +118,23 @@ export function rasterizeField(physicalState, dataType = 'subsidence', scaleKey 
       pixels[pOffset + 1] = lut[lutIdx + 1];
       pixels[pOffset + 2] = lut[lutIdx + 2];
 
-      // Smooth alpha ramp to avoid harsh stair-stepped cutoff boundaries
-      if (val <= cutoff) {
-        pixels[pOffset + 3] = 0;
+      if (isDiverging) {
+        // Distance from neutral midpoint (0.5), mapped to [0, 1]
+        const dev = Math.abs(val - 0.5) * 2;
+        if (dev <= cutoff) {
+          pixels[pOffset + 3] = 0;
+        } else {
+          const ramp = Math.min(1.0, (dev - cutoff) / cutoff);
+          pixels[pOffset + 3] = Math.round(ramp * 255);
+        }
       } else {
-        const ramp = Math.min(1.0, (val - cutoff) / cutoff);
-        pixels[pOffset + 3] = Math.round(ramp * 255);
+        // Smooth alpha ramp to avoid harsh stair-stepped cutoff boundaries
+        if (val <= cutoff) {
+          pixels[pOffset + 3] = 0;
+        } else {
+          const ramp = Math.min(1.0, (val - cutoff) / cutoff);
+          pixels[pOffset + 3] = Math.round(ramp * 255);
+        }
       }
     }
   }
@@ -125,8 +145,8 @@ export function rasterizeField(physicalState, dataType = 'subsidence', scaleKey 
 /**
  * Convenience wrapper returning an ImageData instance when available.
  */
-export function rasterizeFieldToImageData(physicalState, dataType, scaleKey, size = 256, cutoff = 0.004) {
-  const { pixels, width, height } = rasterizeField(physicalState, dataType, scaleKey, size, cutoff);
+export function rasterizeFieldToImageData(physicalState, dataType, scaleKey, size = 256, cutoff = 0.004, capturedState = null) {
+  const { pixels, width, height } = rasterizeField(physicalState, dataType, scaleKey, size, cutoff, capturedState);
   if (typeof ImageData !== 'undefined') {
     return new ImageData(pixels, width, height);
   }

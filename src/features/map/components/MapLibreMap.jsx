@@ -110,11 +110,13 @@ function wellsGeoJSON(physicalState) {
 
 export default function MapLibreMap({
   physicalState,
+  capturedPhysicalState = null,
   params,
   visualizationConfig,
   onSelectDistrict,
   onMoveWell,
-  onCursorMove
+  onCursorMove,
+  compact = false
 }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -157,7 +159,7 @@ export default function MapLibreMap({
   const wireframeData = useMemo(() => buildGridWireframeGeoJSON(physicalState?.resolution || 64), [physicalState?.resolution]);
   const cellHighlightData = useMemo(() => cellPolygonGeoJSON(physicalState, selectedIdx), [physicalState, selectedIdx]);
   const wellsData = useMemo(() => wellsGeoJSON(physicalState), [physicalState]);
-  const selected = selectedIdx != null && physicalState ? describeNode(physicalState, selectedIdx) : null;
+  const selected = selectedIdx != null && physicalState ? describeNode(physicalState, selectedIdx, capturedPhysicalState) : null;
 
   const [isWellPlacingMode, setIsWellPlacingMode] = useState(false);
 
@@ -174,10 +176,10 @@ export default function MapLibreMap({
   });
 
   // Latest data for the one-time layer setup inside the map initialisation effect
-  const latestRef = useRef({ wireframeData, cellHighlightData, wellsData, colorScale, gridOpacity, layerVisibility, dataType, physicalState });
+  const latestRef = useRef({ wireframeData, cellHighlightData, wellsData, colorScale, gridOpacity, layerVisibility, dataType, physicalState, capturedPhysicalState });
   useEffect(() => {
-    latestRef.current = { wireframeData, cellHighlightData, wellsData, colorScale, gridOpacity, layerVisibility, dataType, physicalState };
-  }, [wireframeData, cellHighlightData, wellsData, colorScale, gridOpacity, layerVisibility, dataType, physicalState]);
+    latestRef.current = { wireframeData, cellHighlightData, wellsData, colorScale, gridOpacity, layerVisibility, dataType, physicalState, capturedPhysicalState };
+  }, [wireframeData, cellHighlightData, wellsData, colorScale, gridOpacity, layerVisibility, dataType, physicalState, capturedPhysicalState]);
 
   // Initialize MapLibre GL Map
   useEffect(() => {
@@ -427,7 +429,7 @@ export default function MapLibreMap({
       if (latest.physicalState) {
         const src = map.getSource('result-raster');
         if (src) {
-          const img = rasterizeFieldToImageData(latest.physicalState, latest.dataType, latest.colorScale);
+          const img = rasterizeFieldToImageData(latest.physicalState, latest.dataType, latest.colorScale, 256, 0.004, latest.capturedPhysicalState);
           src.updateImage({ image: img });
         }
       }
@@ -611,10 +613,10 @@ export default function MapLibreMap({
     if (!mapLoaded || !mapRef.current || !physicalState) return;
     const source = mapRef.current.getSource('result-raster');
     if (source) {
-      const img = rasterizeFieldToImageData(physicalState, dataType, colorScale);
+      const img = rasterizeFieldToImageData(physicalState, dataType, colorScale, 256, 0.004, capturedPhysicalState);
       source.updateImage({ image: img });
     }
-  }, [physicalState, dataType, colorScale, mapLoaded]);
+  }, [physicalState, capturedPhysicalState, dataType, colorScale, mapLoaded]);
 
   // Keep cell highlight in sync
   useEffect(() => {
@@ -638,7 +640,12 @@ export default function MapLibreMap({
   const handleZoomOut = () => mapRef.current?.zoomOut();
   const handleResetExtent = () => mapRef.current?.fitBounds(DOMAIN_LNGLAT_BOUNDS, { ...FIT_OPTIONS, duration: 800 });
 
-  const fmt = (v, q) => `${v.toFixed(QUANTITIES[q].decimals)} ${QUANTITIES[q].unit}`;
+  const fmt = (v, q) => {
+    if (v == null) return '—';
+    const isDiv = QUANTITIES[q]?.isDiverging;
+    const prefix = (isDiv && v > 0) ? '+' : '';
+    return `${prefix}${v.toFixed(QUANTITIES[q].decimals)} ${QUANTITIES[q].unit}`;
+  };
 
   return (
     <div className="relative w-full h-full flex-1 bg-slate-950 overflow-hidden select-none">
@@ -939,12 +946,20 @@ export default function MapLibreMap({
             {dataType.toUpperCase()}
           </span>
         </div>
-        <div className="w-full h-2.5 rounded-full mb-1.5 border border-slate-800" style={{ background: cssGradient(colorScale) }} />
-        <div className="flex justify-between text-[10px] font-mono text-slate-300">
-          <span>0</span>
-          <span>{(quantity.max / 2).toFixed(0)}</span>
-          <span>&ge; {quantity.max} {quantity.unit}</span>
-        </div>
+        <div className="w-full h-2.5 rounded-full mb-1.5 border border-slate-800" style={{ background: cssGradient(quantity.isDiverging && colorScale === 'standard' ? 'diverging' : colorScale) }} />
+        {quantity.isDiverging ? (
+          <div className="flex justify-between text-[10px] font-mono text-slate-300">
+            <span className="text-blue-400">-{quantity.max} (Recovery)</span>
+            <span className="text-slate-400">0</span>
+            <span className="text-rose-400">+{quantity.max} {quantity.unit} (Compaction)</span>
+          </div>
+        ) : (
+          <div className="flex justify-between text-[10px] font-mono text-slate-300">
+            <span>0</span>
+            <span>{(quantity.max / 2).toFixed(0)}</span>
+            <span>&ge; {quantity.max} {quantity.unit}</span>
+          </div>
+        )}
         <div className="mt-2 text-[11px] text-slate-400 leading-snug border-t border-slate-800 pt-1.5 flex items-center justify-between">
           <span>Pumping: {physicalState?.pumpingDays ?? 0} days</span>
           <span className="text-cyan-400 font-medium">Shift+Click or tool to move well</span>
@@ -977,6 +992,20 @@ export default function MapLibreMap({
                 <span className="font-mono text-cyan-300 font-bold shrink-0">{fmt(selected[q], q)}</span>
               </div>
             ))}
+            {selected.capturedSubsidence != null && (
+              <div className="p-1.5 rounded-lg bg-slate-950/70 border border-slate-800 my-1 space-y-1 text-[10px] font-mono">
+                <div className="flex justify-between text-slate-400">
+                  <span>Captured Baseline:</span>
+                  <span className="text-slate-200">{selected.capturedSubsidence.toFixed(1)} cm</span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Scenario Delta:</span>
+                  <span className={selected.diffSubsidence > 0 ? 'text-rose-400 font-bold' : selected.diffSubsidence < 0 ? 'text-emerald-400 font-bold' : 'text-slate-300'}>
+                    {selected.diffSubsidence > 0 ? '+' : ''}{selected.diffSubsidence.toFixed(1)} cm
+                  </span>
+                </div>
+              </div>
+            )}
             <div className="text-[10px] text-slate-400 border-t border-slate-800 pt-1.5 mt-2 italic">
               Analytical preview. Not an empirical ground forecast.
             </div>
