@@ -31,6 +31,7 @@ export default function App() {
   // UI Navigation & View State
   const [activeTab, setActiveTab] = useState('Home');
   const [viewMode, setViewMode] = useState('2D'); // '2D' (MapLibre), '3D' (Three.js), or 'split'
+  const [isAnalyticsCollapsed, setIsAnalyticsCollapsed] = useState(true); // Default to zero-scroll collapsed dock
 
   // Visualization Controls State
   const DEFAULT_VIZ = { dataType: 'subsidence', opacity: 75, colorScale: 'standard' };
@@ -81,22 +82,18 @@ export default function App() {
     }
   };
 
-  // Navigation tab selection with smooth viewport scrolling
+  // Navigation tab selection with viewport coordination
   const handleSelectTab = (tabId) => {
     setActiveTab(tabId);
-    if (tabId === 'Scenarios') {
-      const el = document.getElementById('scenario-setup-panel');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-    } else if (tabId === 'Results') {
-      const el = document.getElementById('bottom-analytics-suite');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    if (tabId === 'Results') {
+      setIsAnalyticsCollapsed(false);
     } else if (tabId === 'Home') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setIsAnalyticsCollapsed(true);
     }
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans">
+    <div className="w-full h-dvh max-h-dvh flex flex-col bg-slate-950 text-slate-100 font-sans overflow-hidden select-none">
       {/* 1. Top Header Navigation */}
       <TopNavigation
         activeTab={activeTab}
@@ -108,11 +105,11 @@ export default function App() {
       />
 
       {/* 1.1 Synthetic Numerical Benchmark Disclaimer Banner (CICT-UGR-F001 §2 Line 144) */}
-      <aside aria-label="Research Scope Disclaimer" className="bg-slate-900/95 border-b border-cyan-500/20 px-4 py-1.5 flex items-center justify-between text-xs text-slate-300 shrink-0 z-20 select-none shadow-xs">
-        <div className="flex items-center gap-2 max-w-5xl">
+      <aside aria-label="Research Scope Disclaimer" className="h-7 bg-slate-900/90 border-b border-cyan-500/20 px-4 flex items-center justify-between text-xs text-slate-300 shrink-0 z-20 select-none">
+        <div className="flex items-center gap-2 max-w-5xl truncate">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0 animate-pulse" />
-          <span className="text-[11px] leading-tight">
-            <strong className="text-cyan-300 font-semibold">Research Benchmark Scope:</strong> Spatial overlays represent a controlled synthetic numerical benchmark (PRS92 Zone 4, EPSG:3124) anchored to Metro Iloilo for scenario planning simulation, rather than calibrated street-level geotechnical predictions.
+          <span className="text-[11px] leading-tight truncate">
+            <strong className="text-cyan-300 font-semibold">Research Benchmark Scope:</strong> Spatial overlays represent a controlled synthetic numerical benchmark (PRS92 Zone 4, EPSG:3124) anchored to Metro Iloilo for scenario planning simulation.
           </span>
         </div>
         <div className="hidden lg:flex items-center gap-3 shrink-0 text-[10px] text-slate-400 font-mono">
@@ -124,56 +121,58 @@ export default function App() {
         </div>
       </aside>
 
-      {/* 2. Middle Interactive Stage (Left Sidebar + Central Dual Viewport) */}
-      <main className="flex-1 min-h-[460px] h-[calc(100dvh-22rem)] flex flex-col md:flex-row gap-4 px-4 pt-2.5 pb-2 max-w-[1920px] w-full mx-auto">
+      {/* 2. Middle Interactive Workstation Core (Zero-Scroll Budgeted Stage + Bottom Dock) */}
+      <div className="flex-1 min-h-0 flex flex-col w-full max-w-[1920px] mx-auto px-3.5 py-1.5 gap-2 overflow-hidden">
         
-        {/* Left: Scenario Setup Panel Sidebar */}
-        <ScenarioSetupPanel
-          params={params}
-          setParams={setParams}
-          onCaptureScenario={captureScenarioForComparison}
-          hasUncapturedChanges={hasUncapturedChanges}
-          capturedScenario={capturedScenario}
-          activePreset={activePreset}
-          onSelectPreset={applyPreset}
-        />
+        {/* Main Stage: Left Scenario Sidebar + Center Dual Viewport */}
+        <main className="flex-1 min-h-0 flex flex-row gap-3 overflow-hidden">
+          <ScenarioSetupPanel
+            params={params}
+            setParams={setParams}
+            onCaptureScenario={captureScenarioForComparison}
+            hasUncapturedChanges={hasUncapturedChanges}
+            capturedScenario={capturedScenario}
+            activePreset={activePreset}
+            onSelectPreset={applyPreset}
+          />
 
-        {/* Central: Dual-Mode Viewport (2D MapLibre GIS ⇄ 3D Three.js Subsurface) */}
-        <CentralViewport
-          physicalState={physicalState}
-          capturedScenario={capturedScenario}
-          params={params}
-          visualizationConfig={visualizationConfig}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          onMoveWell={(x, y) => setParams(prev => ({ ...prev, wellX: Math.round(x), wellY: Math.round(y) }))}
-          onOpenVerification={() => setIsVerificationOpen(true)}
-          selectedEngineId={selectedEngineId}
-          onSelectEngine={setSelectedEngineId}
-          perturbSurrogate={perturbSurrogate}
-          onTogglePerturbation={togglePerturbation}
-        />
+          <CentralViewport
+            physicalState={physicalState}
+            capturedScenario={capturedScenario}
+            params={params}
+            visualizationConfig={visualizationConfig}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            onMoveWell={(x, y) => setParams(prev => ({ ...prev, wellX: Math.round(x), wellY: Math.round(y) }))}
+            onOpenVerification={() => setIsVerificationOpen(true)}
+            selectedEngineId={selectedEngineId}
+            onSelectEngine={setSelectedEngineId}
+            perturbSurrogate={perturbSurrogate}
+            onTogglePerturbation={togglePerturbation}
+          />
+        </main>
 
-      </main>
-
-      {/* 3. Bottom Analytics Suite (4-Card Analytical Grid) */}
-      <div className="px-4 pb-2 max-w-[1920px] w-full mx-auto shrink-0">
-        <BottomAnalyticsSuite
-          physicalState={physicalState}
-          params={params}
-          capturedScenario={capturedScenario}
-          hasUncapturedChanges={hasUncapturedChanges}
-          onOpenVerification={() => setIsVerificationOpen(true)}
-          onSetParam={setParam}
-          onResetScenario={handleResetParams}
-          visualizationConfig={visualizationConfig}
-          setVisualizationConfig={setVisualizationConfig}
-          is3D={viewMode === '3D'}
-        />
+        {/* Bottom Telemetry & Analytics Suite (Dockable Ribbon / Expandable Suite) */}
+        <div className="shrink-0 transition-all duration-200">
+          <BottomAnalyticsSuite
+            physicalState={physicalState}
+            params={params}
+            capturedScenario={capturedScenario}
+            hasUncapturedChanges={hasUncapturedChanges}
+            onOpenVerification={() => setIsVerificationOpen(true)}
+            onSetParam={setParam}
+            onResetScenario={handleResetParams}
+            visualizationConfig={visualizationConfig}
+            setVisualizationConfig={setVisualizationConfig}
+            is3D={viewMode === '3D'}
+            isCollapsed={isAnalyticsCollapsed}
+            onToggleCollapse={setIsAnalyticsCollapsed}
+          />
+        </div>
       </div>
 
       {/* 4. Footer Bar */}
-      <footer className="h-8 bg-slate-950 border-t border-slate-800/80 px-6 flex items-center justify-between text-[11px] text-slate-400 font-normal shrink-0 z-20">
+      <footer className="h-7 bg-slate-950 border-t border-slate-800/80 px-4 flex items-center justify-between text-[11px] text-slate-400 font-normal shrink-0 z-20">
         <div className="flex items-center gap-3">
           <span className="font-bold text-white tracking-wider">AQUIFERA</span>
           <span className="text-slate-600">|</span>

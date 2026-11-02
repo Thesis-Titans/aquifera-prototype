@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Map, setWorkerUrl } from 'maplibre-gl';
+import { Map } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Navigation, ZoomIn, ZoomOut, RotateCcw, Layers, Loader2, AlertTriangle, X, Sliders, Crosshair, Grid3x3 } from 'lucide-react';
 import {
@@ -20,15 +20,14 @@ import {
 import { rasterizeFieldToImageData } from '../../../physics/heatmap';
 import { DOMAIN } from '../../../physics/groundwaterPhysics';
 
-// Configure MapLibre background worker for Vite environment
-if (typeof window !== 'undefined' && setWorkerUrl) {
-  const base = import.meta.env.BASE_URL || '/';
-  const workerPath = `${base.endsWith('/') ? base : base + '/'}maplibre-gl-worker.mjs`;
-  const fullUrl = new URL(workerPath, window.location.origin).href;
-  setWorkerUrl(fullUrl);
+// Dual GIS Basemap Style Definition: ESRI Dark Canvas & ESRI World Imagery (No API key required)
+function getSpatialDataUrl(filename) {
+  if (typeof window === 'undefined') return `./data/spatial/${filename}`;
+  const base = document.baseURI || window.location.href;
+  const dir = base.endsWith('/') ? base : base.substring(0, base.lastIndexOf('/') + 1);
+  return new URL(`data/spatial/${filename}`, dir).href;
 }
 
-// Dual GIS Basemap Style Definition: ESRI Dark Canvas & ESRI World Imagery (No API key required)
 const GIS_BASEMAP_STYLE = {
   version: 8,
   sources: {
@@ -244,10 +243,8 @@ export default function MapLibreMap({
       setMapError(null);
       map.resize();
 
-      const base = import.meta.env.BASE_URL || '/';
-      const dataBase = `${base.endsWith('/') ? base : base + '/'}data/spatial/`;
-      map.addSource('iloilo-barangays', { type: 'geojson', data: `${dataBase}iloilo_city_barangays.geojson` });
-      map.addSource('iloilo-city-boundary', { type: 'geojson', data: `${dataBase}iloilo_city_boundary.geojson` });
+      map.addSource('iloilo-barangays', { type: 'geojson', data: getSpatialDataUrl('iloilo_city_barangays.geojson') });
+      map.addSource('iloilo-city-boundary', { type: 'geojson', data: getSpatialDataUrl('iloilo_city_boundary.geojson') });
       map.addSource('result-raster', {
         type: 'image',
         coordinates: DOMAIN_IMAGE_CORNERS
@@ -257,8 +254,8 @@ export default function MapLibreMap({
       map.addSource('domain-outline', { type: 'geojson', data: domainOutlineGeoJSON() });
       map.addSource('insar-baseline', { type: 'geojson', data: insarBaselineGeoJSON() });
       map.addSource('wells', { type: 'geojson', data: latest.wellsData });
-      map.addSource('iloilo-waterways', { type: 'geojson', data: `${dataBase}iloilo_surface_waterways.geojson` });
-      map.addSource('insar-benchmarks', { type: 'geojson', data: `${dataBase}insar_subsidence_benchmarks_iloilo.geojson` });
+      map.addSource('iloilo-waterways', { type: 'geojson', data: getSpatialDataUrl('iloilo_surface_waterways.geojson') });
+      map.addSource('insar-benchmarks', { type: 'geojson', data: getSpatialDataUrl('insar_subsidence_benchmarks_iloilo.geojson') });
 
       // Barangay outlines and the city boundary give geographic context only
       map.addLayer({

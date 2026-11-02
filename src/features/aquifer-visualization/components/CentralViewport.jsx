@@ -142,7 +142,7 @@ export default function CentralViewport({
       </div>
 
       {/* 2. Interactive Viewport Stage (2D MapLibre, 3D Three.js, or Split Synchronized Panes) */}
-      <div ref={stageRef} className="relative flex-1 min-h-0 w-full h-full overflow-hidden">
+      <div ref={stageRef} className="relative flex-1 min-h-0 w-full overflow-hidden">
         
         {/* Automated NIST AI RMF 1.0 Fallback Alert Banner */}
         {isFallbackEngaged && (

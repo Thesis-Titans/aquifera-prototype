@@ -79,30 +79,35 @@ export default function ScenarioSetupPanel({
   return (
     <aside 
       id="scenario-setup-panel" 
-      className="w-80 lg:w-88 aquifera-panel overflow-y-auto shrink-0 custom-scrollbar shadow-2xl space-y-4"
+      className="w-80 lg:w-84 xl:w-88 h-full bg-slate-900/95 border border-slate-800/90 rounded-2xl p-4 flex flex-col gap-3.5 overflow-y-auto custom-scrollbar shrink-0 shadow-2xl backdrop-blur-xl"
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3.5">
         
         {/* Header Block */}
-        <div className="flex flex-col gap-1 pb-1">
-          <div className="flex items-center gap-2.5">
-            <div className="text-cyan-400 p-2 rounded-xl bg-cyan-950/60 border border-cyan-500/30 shadow-xs">
-              <Sliders size={16} />
+        <div className="flex flex-col gap-1.5 pb-1 border-b border-slate-800/80">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-cyan-950/70 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-xs shrink-0">
+                <Sliders size={17} />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <h2 className="text-xs font-bold text-white tracking-wide uppercase">
+                  Scenario Configuration
+                </h2>
+                <span className="text-[11px] font-mono text-cyan-400 font-medium">Hydrogeological Testbed</span>
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-white tracking-wide">
-                Scenario Configuration
-              </h2>
-              <span className="text-[11px] font-mono text-cyan-400 font-medium">Hydrogeological Testbed</span>
-            </div>
+            <span className="aquifera-badge bg-cyan-500/10 text-cyan-300 border-cyan-500/30">
+              PREVIEW
+            </span>
           </div>
-          <p className="text-xs text-slate-400 leading-relaxed font-normal pt-1">
-            Simplified in-browser preview model (Theis drawdown + Terzaghi Layer 4 compaction). Numerical verification baseline is USGS MODFLOW 6 CSUB.
+          <p className="text-[11px] text-slate-400 leading-relaxed font-normal">
+            Simplified in-browser preview model (Theis drawdown + Terzaghi Layer 4 compaction). Numerical baseline is USGS MODFLOW 6 CSUB.
           </p>
         </div>
 
         {/* Group 1: Demonstration Presets Card */}
-        <div className="aquifera-card-inset p-3.5 flex flex-col gap-2.5 shadow-xs">
+        <div className="aquifera-card-inset p-3 flex flex-col gap-2.5 shadow-xs">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-200">
             <span className="flex items-center gap-1.5">
               <Bookmark size={13} className="text-cyan-400" />
@@ -115,82 +120,94 @@ export default function ScenarioSetupPanel({
             <button
               type="button"
               onClick={() => applyPreset('baseline')}
-              className={`py-2 px-2.5 rounded-lg text-xs font-semibold border text-left transition-all cursor-pointer flex flex-col gap-0.5 ${
+              className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer flex flex-col gap-1 active:scale-[0.98] ${
                 activePreset === 'baseline'
-                  ? 'bg-cyan-500/15 text-cyan-300 border-cyan-400/50 shadow-xs'
-                  : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-200'
+                  ? 'bg-cyan-950/50 text-cyan-200 border-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.2)]'
+                  : 'bg-slate-950/60 text-slate-400 border-slate-800/80 hover:bg-slate-850 hover:text-slate-200 hover:border-slate-700'
               }`}
             >
-              <span className="text-[11px] font-bold">1. Baseline</span>
-              <span className="text-[10px] font-mono text-slate-400">12,000 m³/d</span>
+              <div className="flex items-center justify-between w-full">
+                <span className="text-xs font-bold">1. Baseline</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${activePreset === 'baseline' ? 'bg-cyan-400' : 'bg-slate-600'}`} />
+              </div>
+              <span className="text-[10px] font-mono text-cyan-400/90 font-semibold">12,000 m³/d</span>
             </button>
 
             <button
               type="button"
               onClick={() => applyPreset('overdraft')}
-              className={`py-2 px-2.5 rounded-lg text-xs font-semibold border text-left transition-all cursor-pointer flex flex-col gap-0.5 ${
+              className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer flex flex-col gap-1 active:scale-[0.98] ${
                 activePreset === 'overdraft'
-                  ? 'bg-rose-500/15 text-rose-300 border-rose-400/50 shadow-xs'
-                  : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-200'
+                  ? 'bg-rose-950/50 text-rose-200 border-rose-400/60 shadow-[0_0_12px_rgba(244,63,94,0.2)]'
+                  : 'bg-slate-950/60 text-slate-400 border-slate-800/80 hover:bg-slate-850 hover:text-slate-200 hover:border-slate-700'
               }`}
             >
-              <span className="text-[11px] font-bold">2. Overdraft</span>
-              <span className="text-[10px] font-mono text-slate-400">26,000 m³/d</span>
+              <div className="flex items-center justify-between w-full">
+                <span className="text-xs font-bold">2. Overdraft</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${activePreset === 'overdraft' ? 'bg-rose-400' : 'bg-slate-600'}`} />
+              </div>
+              <span className="text-[10px] font-mono text-rose-400/90 font-semibold">26,000 m³/d</span>
             </button>
 
             <button
               type="button"
               onClick={() => applyPreset('mar')}
-              className={`py-2 px-2.5 rounded-lg text-xs font-semibold border text-left transition-all cursor-pointer flex flex-col gap-0.5 ${
+              className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer flex flex-col gap-1 active:scale-[0.98] ${
                 activePreset === 'mar'
-                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-400/50 shadow-xs'
-                  : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-200'
+                  ? 'bg-emerald-950/50 text-emerald-200 border-emerald-400/60 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
+                  : 'bg-slate-950/60 text-slate-400 border-slate-800/80 hover:bg-slate-850 hover:text-slate-200 hover:border-slate-700'
               }`}
             >
-              <span className="text-[11px] font-bold">3. Managed Recharge</span>
-              <span className="text-[10px] font-mono text-slate-400">15k m³/d + 320mm</span>
+              <div className="flex items-center justify-between w-full">
+                <span className="text-xs font-bold">3. Recharge</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${activePreset === 'mar' ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+              </div>
+              <span className="text-[10px] font-mono text-emerald-400/90 font-semibold">15k m³ + 320mm</span>
             </button>
 
             <button
               type="button"
               onClick={() => applyPreset('drought')}
-              className={`py-2 px-2.5 rounded-lg text-xs font-semibold border text-left transition-all cursor-pointer flex flex-col gap-0.5 ${
+              className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer flex flex-col gap-1 active:scale-[0.98] ${
                 activePreset === 'drought'
-                  ? 'bg-amber-500/15 text-amber-300 border-amber-400/50 shadow-xs'
-                  : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-200'
+                  ? 'bg-amber-950/50 text-amber-200 border-amber-400/60 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                  : 'bg-slate-950/60 text-slate-400 border-slate-800/80 hover:bg-slate-850 hover:text-slate-200 hover:border-slate-700'
               }`}
             >
-              <span className="text-[11px] font-bold">4. Drought Shock</span>
-              <span className="text-[10px] font-mono text-slate-400">32,000 m³/d</span>
+              <div className="flex items-center justify-between w-full">
+                <span className="text-xs font-bold">4. Drought</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${activePreset === 'drought' ? 'bg-amber-400' : 'bg-slate-600'}`} />
+              </div>
+              <span className="text-[10px] font-mono text-amber-400/90 font-semibold">32,000 m³/d</span>
             </button>
           </div>
         </div>
 
-        {/* Group 2: Compact Domain & Well Coordinates Status Pill */}
-        <div className="aquifera-card-inset px-3 py-2 flex items-center justify-between text-[11px] text-slate-300">
-          <div className="flex items-center gap-1.5">
-            <MapPin size={13} className="text-cyan-400 shrink-0" />
-            <span className="text-slate-400">Domain:</span>
-            <span className="font-mono text-slate-200 font-semibold">3.2 × 3.2 km (5L)</span>
+        {/* Group 2: Domain & Well Coordinates Status Pill */}
+        <div className="aquifera-card-inset px-3.5 py-2.5 flex items-center justify-between text-xs text-slate-300">
+          <div className="flex items-center gap-2">
+            <MapPin size={14} className="text-cyan-400 shrink-0" />
+            <span className="text-slate-400 text-[11px]">Domain:</span>
+            <span className="font-mono text-slate-200 text-[11px] font-semibold">3.2 × 3.2 km (5L)</span>
           </div>
-          <div className="aquifera-number-pill text-[10px] py-0.5" title="Primary well offset from domain center (East, North)">
+          <div className="aquifera-number-pill text-[11px] py-0.5" title="Primary well offset from domain center (East, North)">
             Well: {params.wellX >= 0 ? '+' : ''}{params.wellX || 0}m E, {-params.wellY >= 0 ? '+' : ''}{-params.wellY || 0}m N
           </div>
         </div>
 
         {/* Group 3: Hydrological Input Variables Card */}
-        <div className="aquifera-card-inset p-3.5 flex flex-col gap-3.5 shadow-xs">
+        <div className="aquifera-card-inset p-3.5 flex flex-col gap-3 shadow-xs">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
             <h3 className="text-xs font-bold text-white tracking-wide uppercase">
               Hydrological Variables
             </h3>
-            <span className="text-[10px] font-mono text-cyan-400 font-medium">Theis + Terzaghi (Analytical)</span>
+            <span className="text-[10px] font-mono text-cyan-400 font-medium">Theis + Terzaghi</span>
           </div>
 
           {/* 1. Pumping Rate */}
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
-              <span className="font-medium text-slate-300">Extraction Rate (Q)</span>
+              <span className="font-semibold text-slate-200">Extraction Rate (Q)</span>
               <span className="aquifera-number-pill">{params.pumpingRate.toLocaleString()} m³/d</span>
             </div>
             <input
@@ -209,7 +226,7 @@ export default function ScenarioSetupPanel({
           {/* 2. Hydraulic Conductivity */}
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
-              <span className="font-medium text-slate-300">Conductivity (K)</span>
+              <span className="font-semibold text-slate-200">Conductivity (K)</span>
               <span className="aquifera-number-pill">{params.hydraulicConductivity || 15} m/d</span>
             </div>
             <input
@@ -228,7 +245,7 @@ export default function ScenarioSetupPanel({
           {/* 3. Specific Storage */}
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
-              <span className="font-medium text-slate-300">Elastic Storage (S<sub>s</sub>)</span>
+              <span className="font-semibold text-slate-200">Elastic Storage (S<sub>s</sub>)</span>
               <span className="aquifera-number-pill">{(params.specificStorage || 0.0001).toFixed(5)} m⁻¹</span>
             </div>
             <input
@@ -247,7 +264,7 @@ export default function ScenarioSetupPanel({
           {/* 4. Recharge Rate */}
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
-              <span className="font-medium text-slate-300">Natural Recharge (R)</span>
+              <span className="font-semibold text-slate-200">Natural Recharge (R)</span>
               <span className="aquifera-number-pill">{params.rechargeRateMmYear || 150} mm/yr</span>
             </div>
             <input
@@ -264,10 +281,10 @@ export default function ScenarioSetupPanel({
           </div>
 
           {/* 5. CLUP 2021-2029 Statutory Zoning Classification */}
-          <div className="flex flex-col gap-1.5 pt-1 border-t border-slate-800/80">
+          <div className="flex flex-col gap-2 pt-1.5 border-t border-slate-800/80">
             <div className="flex justify-between items-center text-xs">
-              <span className="font-medium text-slate-300">CLUP 2021–2029 Zoning</span>
-              <span className="aquifera-number-pill text-[10px] truncate max-w-28 text-right" title="CLUP Zone Code & Imperviousness">
+              <span className="font-semibold text-slate-200">CLUP 2021–2029 Zoning</span>
+              <span className="aquifera-number-pill text-[10px] truncate max-w-32 text-right" title="CLUP Zone Code & Imperviousness">
                 {params.zoningClass ? `${params.zoningClass} (α=${(params.imperviousnessAlpha ?? CLUP_ZONING_FRACTIONS[params.zoningClass]?.alpha ?? 0).toFixed(2)})` : 'Baseline (α=0.0)'}
               </span>
             </div>
@@ -292,10 +309,10 @@ export default function ScenarioSetupPanel({
                   </option>
                 ))}
               </select>
-              <ChevronDown size={14} className="absolute right-3 top-2.5 text-slate-400 pointer-events-none" />
+              <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
             </div>
             {params.zoningClass && (
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 px-0.5">
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 px-1 pt-0.5">
                 <span>Infiltration: <strong className="text-cyan-300">{((1 - (params.imperviousnessAlpha ?? CLUP_ZONING_FRACTIONS[params.zoningClass]?.alpha ?? 0)) * 100).toFixed(0)}%</strong></span>
                 <span>Runoff loss: <strong className="text-amber-400">{((params.imperviousnessAlpha ?? CLUP_ZONING_FRACTIONS[params.zoningClass]?.alpha ?? 0) * 100).toFixed(0)}%</strong></span>
               </div>
@@ -374,7 +391,7 @@ export default function ScenarioSetupPanel({
         {/* Primary Action Button: Capture Scenario for Comparison */}
         <button
           onClick={onCaptureScenario || onRunSimulation}
-          className={`w-full h-11 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 mt-1 shadow-md ${
+          className={`w-full h-10 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 mt-0.5 shadow-md ${
             hasUncapturedChanges
               ? 'text-slate-950 bg-linear-to-r from-cyan-400 to-cyan-300 hover:from-cyan-300 hover:to-cyan-200 shadow-[0_0_20px_rgba(6,182,212,0.4)]'
               : 'text-emerald-300 bg-slate-950/80 border border-emerald-500/40 hover:bg-slate-900 shadow-xs'
@@ -394,7 +411,7 @@ export default function ScenarioSetupPanel({
         </button>
 
         {/* Live Preview vs Captured Status */}
-        <div className="flex flex-col gap-1 pt-1 pb-2">
+        <div className="flex flex-col gap-1 pt-0.5 pb-2">
           <div className="flex items-center justify-between text-xs font-semibold text-white">
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${hasUncapturedChanges ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />

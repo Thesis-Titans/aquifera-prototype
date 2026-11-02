@@ -22,7 +22,7 @@ import { DEFAULT_PARAMS } from '../../scenarios/hooks/useScenarioState';
 // Reference run for the comparison table: the baseline preset, computed with the same model.
 const BASELINE_STATE = computeGroundwaterState(DEFAULT_PARAMS);
 
-const PANEL = 'aquifera-panel';
+const PANEL = 'aquifera-panel p-3.5 flex flex-col justify-between overflow-y-auto custom-scrollbar';
 const SELECT = 'aquifera-select';
 
 function PanelHeader({ icon: Icon, title, badge, badgeClass = 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' }) {
@@ -49,7 +49,7 @@ function niceCeil(v) {
 /** West–east profile through the primary well, live scenario against the captured scenario. */
 function ProfileChart({ live, captured, quantityKey, thresholdDrawdown }) {
   const q = QUANTITIES[quantityKey];
-  const W = 340, H = 155, L = 42, R = 15, T = 12, B = 28;
+  const W = 340, H = 115, L = 40, R = 12, T = 8, B = 22;
   const yMax = niceCeil(Math.max(...live.map(p => p.value), ...captured.map(p => p.value), q.max * 0.02));
   const sx = xKm => L + ((xKm + 1.6) / 3.2) * (W - L - R);
   const sy = v => T + (1 - v / yMax) * (H - T - B);
@@ -64,28 +64,28 @@ function ProfileChart({ live, captured, quantityKey, thresholdDrawdown }) {
       {yTicks.map(t => (
         <g key={t}>
           <line x1={L} x2={W - R} y1={sy(t)} y2={sy(t)} stroke="rgba(148,163,184,0.12)" />
-          <text x={L - 5} y={sy(t) + 3.5} textAnchor="end" fontSize="10" fill="#94a3b8" fontFamily="JetBrains Mono, monospace">{+t.toFixed(1)}</text>
+          <text x={L - 5} y={sy(t) + 3} textAnchor="end" fontSize="9" fill="#94a3b8" fontFamily="JetBrains Mono, monospace">{+t.toFixed(1)}</text>
         </g>
       ))}
       {xTicks.map(t => (
-        <text key={t} x={sx(t)} y={H - 12} textAnchor="middle" fontSize="10" fill="#94a3b8" fontFamily="JetBrains Mono, monospace">{t}</text>
+        <text key={t} x={sx(t)} y={H - 8} textAnchor="middle" fontSize="8.5" fill="#94a3b8" fontFamily="JetBrains Mono, monospace">{t}</text>
       ))}
-      <text x={(L + W - R) / 2} y={H - 1} textAnchor="middle" fontSize="9.5" fill="#64748b">Distance from center, west to east (km)</text>
+      <text x={(L + W - R) / 2} y={H} textAnchor="middle" fontSize="8.5" fill="#64748b">West to East (km)</text>
       {showThreshold && (
         <g>
           <line x1={L} x2={W - R} y1={sy(thresholdDrawdown)} y2={sy(thresholdDrawdown)} stroke="#f59e0b" strokeDasharray="4 3" />
-          <text x={W - R - 2} y={sy(thresholdDrawdown) - 3} textAnchor="end" fontSize="9" fill="#f59e0b">Preconsolidation threshold</text>
+          <text x={W - R - 2} y={sy(thresholdDrawdown) - 2} textAnchor="end" fontSize="8" fill="#f59e0b">Threshold</text>
         </g>
       )}
       <path d={path(captured)} fill="none" stroke="#64748b" strokeWidth="1.5" strokeDasharray="4 3" />
-      <path d={path(live)} fill="none" stroke="#22d3ee" strokeWidth="2.2" />
+      <path d={path(live)} fill="none" stroke="#22d3ee" strokeWidth="2.0" />
     </svg>
   );
 }
 
 /** 12-Month Transient Hydrograph driven by DOST-PAGASA Station 614 Climatological Normals */
 function HydrographChart({ timeSeries, thresholdDrawdown }) {
-  const W = 340, H = 155, L = 42, R = 15, T = 12, B = 28;
+  const W = 340, H = 115, L = 40, R = 12, T = 8, B = 22;
   const maxDrawdown = Math.max(...timeSeries.map(p => p.drawdownM), 10.0);
   const maxRain = Math.max(...timeSeries.map(p => p.rainfallMm), 350.0);
   const yMax = niceCeil(maxDrawdown);
@@ -180,20 +180,27 @@ export default function BottomAnalyticsSuite({
   onResetScenario,
   visualizationConfig,
   setVisualizationConfig,
-  is3D = false
+  is3D = false,
+  isCollapsed: controlledCollapsed,
+  onToggleCollapse
 }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(true);
+  const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+
+  const handleExpand = () => {
+    setInternalCollapsed(false);
+    if (onToggleCollapse) onToggleCollapse(false);
+  };
+
+  const handleMinimize = () => {
+    setInternalCollapsed(true);
+    if (onToggleCollapse) onToggleCollapse(true);
+  };
+
   const [activeResultsTab, setActiveResultsTab] = useState('subsidence');
   const [card1Mode, setCard1Mode] = useState('profile'); // 'profile' | 'hydrograph'
   const sectionRef = useRef(null);
   const captured = capturedScenario?.physicalState || physicalState;
-
-  const handleExpand = () => {
-    setIsCollapsed(false);
-    requestAnimationFrame(() => {
-      sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    });
-  };
 
   const liveProfile = useMemo(() => profileThroughWell(physicalState, activeResultsTab), [physicalState, activeResultsTab]);
   const capturedProfile = useMemo(() => profileThroughWell(captured, activeResultsTab), [captured, activeResultsTab]);
@@ -272,30 +279,30 @@ export default function BottomAnalyticsSuite({
   // If dock is minimized, render compact telemetry ribbon
   if (isCollapsed) {
     return (
-      <section ref={sectionRef} id="bottom-analytics-suite" className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl px-5 py-2.5 scroll-mt-16 shadow-xl flex items-center justify-between text-xs select-none">
-        <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
-          <div className="flex items-center gap-2 font-bold text-white">
+      <section ref={sectionRef} id="bottom-analytics-suite" className="bg-slate-900/95 backdrop-blur-xl border border-slate-800/90 rounded-xl px-4 py-2 scroll-mt-16 shadow-xl flex items-center justify-between text-xs select-none h-11 shrink-0">
+        <div className="flex items-center gap-3 sm:gap-6 flex-wrap min-w-0">
+          <div className="flex items-center gap-2 font-bold text-white shrink-0">
             <BarChart3 size={15} className="text-cyan-400" />
-            <span>Telemetry Dock</span>
+            <span className="tracking-wide text-xs">TELEMETRY DOCK</span>
           </div>
-          <div className="h-3.5 w-px bg-slate-800 hidden sm:block" />
+          <div className="h-3.5 w-px bg-slate-800 hidden sm:block shrink-0" />
           <div className="flex items-center gap-2 text-slate-300">
             <span className="text-slate-400">Subsidence:</span>
-            <strong className="text-white font-mono">{live.subsidence.toFixed(1)} cm</strong>
+            <strong className="text-white font-mono text-xs">{live.subsidence.toFixed(1)} cm</strong>
           </div>
           <div className="flex items-center gap-2 text-slate-300">
             <span className="text-slate-400">Head Drawdown:</span>
-            <strong className="text-white font-mono">{live.drawdown.toFixed(1)} m</strong>
+            <strong className="text-white font-mono text-xs">{live.drawdown.toFixed(1)} m</strong>
           </div>
           <div className="flex items-center gap-2 text-slate-300">
             <span className="text-slate-400">Permanent Compaction:</span>
-            <strong className="text-cyan-300 font-mono">{live.inelastic.toFixed(1)} cm</strong>
+            <strong className="text-cyan-300 font-mono text-xs">{live.inelastic.toFixed(1)} cm</strong>
           </div>
         </div>
 
         <button
           onClick={handleExpand}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-cyan-300 transition-colors cursor-pointer border border-slate-700 shadow-xs"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-200 hover:text-white transition-all cursor-pointer border border-cyan-500/30 shadow-xs shrink-0"
           title="Expand Analytics Suite"
         >
           <ChevronUp size={14} />
@@ -306,27 +313,27 @@ export default function BottomAnalyticsSuite({
   }
 
   return (
-    <section ref={sectionRef} id="bottom-analytics-suite" className="scroll-mt-16 flex flex-col gap-2">
+    <section ref={sectionRef} id="bottom-analytics-suite" className="scroll-mt-16 flex flex-col gap-1.5 select-none h-60 max-h-64">
       {/* Dock Header with Minimize Toggle */}
-      <div className="flex items-center justify-between px-1">
+      <div className="flex items-center justify-between px-1 h-6 shrink-0">
         <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
-          <BarChart3 size={15} className="text-cyan-400" />
+          <BarChart3 size={14} className="text-cyan-400" />
           <span>Analytical Suite & Cross-Section Telemetry</span>
         </div>
         <button
-          onClick={() => setIsCollapsed(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900 border border-slate-800 transition-colors cursor-pointer"
+          onClick={handleMinimize}
+          className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900 border border-slate-800 transition-colors cursor-pointer"
           title="Minimize Analytics to Ribbon"
         >
-          <Minimize2 size={13} />
+          <Minimize2 size={12} />
           <span>Minimize Dock</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 flex-1 min-h-0">
 
         {/* CARD 1: Cross-Section Profile & Climatological Hydrograph */}
-        <div className={PANEL}>
+        <div className="aquifera-panel p-3 flex flex-col justify-between overflow-y-auto custom-scrollbar">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5 gap-2">
             <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 shadow-inner">
               <button
