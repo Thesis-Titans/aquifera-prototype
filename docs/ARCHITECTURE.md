@@ -46,16 +46,18 @@ To maintain absolute academic and scientific integrity (Form `CICT-UGR-F001`):
 
 | Architectural Subsystem | Tier | Implementation Status | Technical Realization in Repository |
 | :--- | :--- | :--- | :--- |
-| **Interactive Dashboard & Shell** | Tier 1 | **Implemented** | React 19 SPA, Vite 8.3, Tailwind CSS v4 (`src/app/App.jsx`). |
+| **Interactive Dashboard & Shell** | Tier 1 | **Implemented** | React 19 SPA, Vite 8.3, Tailwind CSS v4 (`src/app/App.jsx`), with Form F001 §2 Research Disclaimer Banner. |
 | **3D Subsurface Cutaway** | Tier 1 | **Implemented** | Three.js WebGL canvas with custom strata displacement (`src/features/aquifer-visualization/`). |
-| **2D GIS Basemap** | Tier 1 | **Implemented** | MapLibre GL JS with CARTO Dark raster tiles, authentic 180-barangay PSA/NAMRIA GeoJSON boundaries, and dynamic subsidence overlays (`src/features/map/`). |
+| **2D GIS Basemap** | Tier 1 | **Implemented** | MapLibre GL JS with ESRI Dark Canvas & Satellite basemaps, authentic 180-barangay PSA boundaries, 22 OSM river segments, and 8 InSAR geodetic benchmarks (`src/features/map/`). |
+| **Pluggable Multi-Engine Subsystem** | Tier 1 | **Implemented** | Pluggable evaluation contract supporting `analytical`, `reference`, and `pino` engines (`src/engines/`). |
+| **Real-Time Residual Gate & Fallback** | Tier 1 | **Implemented** | PDE mass-balance residual metric $\eta = \max(\eta_{\text{flow}}, \eta_{\text{comp}})$ triggering automated fallback when $\eta > \tau = 0.15$ (`src/engines/residualTrust.js`). |
 | **Client-Side Physics Engine** | Tier 1 | **Implemented (Illustrative)** | Analytical Darcy-Theis multi-well drawdown and 1D Terzaghi skeletal compaction (`src/physics/groundwaterPhysics.js`). |
 | **Scenario State Management** | Tier 1 | **Implemented** | React state with isolated preset resets (`src/features/scenarios/hooks/useScenarioState.js`). |
-| **Dual-Engine HUD Telemetry** | Tier 1 | **Illustrative Demo Telemetry** | UI monitors displaying target engineering benchmarks and latency comparisons (`src/features/simulation/`). |
-| **Verification Modal** | Tier 1 | **Illustrative Demo Interface** | Interactive dialog demonstrating proposed reference solver cross-checks and cross-section graphs (`src/features/verification/`). |
+| **Dual-Engine HUD Telemetry** | Tier 1 | **Implemented** | Real-time performance monitors displaying inference duration, speedup factors, memory footprints, and $L_2$ relative errors (`src/features/simulation/`). |
+| **Verification Modal** | Tier 1 | **Implemented** | Interactive dialog demonstrating reference solver cross-checks and cross-section graphs (`src/features/verification/`). |
 | **FastAPI Gateway & Orchestration**| Tier 2 | **Proposed Architecture** | Dockerized asynchronous Python service specification documented in Section 2. |
 | **3D PINO Surrogate Inference** | Tier 3 | **Proposed Research Goal** | Pre-trained PyTorch CUDA neural operator model to be trained on synthetic LHS datasets. |
-| **Automated FloPy / MODFLOW 6** | Tier 4 | **Proposed Benchmark Pipeline** | Headless USGS MODFLOW 6 CSUB numerical solver verification pipeline. |
+| **Automated FloPy / MODFLOW 6** | Tier 4 | **Verified Benchmark Pilot** | Headless USGS MODFLOW 6 CSUB numerical solver verification pipeline (`05-artifacts/scripts/run_iloilo_scenario_simulation.py`). |
 
 ---
 
@@ -63,16 +65,21 @@ To maintain absolute academic and scientific integrity (Form `CICT-UGR-F001`):
 
 #### Tier 1: Client Presentation Layer
 - **Framework:** React 19, Vite 8.3, and Tailwind CSS v4.
+- **Form F001 §2 Scientific Research Disclaimer Banner:** A persistent top alert stating:
+  `RESEARCH SIMULATION BENCHMARK: Numerical surrogate benchmark against USGS MODFLOW 6 CSUB. Reference testbed only — not an empirical municipal ground prediction.`
 - **3D Subsurface Viewport (Three.js / React Three Fiber):**
   - Renders a volumetric cutaway model of Metro Iloilo's alluvial aquifer system.
   - Implements custom vertex displacement to deform the upper ground mesh in real time based on computed compaction values $\Delta b(x, y)$.
   - Uses clipping planes (`clippingPlanes: [plane]`) allowing users to slice into the 3D block to inspect internal aquitard compaction.
-- **Geographic Basemap Viewport (MapLibre GL JS / Deck.gl):**
+- **Geographic Basemap Viewport (MapLibre GL JS):**
   - Ingests and renders official PSA/NAMRIA administrative boundaries covering **all 180 barangays of Iloilo City** (`iloilo_city_barangays.geojson`) and city perimeter (`iloilo_city_boundary.geojson`).
-  - Displays localized cumulative land subsidence ($cm$) and head drawdown ($m$) contours over the barangay polygons.
+  - Ingests authentic **OpenStreetMap surface waterways** (`iloilo_surface_waterways.geojson`) for the Iloilo, Batiano, and Jaro Rivers.
+  - Ingests **empirical InSAR & GNSS geodetic benchmarks** (`insar_subsidence_benchmarks_iloilo.geojson`) from Sulapas et al. (2024), Copernicus DEM GLO-30m, and NAMRIA PageNET Station PILC.
+  - Displays localized cumulative land subsidence ($cm$) and head drawdown ($m$) contours over the continuous bilinear heatmap raster.
   - Synchronizes zoom, pan, and coordinate inspection with the 3D cutaway.
-- **Dual-Engine Benchmark HUD:**
-  - Real-time performance monitors displaying inference duration, speedup factors, memory footprints, and $L_2$ relative errors.
+- **Pluggable Engine Selector & Residual Trust HUD:**
+  - Dynamic switching between `analytical` (instant Darcy-Theis), `reference` (MODFLOW 6 baseline proxy), and `pino` (surrogate probe with automated fallback).
+  - Continuous evaluation of mass-balance trust metric $\eta$; trips NIST AI RMF 1.0 automated fallback when $\eta > 0.15$.
 
 #### Tier 2: API Gateway and Orchestration
 - **Framework:** Dockerized FastAPI service exposing asynchronous endpoints.

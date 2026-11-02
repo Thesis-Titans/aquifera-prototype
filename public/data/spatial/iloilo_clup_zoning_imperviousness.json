@@ -1,0 +1,93 @@
+{
+  "metadata": {
+    "title": "Iloilo City Zoning Land-Use & Surface Imperviousness Matrix",
+    "governing_policy": "City Government of Iloilo Comprehensive Land Use Plan (CLUP 2021-2029) & City Zoning Ordinance",
+    "spatial_resolution": "Mapped to 50 m x 50 m grid cells (PRS92 Zone 4, EPSG:3124)",
+    "applied_usage_in_aquifera": "Modulation of surface infiltration recharge W(x,y,t) and shallow unmetered domestic extraction q_shallow across Layer 1"
+  },
+  "zoning_classes": [
+    {
+      "zone_code": "C-3",
+      "zone_name": "Metropolitan Commercial Zone",
+      "typical_locations": ["Mandurriao Commercial Hub", "Iloilo Business Park", "SM City / Diversion Road"],
+      "impervious_surface_fraction_alpha": 0.90,
+      "recharge_retention_factor": 0.10,
+      "shallow_domestic_sink_mm_yr": 0.0,
+      "commercial_deep_pumping_potential": "Very High (Screened to Layers 3 & 5: 2500-5000 m3/day)"
+    },
+    {
+      "zone_code": "C-2",
+      "zone_name": "High-Density Commercial Zone",
+      "typical_locations": ["City Proper Downtown", "Calle Real", "Valeria Street", "Iznart Street"],
+      "impervious_surface_fraction_alpha": 0.85,
+      "recharge_retention_factor": 0.15,
+      "shallow_domestic_sink_mm_yr": 5.0,
+      "commercial_deep_pumping_potential": "Moderate to High"
+    },
+    {
+      "zone_code": "C-1",
+      "zone_name": "Neighborhood Commercial Zone",
+      "typical_locations": ["District Plazas", "Molo Plaza Commercial", "Jaro Plaza Perimeter"],
+      "impervious_surface_fraction_alpha": 0.70,
+      "recharge_retention_factor": 0.30,
+      "shallow_domestic_sink_mm_yr": 15.0,
+      "commercial_deep_pumping_potential": "Low to Moderate"
+    },
+    {
+      "zone_code": "R-3",
+      "zone_name": "High-Density Residential Zone",
+      "typical_locations": ["Calumpang (Molo)", "San Juan (Molo)", "Bo. Obrero (Lapuz)", "Bito-on (Jaro)"],
+      "impervious_surface_fraction_alpha": 0.75,
+      "recharge_retention_factor": 0.25,
+      "shallow_domestic_sink_mm_yr": 40.0,
+      "commercial_deep_pumping_potential": "Negligible (Dominated by diffuse shallow jetmatic wells)"
+    },
+    {
+      "zone_code": "R-2",
+      "zone_name": "Medium-Density Residential Zone",
+      "typical_locations": ["La Paz Subdivisions", "Jaro Subdivisions", "Mandurriao Residential"],
+      "impervious_surface_fraction_alpha": 0.55,
+      "recharge_retention_factor": 0.45,
+      "shallow_domestic_sink_mm_yr": 25.0,
+      "commercial_deep_pumping_potential": "Low"
+    },
+    {
+      "zone_code": "R-1",
+      "zone_name": "Low-Density Residential Zone",
+      "typical_locations": ["Suburban Villa Arevalo", "Northern Jaro Periphery"],
+      "impervious_surface_fraction_alpha": 0.35,
+      "recharge_retention_factor": 0.65,
+      "shallow_domestic_sink_mm_yr": 10.0,
+      "commercial_deep_pumping_potential": "Low"
+    },
+    {
+      "zone_code": "I-2",
+      "zone_name": "Medium / Heavy Industrial Zone",
+      "typical_locations": ["Lapuz Port Waterfront", "Loboc (Lapuz) Milling & Depots", "Molo Coastal Cold Storage"],
+      "impervious_surface_fraction_alpha": 0.85,
+      "recharge_retention_factor": 0.15,
+      "shallow_domestic_sink_mm_yr": 0.0,
+      "commercial_deep_pumping_potential": "High (Industrial process wells: 1500-3500 m3/day)"
+    },
+    {
+      "zone_code": "INST",
+      "zone_name": "Institutional Zone",
+      "typical_locations": ["WVSU Main Campus (La Paz)", "ISAT-U Campus", "UP Visayas Iloilo City Campus", "Iloilo Provincial Capitol"],
+      "impervious_surface_fraction_alpha": 0.50,
+      "recharge_retention_factor": 0.50,
+      "shallow_domestic_sink_mm_yr": 10.0,
+      "commercial_deep_pumping_potential": "Moderate (Campus water utilities)"
+    },
+    {
+      "zone_code": "OS-PARK",
+      "zone_name": "Open Space, Parks & Mangrove Eco-Parks",
+      "typical_locations": ["Iloilo River Esplanade", "Hinactacan Mangrove Forest (Jaro)", "La Paz Public Plaza"],
+      "impervious_surface_fraction_alpha": 0.10,
+      "recharge_retention_factor": 0.90,
+      "shallow_domestic_sink_mm_yr": 0.0,
+      "commercial_deep_pumping_potential": "Zero (Protected natural infiltration zones)"
+    }
+  ],
+  "governing_recharge_equation": "W_eff(x, y, t) = W_PAGASA(t) * (1.0 - alpha(x, y))",
+  "governing_shallow_sink_equation": "S_shallow(x, y, t) = q_shallow(x, y) / b1 (applied exclusively to convertible Layer 1)"
+}

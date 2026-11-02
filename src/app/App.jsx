@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AlertTriangle, Info } from 'lucide-react';
 import { TopNavigation } from '../components/layout';
 import { ScenarioSetupPanel, useScenarioState } from '../features/scenarios';
 import { CentralViewport } from '../features/aquifer-visualization';
@@ -105,6 +106,23 @@ export default function App() {
         onOpenVerification={() => setIsVerificationOpen(true)}
         onStartDefenseTour={() => setIsDefenseTourOpen(true)}
       />
+
+      {/* 1.1 Synthetic Numerical Benchmark Disclaimer Banner (CICT-UGR-F001 §2 Line 144) */}
+      <aside aria-label="Research Scope Disclaimer" className="bg-slate-900/95 border-b border-cyan-500/20 px-4 py-1.5 flex items-center justify-between text-xs text-slate-300 shrink-0 z-20 select-none shadow-xs">
+        <div className="flex items-center gap-2 max-w-5xl">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0 animate-pulse" />
+          <span className="text-[11px] leading-tight">
+            <strong className="text-cyan-300 font-semibold">Research Benchmark Scope:</strong> Spatial overlays represent a controlled synthetic numerical benchmark (PRS92 Zone 4, EPSG:3124) anchored to Metro Iloilo for scenario planning simulation, rather than calibrated street-level geotechnical predictions.
+          </span>
+        </div>
+        <div className="hidden lg:flex items-center gap-3 shrink-0 text-[10px] text-slate-400 font-mono">
+          <span>PRS92 Zone 4</span>
+          <span className="text-slate-600">•</span>
+          <span>Copernicus DEM 30m</span>
+          <span className="text-slate-600">•</span>
+          <span>MODFLOW 6 CSUB Baseline</span>
+        </div>
+      </aside>
 
       {/* 2. Middle Interactive Stage (Left Sidebar + Central Dual Viewport) */}
       <main className="h-[calc(100dvh-9rem)] min-h-115 flex flex-col md:flex-row gap-4 px-4 pt-3 pb-2 max-w-[1920px] w-full mx-auto">

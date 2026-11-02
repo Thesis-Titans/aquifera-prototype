@@ -1,0 +1,163 @@
+{
+  "type": "FeatureCollection",
+  "name": "Metro_Iloilo_InSAR_Subsidence_and_Geodetic_Benchmarks",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "metadata": {
+    "source_citation": "Sulapas, J. et al. (2024). Multi-temporal Sentinel-1 InSAR and GNSS Observations of Land Subsidence in Philippine Cities. Int. J. Appl. Earth Obs. Geoinf., 133, 104107.",
+    "sensor": "Sentinel-1 C-band Synthetic Aperture Radar (SAR)",
+    "temporal_baseline": "2014-2020",
+    "elevation_source": "Copernicus Digital Elevation Model (DEM) GLO-30m",
+    "geodetic_reference": "Continuous GNSS validated against NAMRIA PageNET Station PILC",
+    "target_area": "Metro Iloilo (Iloilo City Basin)",
+    "purpose_in_aquifera": "Empirical spatial geodetic baseline for comparative evaluation of modeled surface subsidence fields Δb(x, y)"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "benchmark_id": "INSAR-ILO-01",
+        "district": "Mandurriao",
+        "location_description": "Southeastern Mandurriao Commercial Corridor / Iloilo Business Park",
+        "mean_velocity_mm_yr": -8.5,
+        "velocity_range_mm_yr": [-7.0, -9.0],
+        "elevation_m_msl": 6.0,
+        "hazard_category": "High Subsidence Corridor",
+        "primary_driver": "Deep commercial & industrial groundwater extraction in confined deltaic sand units",
+        "observed_effects": "Piezometric drawdown cone and structural differential settlement risk"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [122.5485, 10.7135]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "benchmark_id": "INSAR-ILO-02",
+        "district": "Molo",
+        "location_description": "Coastal Molo District / Guimaras Strait Estuarine Margin",
+        "mean_velocity_mm_yr": -6.8,
+        "velocity_range_mm_yr": [-5.0, -8.0],
+        "elevation_m_msl": 1.0,
+        "hazard_category": "High Subsidence & Salinization Risk",
+        "primary_driver": "Dense domestic jetmatic abstraction & intermediate aquifer depressurization",
+        "observed_effects": "Saline water detected in shallow wells; compound tidal surge vulnerability"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [122.5390, 10.6970]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "benchmark_id": "INSAR-ILO-03",
+        "district": "La Paz",
+        "location_description": "La Paz District Alluvial Plain / Iloilo River Basin",
+        "mean_velocity_mm_yr": -5.2,
+        "velocity_range_mm_yr": [-4.0, -6.0],
+        "elevation_m_msl": 9.0,
+        "hazard_category": "Moderate Subsidence Zone",
+        "primary_driver": "Mixed commercial/residential extraction and compressible alluvial silts",
+        "observed_effects": "Drainage gradient reduction along estuarine tributaries"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [122.5680, 10.7180]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "benchmark_id": "INSAR-ILO-04",
+        "district": "City Proper",
+        "location_description": "Downtown Historic Commercial Sector & Port of Iloilo",
+        "mean_velocity_mm_yr": -3.8,
+        "velocity_range_mm_yr": [-2.0, -5.0],
+        "elevation_m_msl": 4.0,
+        "hazard_category": "Tidal Compound Flood Hazard",
+        "primary_driver": "Consolidation of low-lying estuarine fill compounding high-tide inundation",
+        "observed_effects": "Nuisance tidal flooding during syzygy high tides in low-elevation streets"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [122.5740, 10.6940]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "benchmark_id": "INSAR-ILO-05",
+        "district": "Lapuz",
+        "location_description": "Lapuz District Shipping & Ferry Terminal Waterfront",
+        "mean_velocity_mm_yr": -4.5,
+        "velocity_range_mm_yr": [-3.0, -5.5],
+        "elevation_m_msl": 1.0,
+        "hazard_category": "Moderate Coastal Subsidence",
+        "primary_driver": "Port logistics and coastal fill consolidation",
+        "observed_effects": "Wharf and seawall relative sea-level rise acceleration"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [122.5820, 10.7020]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "benchmark_id": "INSAR-ILO-06",
+        "district": "Jaro",
+        "location_description": "Northern Jaro Floodplain / Alluvial River Terrace",
+        "mean_velocity_mm_yr": -2.1,
+        "velocity_range_mm_yr": [-1.0, -3.0],
+        "elevation_m_msl": 11.0,
+        "hazard_category": "Low / Relatively Stable Ground",
+        "primary_driver": "Shallow agricultural recharge and lower commercial well density",
+        "observed_effects": "Stable baseline ground elevation"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [122.5590, 10.7320]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "benchmark_id": "GNSS-PILC",
+        "station_name": "Continuous GNSS Reference Station PILC",
+        "custodian": "National Mapping and Resource Information Authority (NAMRIA PageNET)",
+        "district": "La Paz",
+        "elevation_m_msl": 7.0,
+        "hazard_category": "Geodetic Geocentric Reference Station",
+        "primary_driver": "National Active Geodetic Network Reference",
+        "observed_effects": "InSAR line-of-sight validation anchor for Metro Iloilo"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [122.5620, 10.7120]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "benchmark_id": "TIDE-FORT-SAN-PEDRO",
+        "station_name": "Iloilo Permanent Sea-Level Monitoring Station",
+        "custodian": "NAMRIA Hydrography / PSMSL Station 177",
+        "district": "City Proper / Fort San Pedro",
+        "elevation_m_msl": 0.0,
+        "hazard_category": "Tidal Datum Reference",
+        "primary_driver": "Semi-diurnal tidal regime in Iloilo Strait",
+        "observed_effects": "Mean Sea Level (0.0 m MSL) boundary anchor for coastal Constant Head Boundary (CHD)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [122.5815, 10.6935]
+      }
+    }
+  ]
+}

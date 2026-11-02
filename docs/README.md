@@ -23,15 +23,16 @@ To maintain strict academic and scientific integrity, platform capabilities are 
 
 | Architectural Component | Implementation Status | Technical Mechanism | Verification Anchor |
 | :--- | :---: | :--- | :--- |
-| **Client UI Shell (Tier 1)** | **Implemented** | React 19, TailwindCSS 4, TopNav, ScenarioSetupPanel, BottomAnalyticsSuite | `src/app/App.jsx` |
+| **Client UI Shell (Tier 1)** | **Implemented** | React 19, Tailwind CSS 4, TopNav, ScenarioSetupPanel, BottomAnalyticsSuite, Form F001 §2 Banner | `src/app/App.jsx` |
 | **Interactive 3D Cutaway** | **Implemented** | Three.js (r182), stratified 5-layer geometry, well cylinders, cutaway clipping | `src/features/aquifer-visualization/` |
-| **2D GIS Map (MapLibre)** | **Implemented** | MapLibre GL 5, ESRI basemap, authentic PSA PSGC Barangay & City GeoJSON | `src/features/map/` |
+| **2D GIS Map (MapLibre)** | **Implemented** | MapLibre GL 5, ESRI basemaps, PSA 180 barangays, 22 OSM rivers, 8 InSAR benchmarks | `src/features/map/` |
+| **Pluggable Multi-Engine System** | **Implemented** | Pluggable evaluation contract supporting analytical, reference, and PINO engines | `src/engines/index.js` |
+| **Real-Time Residual Fallback ($\eta$)** | **Implemented** | Discrete PDE mass-balance residual metric $\eta \le 0.15$ with automated reference fallback | `src/engines/residualTrust.js` |
 | **Client-Side Analytical Model** | **Implemented (Illustrative)** | Fast Theis (1935) radial drawdown + Terzaghi plastic compaction preview | `src/physics/groundwaterPhysics.js` |
-| **Dual Export (GeoJSON/CSV)** | **Implemented** | RFC 7946 GeoJSON + cross-section profile CSV with research disclaimers | `src/physics/fields.js` |
-| **USGS MODFLOW 6 CSUB Pipeline** | **Feasibility Benchmarked** | Automated FloPy script running headless MODFLOW 6.8.1 (22.5 s median runtime) | `05-artifacts/pilot/PILOT-RESULTS-2026-10-23.md` |
+| **Dual Export (GeoJSON/CSV)** | **Implemented** | RFC 7946 GeoJSON in PRS92 Zone 4 + cross-section profile CSV with disclaimers | `src/physics/fields.js` |
+| **USGS MODFLOW 6 CSUB Pipeline** | **Verified Pilot Run** | Automated FloPy script running headless MODFLOW 6.8.1 (48.51 s runtime, 0.00% mass error) | `05-artifacts/scripts/run_iloilo_scenario_simulation.py` |
 | **PINO Surrogate Model** | **Feasibility Benchmarked** | 3D FNO PyTorch CUDA forward pass (38.6 ms latency, 2.14 GB VRAM on RTX 4050) | `05-artifacts/scripts/gpu_fno_check.py` |
 | **Live Backend API (Tier 2–4)** | **Proposed (Thesis Target)** | FastAPI gateway, Redis caching, Celery async verification queue | Proposal Form F001 §Methodology 5 |
-| **Live Residual Fallback (η)** | **Sprint Simulated** | Real-time PDE conservation residual gauge with automated fallback warning | `docs/plans/SPRINT-PLAN.md` (Sprint 3) |
 
 ---
 

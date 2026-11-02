@@ -32,17 +32,23 @@ To preserve scientific rigor and prevent misleading user expectations, the platf
 ### 3. Functional Requirements (FR)
 
 #### FR-01: Dual-Mode Geographic and Subsurface Viewport
-- **2D Geographic GIS Mode (MapLibre GL JS / Deck.gl):**
-  - The system shall render an interactive geographic basemap centered on the Metro Iloilo deltaic basin (`10.72° N, 122.56° E`, WGS84 / PRS92 alignment).
-  - The map shall feature standard pan, zoom, pitch, and reset-to-extent navigation controls.
+- **2D Geographic GIS Mode (MapLibre GL JS):**
+  - The system shall render an interactive geographic basemap centered on the Metro Iloilo deltaic basin (`10.71° N, 122.56° E`, WGS84 / PRS92 Zone 4 alignment), supporting ESRI Dark Canvas and ESRI World Imagery (Satellite) with ESRI Dark Reference labels.
+  - The map shall feature standard pan, zoom, pitch, reset-to-extent, and interactive well relocation controls.
   - **Authentic Administrative Boundary Ingestion:** The map shall render the official administrative boundaries for all **180 barangays of Iloilo City** (`iloilo_city_barangays.geojson`) sourced from PSA/NAMRIA, along with the municipal perimeter outline (`iloilo_city_boundary.geojson`).
-  - **Dynamic Subsidence Overlay:** The map shall render localized cumulative land subsidence ($cm$) and head drawdown ($m$) contours over the barangay boundaries.
-  - Clicking any barangay shall open an inspector popup detailing the official Barangay Name (`adm4_en`), PSGC Code (`adm4_pcode`), estimated settlement rate ($mm/year$), drawdown ($m$), and risk classification.
-- **3D Geotechnical Subsurface Mode (Three.js WebGL / React Three Fiber):**
-  - The system shall render an interactive 3D WebGL cutaway of the Metro Iloilo deltaic aquifer system comprising three distinct hydrostratigraphic layers:
-    - **Layer 1 (0 to 30 m):** Upper unconfined alluvial sand and silt aquifer.
-    - **Layer 2 (30 to 60 m):** Low-permeability, compressible marine clay aquitard.
-    - **Layer 3 (60 to 120 m):** Lower semi-confined to confined sand/gravel regional production aquifer.
+  - **Authentic Surface Waterways:** The map shall render the 22 OpenStreetMap river geometries (`iloilo_surface_waterways.geojson`) for the Iloilo, Batiano, and Jaro Rivers.
+  - **Empirical InSAR and Geodetic Benchmarks:** The map shall render the 8 geodetic benchmark points (`insar_subsidence_benchmarks_iloilo.geojson`) including Sulapas et al. (2024) Sentinel-1 InSAR measurements, Copernicus GLO-30m DEM elevations, NAMRIA PageNET Station PILC, and Fort San Pedro tide gauge.
+  - **Continuous Bilinear Heatmap Raster:** The map shall render localized cumulative land subsidence ($cm$) and head drawdown ($m$) as an offscreen bilinear interpolated raster texture.
+  - **Interactive Feature & Cell Inspector:** Clicking an InSAR benchmark or river waterway shall open an inspector card detailing geodetic velocity, Copernicus DEM elevation, channel conductance, and driver; clicking a 50m simulation cell shall inspect local drawdown, subsidence, and effective stress.
+  - **Form F001 §2 Disclaimer Banner:** The interface shall display a persistent top notification stating:
+    `RESEARCH SIMULATION BENCHMARK: Numerical surrogate benchmark against USGS MODFLOW 6 CSUB. Reference testbed only — not an empirical municipal ground prediction.`
+- **3D Geotechnical Subsurface Mode (Three.js WebGL):**
+  - The system shall render an interactive 3D WebGL cutaway of the Metro Iloilo deltaic aquifer system comprising five distinct hydrostratigraphic layers (proposal Fig. 6):
+    - **Layer 1 (0 to 20 m):** Upper unconfined alluvial sand and silt aquifer.
+    - **Layer 2 (20 to 40 m):** Upper confining clay aquitard.
+    - **Layer 3 (40 to 70 m):** Middle semi-confined aquifer.
+    - **Layer 4 (70 to 95 m):** Lower compressible clay interbeds (primary compaction unit).
+    - **Layer 5 (95 to 120 m):** Basal deep semi-confined gravel production aquifer.
   - The user shall have interactive camera controls (orbit, pan, zoom, preset views) and an adjustable clipping plane ($0\%$ to $100\%$) to inspect internal clay compaction.
 
 #### FR-02: Spatial Parameter Configuration and Scenario Presets
@@ -64,11 +70,14 @@ To preserve scientific rigor and prevent misleading user expectations, the platf
 - When the localized head drops below the preconsolidation head threshold ($h < h_{\min}$), the system shall trigger a high-priority UI alert indicating that the clay interbed has transitioned from recoverable elastic compression ($S_{ske} \approx 10^{-5}\text{ m}^{-1}$) to permanent, irreversible inelastic compaction ($S_{skv} \approx 10^{-3}\text{ m}^{-1}$).
 - Visual warning badges shall highlight barangays where annual projected subsidence exceeds $5\text{ mm/year}$, with critical high-vulnerability alerts triggered at $\ge 8.0\text{ mm/year}$ (calibrated to the empirical Mandurriao-Molo satellite InSAR baseline from Sulapas et al., 2024 [Ref 1]).
 
-#### FR-05: Dual-Engine Benchmark Heads-Up Display (HUD)
-- The user interface shall feature a synchronized benchmark HUD comparing the performance of:
-  - **Surrogate Engine (PINO PyTorch CUDA):** Inference runtime ($< 250\text{ ms}$), VRAM usage, and estimated energy consumption.
-  - **Numerical Solver (USGS MODFLOW 6 CSUB):** Execution time (pilot: $4.5$ to $96\text{ s}$ per run), CPU thread load, and grid convergence iterations.
-- The HUD shall display relative accuracy metrics ($L_2$ head error, $L_2$ compaction error, and coefficient of determination $R^2$).
+#### FR-05: Multi-Engine Benchmark HUD and Real-Time Residual Gating
+- The user interface shall feature a synchronized benchmark HUD with a pluggable engine selector (`analytical`, `reference`, `pino`):
+  - **Analytical Baseline:** Instantaneous Darcy-Theis multi-well drawdown and 1D Terzaghi skeletal compaction preview evaluated directly in the browser runtime.
+  - **Reference Solver Proxy (USGS MODFLOW 6 CSUB):** Numerical finite-difference benchmark characteristics ($48.51\text{ s}$ runtime, 60 time steps, 0.00% mass discrepancy).
+  - **Neural Surrogate Probe (PINO PyTorch):** Latency target $< 250\text{ ms}$ (proposed criterion), VRAM footprint $\le 4.2\text{ GB}$, and FNO-3D spectral kernel characteristics.
+- **Real-Time Residual Gating & Safe Fallback (NIST AI RMF 1.0):**
+  - The system shall compute discrete PDE mass-balance residuals $\eta_{\text{flow}}$ and skeletal compaction residuals $\eta_{\text{comp}}$ in real time.
+  - If the combined residual trust metric $\eta = \max(\eta_{\text{flow}}, \eta_{\text{comp}})$ breaches the safety threshold $\tau = 0.15$, the platform shall trip an automated fallback alert, flag the surrogate prediction as unverified, and fall back to the reference numerical solver.
 
 #### FR-06: Asynchronous Numerical Verification Pipeline Trigger
 - The user shall have an on-demand verification button: `Verify with MODFLOW 6`.

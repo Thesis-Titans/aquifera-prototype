@@ -133,8 +133,11 @@ export default function MapLibreMap({
     domainOutline: true,
     wells: true,
     gridMesh: false,
-    insarBaseline: false
+    insarBaseline: false,
+    waterways: true,
+    benchmarks: true
   });
+  const [inspectedFeature, setInspectedFeature] = useState(null);
   const [gridOpacity, setGridOpacity] = useState(
     visualizationConfig?.opacity ? visualizationConfig.opacity / 100 : 0.75
   );
@@ -252,6 +255,8 @@ export default function MapLibreMap({
       map.addSource('domain-outline', { type: 'geojson', data: domainOutlineGeoJSON() });
       map.addSource('insar-baseline', { type: 'geojson', data: insarBaselineGeoJSON() });
       map.addSource('wells', { type: 'geojson', data: latest.wellsData });
+      map.addSource('iloilo-waterways', { type: 'geojson', data: `${dataBase}iloilo_surface_waterways.geojson` });
+      map.addSource('insar-benchmarks', { type: 'geojson', data: `${dataBase}insar_subsidence_benchmarks_iloilo.geojson` });
 
       // Barangay outlines and the city boundary give geographic context only
       map.addLayer({
@@ -347,12 +352,62 @@ export default function MapLibreMap({
         }
       });
 
+      // Surface Waterways (OpenStreetMap Official Geometry via Nominatim)
+      map.addLayer({
+        id: 'iloilo-waterways-casing',
+        type: 'line',
+        source: 'iloilo-waterways',
+        layout: {
+          'visibility': latest.layerVisibility.waterways ? 'visible' : 'none'
+        },
+        paint: {
+          'line-color': '#0369a1',
+          'line-width': 4,
+          'line-opacity': 0.7
+        }
+      });
+      map.addLayer({
+        id: 'iloilo-waterways-line',
+        type: 'line',
+        source: 'iloilo-waterways',
+        layout: {
+          'visibility': latest.layerVisibility.waterways ? 'visible' : 'none'
+        },
+        paint: {
+          'line-color': '#38bdf8',
+          'line-width': 2.2,
+          'line-opacity': 0.9
+        }
+      });
+
       // Place-name reference tiles above the result grid
       map.addLayer({
         id: 'esri-dark-reference-layer',
         type: 'raster',
         source: 'esri-dark-reference',
         paint: { 'raster-opacity': 0.85 }
+      });
+
+      // InSAR Subsidence & GNSS Geodetic Benchmarks (Sulapas et al., 2024 / NAMRIA)
+      map.addLayer({
+        id: 'insar-benchmarks-circle',
+        type: 'circle',
+        source: 'insar-benchmarks',
+        layout: {
+          'visibility': latest.layerVisibility.benchmarks ? 'visible' : 'none'
+        },
+        paint: {
+          'circle-radius': 7.5,
+          'circle-color': [
+            'case',
+            ['==', ['get', 'hazard_category'], 'Active Continuous GNSS Station'], '#10b981',
+            ['==', ['get', 'hazard_category'], 'Tide Gauge & Oceanographic Station'], '#06b6d4',
+            ['==', ['get', 'hazard_category'], 'Stable InSAR Reference Point'], '#3b82f6',
+            '#f43f5e'
+          ],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2.5
+        }
       });
 
       // Production Wells
@@ -417,7 +472,21 @@ export default function MapLibreMap({
         }
       });
 
-      // Global click handler: places well when well placing mode is active; otherwise selects clicked 50m cell
+      // Interactive cursor affordance for vector benchmarks and waterways
+      map.on('mouseenter', 'insar-benchmarks-circle', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'insar-benchmarks-circle', () => {
+        map.getCanvas().style.cursor = '';
+      });
+      map.on('mouseenter', 'iloilo-waterways-line', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'iloilo-waterways-line', () => {
+        map.getCanvas().style.cursor = '';
+      });
+
+      // Global click handler: handles well placement, vector feature inspection, or 50m cell query
       map.on('click', (e) => {
         const [x, y] = lngLatToMeters(e.lngLat.lng, e.lngLat.lat);
         if (isWellPlacingModeRef.current || e.originalEvent?.shiftKey) {
@@ -427,6 +496,33 @@ export default function MapLibreMap({
           }
           return;
         }
+
+        // 1. Query interactive vector feature layers (InSAR benchmarks & river waterways)
+        const benchmarkFeatures = map.queryRenderedFeatures(e.point, { layers: ['insar-benchmarks-circle'] });
+        if (benchmarkFeatures && benchmarkFeatures.length > 0) {
+          const feat = benchmarkFeatures[0];
+          setInspectedFeature({
+            kind: 'benchmark',
+            properties: feat.properties,
+            coordinates: feat.geometry.coordinates
+          });
+          setSelectedIdx(null);
+          return;
+        }
+
+        const waterwayFeatures = map.queryRenderedFeatures(e.point, { layers: ['iloilo-waterways-line'] });
+        if (waterwayFeatures && waterwayFeatures.length > 0) {
+          const feat = waterwayFeatures[0];
+          setInspectedFeature({
+            kind: 'waterway',
+            properties: feat.properties
+          });
+          setSelectedIdx(null);
+          return;
+        }
+
+        // 2. Query finite difference simulation grid cell
+        setInspectedFeature(null);
         if (Math.abs(x) <= half && Math.abs(y) <= half && physicalStateRef.current) {
           const idx = nodeAtMeters(physicalStateRef.current, x, y);
           setSelectedIdx(idx);
@@ -482,6 +578,15 @@ export default function MapLibreMap({
     }
     if (map.getLayer('insar-baseline-line')) {
       map.setLayoutProperty('insar-baseline-line', 'visibility', layerVisibility.insarBaseline ? 'visible' : 'none');
+    }
+    if (map.getLayer('iloilo-waterways-casing')) {
+      map.setLayoutProperty('iloilo-waterways-casing', 'visibility', layerVisibility.waterways ? 'visible' : 'none');
+    }
+    if (map.getLayer('iloilo-waterways-line')) {
+      map.setLayoutProperty('iloilo-waterways-line', 'visibility', layerVisibility.waterways ? 'visible' : 'none');
+    }
+    if (map.getLayer('insar-benchmarks-circle')) {
+      map.setLayoutProperty('insar-benchmarks-circle', 'visibility', layerVisibility.benchmarks ? 'visible' : 'none');
     }
   }, [layerVisibility, mapLoaded]);
 
@@ -766,6 +871,32 @@ export default function MapLibreMap({
 
             <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer hover:text-white">
               <span className="flex items-center gap-2">
+                <span className="w-2.5 h-1 bg-sky-400 rounded-full" />
+                River Waterways (OSM)
+              </span>
+              <input
+                type="checkbox"
+                checked={layerVisibility.waterways}
+                onChange={(e) => setLayerVisibility(v => ({ ...v, waterways: e.target.checked }))}
+                className="accent-cyan-400 rounded cursor-pointer"
+              />
+            </label>
+
+            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer hover:text-white">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full border border-white bg-rose-500" />
+                InSAR &amp; GNSS Benchmarks
+              </span>
+              <input
+                type="checkbox"
+                checked={layerVisibility.benchmarks}
+                onChange={(e) => setLayerVisibility(v => ({ ...v, benchmarks: e.target.checked }))}
+                className="accent-rose-500 rounded cursor-pointer"
+              />
+            </label>
+
+            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer hover:text-white">
+              <span className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full border border-cyan-400 bg-slate-900" />
                 Production Wells
               </span>
@@ -850,6 +981,83 @@ export default function MapLibreMap({
               Analytical preview. Not an empirical ground forecast.
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 7. Inspected Benchmark / Waterway Feature Overlay */}
+      {inspectedFeature && (
+        <div className="absolute bottom-4 right-4 z-10 bg-slate-900/95 backdrop-blur-md p-3.5 rounded-xl border border-sky-400/50 shadow-2xl w-72 text-xs animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-2">
+            <span className="font-bold text-sky-300 flex items-center gap-1.5 truncate">
+              <span className={`w-2 h-2 rounded-full ${inspectedFeature.kind === 'benchmark' ? 'bg-rose-400' : 'bg-sky-400'}`} />
+              {inspectedFeature.kind === 'benchmark'
+                ? (inspectedFeature.properties.benchmark_id || 'Geodetic Benchmark')
+                : (inspectedFeature.properties.river_name || 'Surface Waterway')}
+            </span>
+            <button
+              onClick={() => setInspectedFeature(null)}
+              aria-label="Close feature inspector"
+              className="text-slate-400 hover:text-white cursor-pointer p-0.5 rounded hover:bg-slate-800 shrink-0"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          {inspectedFeature.kind === 'benchmark' && (
+            <div className="space-y-1.5 text-[11px]">
+              <div className="flex justify-between text-slate-400">
+                <span>District</span>
+                <span className="font-semibold text-slate-200">{inspectedFeature.properties.district || 'Metro Iloilo'}</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Category</span>
+                <span className="font-medium text-amber-300/90 text-right">{inspectedFeature.properties.hazard_category}</span>
+              </div>
+              {inspectedFeature.properties.mean_velocity_mm_yr != null && (
+                <div className="flex justify-between">
+                  <span className="text-slate-400">InSAR Velocity</span>
+                  <span className="font-mono font-bold text-rose-400">
+                    {inspectedFeature.properties.mean_velocity_mm_yr} mm/yr
+                  </span>
+                </div>
+              )}
+              {inspectedFeature.properties.elevation_m_msl != null && (
+                <div className="flex justify-between text-slate-400">
+                  <span>Copernicus DEM</span>
+                  <span className="font-mono text-slate-200">{inspectedFeature.properties.elevation_m_msl} m MSL</span>
+                </div>
+              )}
+              {inspectedFeature.properties.primary_driver && (
+                <div className="border-t border-slate-800 pt-1.5 text-[10px] text-slate-300 leading-snug">
+                  <span className="text-slate-400 block font-medium">Driver / Mechanism:</span>
+                  {inspectedFeature.properties.primary_driver}
+                </div>
+              )}
+              <div className="text-[10px] text-slate-400 border-t border-slate-800 pt-1.5 mt-2 italic">
+                Empirical geodetic baseline (Sulapas et al., 2024 / NAMRIA).
+              </div>
+            </div>
+          )}
+
+          {inspectedFeature.kind === 'waterway' && (
+            <div className="space-y-1.5 text-[11px]">
+              <div className="flex justify-between text-slate-400">
+                <span>Channel Type</span>
+                <span className="font-semibold text-slate-200 text-right">{inspectedFeature.properties.river_type}</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Stage Elevation</span>
+                <span className="font-mono text-sky-300">{inspectedFeature.properties.stage_m_msl} m MSL</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Bed Conductance</span>
+                <span className="font-mono text-cyan-300">{inspectedFeature.properties.bed_conductance_m2_day} m²/day</span>
+              </div>
+              <div className="text-[10px] text-slate-400 border-t border-slate-800 pt-1.5 mt-2 italic">
+                Boundary condition parameter (OSM Nominatim geometry).
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

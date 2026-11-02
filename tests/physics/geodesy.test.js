@@ -1,5 +1,8 @@
 import test, { describe } from 'node:test';
 import assert from 'node:assert';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   PRS92_ANCHOR,
   metersToPRS92,
@@ -8,6 +11,10 @@ import {
   lngLatToMeters,
   insarBaselineGeoJSON
 } from '../../src/physics/fields.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const spatialDir = path.resolve(__dirname, '../../public/data/spatial');
 
 describe('AQUIFERA Geodesy & PRS92 Zone 4 (EPSG:3124) Spatial Contracts', () => {
 
@@ -70,6 +77,65 @@ describe('AQUIFERA Geodesy & PRS92 Zone 4 (EPSG:3124) Spatial Contracts', () => 
       assert.strictEqual(f.geometry.type, 'Polygon');
       assert.ok(f.geometry.coordinates[0].length >= 4);
       assert.ok(f.properties.rate.includes('mm/yr'));
+    }
+  });
+
+  test('real OSM waterways dataset conforms to OGC GeoJSON LineString specifications', () => {
+    const filePath = path.join(spatialDir, 'iloilo_surface_waterways.geojson');
+    assert.ok(fs.existsSync(filePath), 'Waterways GeoJSON must exist');
+
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    assert.strictEqual(data.type, 'FeatureCollection');
+    assert.strictEqual(data.features.length, 22, 'Must contain exactly 22 river segments from OSM');
+
+    for (const feat of data.features) {
+      assert.strictEqual(feat.type, 'Feature');
+      assert.strictEqual(feat.geometry.type, 'LineString');
+      assert.ok(feat.geometry.coordinates.length >= 2, 'LineString must have at least 2 vertices');
+      assert.ok(feat.properties.river_name, 'Feature must define river_name');
+      assert.ok(feat.properties.bed_conductance_m2_day > 0, 'Bed conductance must be positive');
+    }
+  });
+
+  test('InSAR and geodetic benchmarks dataset contains valid velocities and DEM elevations', () => {
+    const filePath = path.join(spatialDir, 'insar_subsidence_benchmarks_iloilo.geojson');
+    assert.ok(fs.existsSync(filePath), 'InSAR benchmarks GeoJSON must exist');
+
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    assert.strictEqual(data.type, 'FeatureCollection');
+    assert.strictEqual(data.features.length, 8, 'Must contain 8 verified geodetic benchmarks (6 InSAR + GNSS PILC + Tide Gauge)');
+
+    for (const feat of data.features) {
+      assert.strictEqual(feat.type, 'Feature');
+      assert.strictEqual(feat.geometry.type, 'Point');
+      assert.strictEqual(feat.geometry.coordinates.length, 2);
+      assert.ok(feat.properties.benchmark_id, 'Benchmark must have an ID');
+      assert.ok(typeof feat.properties.elevation_m_msl === 'number', 'Elevation must be a valid number');
+      if (feat.properties.benchmark_id.startsWith('INSAR')) {
+        assert.ok(typeof feat.properties.mean_velocity_mm_yr === 'number', 'InSAR benchmark must specify mean velocity');
+      } else {
+        assert.ok(feat.properties.custodian, 'Geodetic datum station must specify custodian');
+      }
+    }
+  });
+
+  test('CLUP 2021-2029 zoning matrix specifies bounded imperviousness fractions', () => {
+    const filePath = path.join(spatialDir, 'iloilo_clup_zoning_imperviousness.json');
+    assert.ok(fs.existsSync(filePath), 'CLUP zoning JSON must exist');
+
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    assert.ok(data.metadata.governing_policy.includes('CLUP 2021-2029'));
+    assert.ok(data.zoning_classes.length >= 8, 'Must define all major land use zones');
+
+    for (const z of data.zoning_classes) {
+      assert.ok(
+        z.impervious_surface_fraction_alpha >= 0.10 && z.impervious_surface_fraction_alpha <= 0.90,
+        'Imperviousness fraction must be bounded in [0.10, 0.90]'
+      );
+      assert.ok(
+        z.recharge_retention_factor >= 0.10 && z.recharge_retention_factor <= 0.90,
+        'Retention factor must be bounded in [0.10, 0.90]'
+      );
     }
   });
 });
