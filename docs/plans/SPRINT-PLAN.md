@@ -3,7 +3,7 @@
 > **Artifact Type:** Technical Engineering Plan & Implementation Roadmap  
 > **Target Project:** `01-concepts/01-aquifera/05-artifacts/aquifera-prototype`  
 > **Tech Stack:** React 19, Three.js (v0.186.1), MapLibre GL (v6.15.0), TailwindCSS 4, Vite 8  
-> **Baseline:** 48 unit tests passing, Vite build clean (<700 ms), 0 errors  
+> **Baseline:** 55 unit tests passing, Vite build clean (<650 ms), 0 errors  
 > **Collaborative Model:** **Antigravity** (Architect, QA & Token Governor) + **Claude Code CLI** (Deep Component Engineer)
 
 ---
@@ -66,7 +66,14 @@ flowchart TD
         T53["S5.3: Form F001 §2 Research Disclaimer Banner Integration ✓"]
     end
 
-    SP1 --> SP2 --> SP3 --> SP4 --> SP5
+    subgraph SP6["Sprint 6: Advanced Scenario Dynamics & Climatological Analytics (COMPLETED)"]
+        T60["S6.0: CLUP Zoning Impervious Surface Modulation (α ∈ [0.10, 0.90]) ✓"]
+        T61["S6.1: DOST-PAGASA Station 614 12-Month Transient Hydrograph & Dual Mode Card 1 ✓"]
+        T62["S6.2: Scenario Comparison Spatial Delta Diff Engine (Δs = Live − Captured) ✓"]
+        T63["S6.3: Diverging Colormap & Baseline Inspector Integration ✓"]
+    end
+
+    SP1 --> SP2 --> SP3 --> SP4 --> SP5 --> SP6
 ```
 
 ---
@@ -108,3 +115,11 @@ flowchart TD
 * [x] **Task S5.1: InSAR Benchmark Markers with Copernicus DEM Heights & GNSS `PILC` (`insar_subsidence_benchmarks_iloilo.geojson`)**
 * [x] **Task S5.2: CLUP 2021–2029 Zoning Imperviousness & PAGASA Recharge Integration**
 * [x] **Task S5.3: Form F001 §2 Research Disclaimer Banner in `App.jsx`**
+
+---
+
+### Sprint 6: Advanced Scenario Dynamics & Climatological Analytics (COMPLETED)
+* [x] **Task S6.0: CLUP 2021–2029 Statutory Zoning Impervious Surface Modulation ($\alpha \in [0.10, 0.90]$)**: Integrated zoning classes (`C-3`, `C-2`, `C-1`, `R-3`, `R-2`, `R-1`, `I-2`, `I-1`, `AG`, `OS`, `INST`) into `groundwaterPhysics.js` and wired interactive dropdown & numeric slider override into `ScenarioSetupPanel.jsx`.
+* [x] **Task S6.1: DOST-PAGASA Station 614 12-Month Transient Hydrograph**: Implemented 30-year climatological normals (1991–2020) time-series computation, SVG chart with dual-axis seasonal precipitation bars & Theis drawdown curves, segmented Card 1 toggle, and dedicated hydrograph CSV export in `BottomAnalyticsSuite.jsx`.
+* [x] **Task S6.2: Scenario Comparison Spatial Delta Diff Engine ($\Delta s = s_{\text{live}} - s_{\text{captured}}$)**: Added `diff_subsidence` quantity, diverging color scale (`#2563eb` recovery $\leftarrow$ slate neutral $\rightarrow$ `#dc2626` compaction), and bilinear interpolation with zero-difference alpha cutoff in `heatmap.js`.
+* [x] **Task S6.3: Diverging Colormap & Baseline Inspector Integration**: Added map spatial delta toggle in Card 3, updated MapLibre raster synchronization with `capturedPhysicalState`, and enhanced clicked cell inspector to display live, captured baseline, and delta settlement.
