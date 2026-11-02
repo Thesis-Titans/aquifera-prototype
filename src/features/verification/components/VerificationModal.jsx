@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
 import {
   X,
   Cpu,
@@ -162,62 +163,51 @@ export default function VerificationModal({
     URL.revokeObjectURL(link.href);
   }, []);
 
-  // Keyboard accessibility: Close dialog on Escape key
-  React.useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="verif-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="w-full max-w-4xl max-h-[min(90dvh,54rem)] flex flex-col overflow-hidden rounded-2xl bg-slate-950 border border-slate-800 shadow-[0_25px_70px_rgba(0,0,0,0.85)] animate-in fade-in zoom-in-95 duration-200">
-        
-        {/* 1. Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/60 shrink-0 flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
-                <Cpu size={18} />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 id="verif-title" className="text-base font-bold text-white tracking-tight truncate">
-                    Numerical Verification & Multi-Engine Benchmark Suite
-                  </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30 shrink-0 font-semibold">
-                    ISO/IEC 25010 & NIST AI RMF 1.0
-                  </span>
+    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 w-screen h-screen bg-slate-950/80 backdrop-blur-md z-50 animate-in fade-in duration-150" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+          <Dialog.Content 
+            className="w-full max-w-4xl max-h-[min(90dvh,54rem)] flex flex-col overflow-hidden rounded-2xl bg-slate-950 border border-slate-800 shadow-[0_25px_70px_rgba(0,0,0,0.85)] pointer-events-auto animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
+            aria-describedby="verif-desc"
+          >
+            {/* 1. Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/60 shrink-0 flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+                    <Cpu size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Dialog.Title className="text-base font-bold text-white tracking-tight truncate">
+                        Numerical Verification & Multi-Engine Benchmark Suite
+                      </Dialog.Title>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30 shrink-0 font-semibold">
+                        ISO/IEC 25010 & NIST AI RMF 1.0
+                      </span>
+                    </div>
+                    <Dialog.Description id="verif-desc" className="text-xs text-slate-400 mt-0.5 truncate">
+                      MODFLOW 6 CSUB Baseline Proxy, PINO Surrogate Probe & Automated Residual Gating
+                    </Dialog.Description>
+                  </div>
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5 truncate">
-                  MODFLOW 6 CSUB Baseline Proxy, PINO Surrogate Probe & Automated Residual Gating
-                </p>
+
+                <Dialog.Close asChild>
+                  <button 
+                    onClick={onClose}
+                    className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    title="Close Dialog (Esc)"
+                  >
+                    <X size={18} />
+                  </button>
+                </Dialog.Close>
               </div>
-            </div>
 
-            <button 
-              onClick={onClose}
-              className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-              title="Close Dialog (Esc)"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          {/* Tab Navigation Pill Bar */}
-          <div className="flex items-center justify-between gap-3 pt-1 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+              {/* Tab Navigation Pill Bar */}
+              <div className="flex items-center justify-between gap-3 pt-1 flex-wrap">
+                <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
               <button
                 onClick={() => setActiveTab('live')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
@@ -676,15 +666,19 @@ export default function VerificationModal({
             )}
           </div>
 
-          <button 
-            className="aquifera-btn-primary py-2 px-5 text-xs font-bold cursor-pointer"
-            onClick={onClose}
-          >
-            Close Dialog
-          </button>
+          <Dialog.Close asChild>
+            <button 
+              className="aquifera-btn-primary py-2 px-5 text-xs font-bold cursor-pointer"
+              onClick={onClose}
+            >
+              Close Dialog
+            </button>
+          </Dialog.Close>
         </div>
 
-      </div>
+      </Dialog.Content>
     </div>
-  );
+  </Dialog.Portal>
+</Dialog.Root>
+);
 }
